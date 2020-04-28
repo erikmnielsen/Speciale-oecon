@@ -1,0 +1,97 @@
+Key,Variable
+VA,Gross value added at current basic prices (in millions of national currency)
+GO,Gross Output at current basic prices (in millions of national currency)
+II,Intermediate inputs at current purchasers prices (in millions of national currency)
+COMP,Compensation of employees (in millions of national currency)
+EMP,Number of persons engaged (thousands)
+EMPE,Number of employees (thousands)
+H_EMP,Total hours worked by persons engaged (thousands)
+H_EMPE,Total hours worked by employees (thousands)
+VA_P,"Gross value added, price indices, 2010 = 100"
+GO_P,"Gross output, price indices, 2010 = 100"
+II_P,"Intermediate inputs, price indices, 2010 = 100"
+VA_QI,"Gross value added, volume (2010 prices)"
+GO_QI,"Gross output, volume (2010 prices)"
+II_QI,"Intermediate inputs, volume (2010 prices)"
+LP_I,"Gross value added per hour worked, volume indices, 2010 = 100"
+LAB,Labour compensation (in millions of national currency)
+CAP,Capital compensation (in millions of national currency)
+LAB_QI,"Labour services, volume indices, 2010 = 100"
+CAP_QI,"Capital services, volume indices, 2010 = 100"
+CAPIT_QI,"ICT capital services, volume indices, 2010 = 100"
+CAPNIT_QI,"Non-ICT capital services, volume indices, 2010 = 100"
+VA_Q,Growth rate of value added volume (% per year)
+VAConH,Contribution of hours worked to value added growth (percentage points)
+VAConLC,Contribution of labour composition change to value added growth (percentage points)
+VAConKIT,Contribution of ICT capital services to value added growth (percentage points)
+VAConKNIT,Contribution of non-ICT capital services to value added growth (percentage points)
+VAConTFP,Contribution of TFP to value added growth (percentage points)
+TFPva_I,"TFP (value added based) growth, 2010 = 100"
+LP1_Q,Growth rate of value added per hour worked  (% per year)
+LP1ConLC,Contribution of labour composition change to value added per hour worked  growth (percentage points)
+LP1ConKIT,Contribution of ICT capital services to  value added per hour worked (percentage points)
+LP1ConKNIT,Contribution of non-ICT capital services to  value added per hour worked (percentage points)
+LP1ConTFP,Contribution of TFP to  value added per hour worked growth (percentage points)
+TFPlp1_I,"TFP ( value added per hour worked based) growth, 2010=100"
+LP2_Q,Growth rate of value added per person employed  (% per year)
+LP2ConLC,Contribution of labour composition change to value added per person employed  growth (percentage points)
+LP2ConKIT,Contribution of ICT capital services to  value added per person employed (percentage points)
+LP2ConKNIT,Contribution of non-ICT capital services to  value added per person employed (percentage points)
+LP2ConTFP,Contribution of TFP to  value added per person employed growth (percentage points)
+TFPlp2_I,"TFP ( value added per person employed based) growth, 2010=100"
+I_IT,"Nominal gross fixed capital formation, in millions of national currency of Computing equipment"
+I_CT,"Nominal gross fixed capital formation, in millions of national currency of Communications equipment"
+I_Soft_DB,"Nominal gross fixed capital formation, in millions of national currency of Computer software and databases"
+I_TraEq,"Nominal gross fixed capital formation, in millions of national currency of Transport Equipment"
+I_OMach,"Nominal gross fixed capital formation, in millions of national currency of Other Machinery and Equipment"
+I_OCon,"Nominal gross fixed capital formation, in millions of national currency of Total Non-residential investment"
+I_RStruc,"Nominal gross fixed capital formation, in millions of national currency of Residential structures"
+I_Cult,"Nominal gross fixed capital formation, in millions of national currency of Cultivated assets"
+I_RD,"Nominal gross fixed capital formation, in millions of national currency of Research and development"
+I_OIPP,"Nominal gross fixed capital formation, in millions of national currency of Other IPP assets"
+I_GFCF,"Nominal gross fixed capital formation, in millions of national currency of All assets"
+Iq_IT,Real gross fixed capital formation volume (2010 prices) of Computing equipment
+Iq_CT,Real gross fixed capital formation volume (2010 prices) of Communications equipment
+Iq_Soft_DB,Real gross fixed capital formation volume (2010 prices) of Computer software and databases
+Iq_TraEq,Real gross fixed capital formation volume (2010 prices) of Transport Equipment
+Iq_OMach,Real gross fixed capital formation volume (2010 prices) of Other Machinery and Equipment
+Iq_OCon,Real gross fixed capital formation volume (2010 prices) of Total Non-residential investment
+Iq_RStruc,Real gross fixed capital formation volume (2010 prices) of Residential structures
+Iq_Cult,Real gross fixed capital formation volume (2010 prices) of Cultivated assets
+Iq_RD,Real gross fixed capital formation volume (2010 prices) of Research and development
+Iq_OIPP,Real gross fixed capital formation volume (2010 prices) of Other IPP assets
+Iq_GFCF,Real gross fixed capital formation volume (2010 prices) of All assets
+Ip_IT,Gross fixed capital formation price index (2010=100.0) of Computing equipment
+Ip_CT,Gross fixed capital formation price index (2010=100.0) of Communications equipment
+Ip_Soft_DB,Gross fixed capital formation price index (2010=100.0) of Computer software and databases
+Ip_TraEq,Gross fixed capital formation price index (2010=100.0) of Transport Equipment
+Ip_OMach,Gross fixed capital formation price index (2010=100.0) of Other Machinery and Equipment
+Ip_OCon,Gross fixed capital formation price index (2010=100.0) of Total Non-residential investment
+Ip_RStruc,Gross fixed capital formation price index (2010=100.0) of Residential structures
+Ip_Cult,Gross fixed capital formation price index (2010=100.0) of Cultivated assets
+Ip_RD,Gross fixed capital formation price index (2010=100.0) of Research and development
+Ip_OIPP,Gross fixed capital formation price index (2010=100.0) of Other IPP assets
+Ip_GFCF,Gross fixed capital formation price index (2010=100.0) of All assets
+K_IT,"Nominal capital stock, in millions of national currency of Computing equipment"
+K_CT,"Nominal capital stock, in millions of national currency of Communications equipment"
+K_Soft_DB,"Nominal capital stock, in millions of national currency of Computer software and databases"
+K_TraEq,"Nominal capital stock, in millions of national currency of Transport Equipment"
+K_OMach,"Nominal capital stock, in millions of national currency of Other Machinery and Equipment"
+K_OCon,"Nominal capital stock, in millions of national currency of Total Non-residential investment"
+K_RStruc,"Nominal capital stock, in millions of national currency of Residential structures"
+K_Cult,"Nominal capital stock, in millions of national currency of Cultivated assets"
+K_RD,"Nominal capital stock, in millions of national currency of Research and development"
+K_OIPP,"Nominal capital stock, in millions of national currency of Other IPP assets"
+K_GFCF,"Nominal capital stock, in millions of national currency of All assets"
+Kq_IT,Real fixed capital stock  (2010 prices) of Computing equipment
+Kq_CT,Real fixed capital stock  (2010 prices) of Communications equipment
+Kq_Soft_DB,Real fixed capital stock  (2010 prices) of Computer software and databases
+Kq_TraEq,Real fixed capital stock  (2010 prices) of Transport Equipment
+Kq_OMach,Real fixed capital stock  (2010 prices) of Other Machinery and Equipment
+Kq_OCon,Real fixed capital stock  (2010 prices) of Total Non-residential investment
+Kq_RStruc,Real fixed capital stock  (2010 prices) of Residential structures
+Kq_Cult,Real fixed capital stock  (2010 prices) of Cultivated assets
+Kq_RD,Real fixed capital stock  (2010 prices) of Research and development
+Kq_OIPP,Real fixed capital stock  (2010 prices) of Other IPP assets
+Kq_GFCF,Real fixed capital stock  (2010 prices) of All assets
+Deprate,EU KLEMS Geometric depreciation rates
