@@ -56,14 +56,16 @@ ggplot(data, aes(aldergrp)) +
   theme(axis.text.x = element_text(angle = 360, hjust = 0.5)) + 
   ggtitle("Alder, grupperet")
 
-ggplot(data, aes(udgrp)) + 
-  geom_histogram(binwidth = 0.5, color="black") + 
+ggplot(data, aes(fill = udgrp)) + 
+  geom_bar(x = data$udgrp, 
+           y = (total)/sum(total)) + 
   ylab("") + 
   xlab("") + 
-  theme_classic() + 
+  theme_economist() + 
   scale_color_economist() +
-  scale_x_discrete(limits=c("Grundskole eller uoplyst", "Gymnasial / erhvervsfaglig (EUD) / KVU", "MVU/Bachelor/LVU/PHD")) + 
+  scale_x_discrete(limits=c("Grundskole og uoplyst", "Kort udd", "Mellemlang og lang udd")) + 
   theme(axis.text.x = element_text(angle = 360, hjust = 0.5)) + 
+  scale_y_continuous(labels = percent) +
   ggtitle("Uddannelse")
 
 ggplot(data, aes(loengrp)) + 
