@@ -1391,7 +1391,8 @@ max <- NA
 
 # Country panel  -----------------------------------------------------
 
-c_panel = rbind(DK_tot, SE_tot, US_tot, NL_tot, DE_tot, AT_tot, BE_tot)
+c_panel = rbind(DK_tot, SE_tot, US_tot, NL_tot, DE_tot, AT_tot, BE_tot, CZ_tot, EL_tot, FI_tot, FR_tot, 
+                IT_tot, LU_tot, LV_tot, SI_tot, SK_tot)
 c_panel = na.omit(c_panel)
 
 model_linear1 = emp_logchanges ~ prod_logchanges 
@@ -1407,7 +1408,6 @@ c_panel = pdata.frame(c_panel, index = c("country", "year"))
 c_panel$prod_logchanges_lag1 = lag(c_panel$prod_logchanges, k = 1, shift = "time")
 c_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges, k = 2, shift = "time")
 c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges, k = 3, shift = "time")
-c_panel$prod_logchanges_lag4 = lag(c_panel$prod_logchanges, k = 4, shift = "time")
 c_panel = na.omit(c_panel)
 
 model_linear2 = emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3
@@ -1423,7 +1423,18 @@ summary(C2_fe)
 
 
 # Country industry panel --------------------------------------------------
-ci_panel = rbind(dk, SE, US, NL, DE)
+ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, 
+                IT, LU, LV, SI, SK)
+
+ci_panel$b2 = ifelse(ci_panel$code == "b2", 1, 0)
+ci_panel$b3 = ifelse(ci_panel$code == "b3", 1, 0)
+ci_panel$b4 = ifelse(ci_panel$code == "b4", 1, 0)
+ci_panel$b5 = ifelse(ci_panel$code == "b5", 1, 0)
+ci_panel$b6 = ifelse(ci_panel$code == "b6", 1, 0)
+ci_panel$b7 = ifelse(ci_panel$code == "b7", 1, 0)
+ci_panel$b8 = ifelse(ci_panel$code == "b8", 1, 0)
+ci_panel$b9 = ifelse(ci_panel$code == "b9", 1, 0)
+ci_panel$b10 = ifelse(ci_panel$code == "b10", 1, 0)
 
 model_linear1 = emp_logchanges ~ prod_logchanges 
 
