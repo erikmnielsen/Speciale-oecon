@@ -1057,7 +1057,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   #Labour share
   SI_ls = func_labshare(SI_comp, SI_va, SI_lab, "SI", "COMP", "VA", "LAB")
-  SI_ls$year = lubridate::ymd(SK_ls$year, truncated = 2L)
+  SI_ls$year = lubridate::ymd(SI_ls$year, truncated = 2L)
   
   #Employment and productivty
   SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P")
@@ -1092,54 +1092,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
 }
-
-# Slovenien
-{
-  SI_emp = read_excel("Data/SI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-  #SI_go = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  SI_gop = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
-  SI_comp = read_excel("Data/SI_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
-  SI_lab = read_excel("Data/SI_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
-  SI_va = read_excel("Data/SI_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
-  
-  #Labour share
-  SI_ls = func_labshare(SI_comp, SI_va, SI_lab, "SI", "COMP", "VA", "LAB")
-  SI_ls$year = lubridate::ymd(SK_ls$year, truncated = 2L)
-  
-  #Employment and productivty
-  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P")
-  
-  #PLM analyse
-  SI_tot = SI_ep %>% filter(code=="TOT")
-  SI_tot$TOT = SI_tot$EMP
-  SI_tot = SI_tot %>% select(year, country, TOT)
-  
-  #SI = SI_ep %>% filter(branche=="b-tot", year!="1975")
-  SI = SI_ep %>% filter(branche=="b-tot")
-  SI = merge(SI,SI_tot, by=c("year", "country"), all.x = TRUE)
-  SI = na.omit(SI)
-  
-  SI$wgt = SI$EMP/SI$TOT
-  
-  #deskriptiv
-  SI_b = SI_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = SI_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    SI_b = merge(SI_b, sumEMP, by=c("year"), all.x = TRUE)
-    SI_b$share_EMP = (SI_b$EMP/SI_b$sum_EMP)*100
-    SI_b = pdata.frame(SI_b, index = c("code", "year"))
-    SI_b$share_EMP_ppchange = diff(SI_b$share_EMP, lag = 1, shift = "time")
-    SI_b$share_EMP_ppchange = ifelse(is.na(SI_b$share_EMP_ppchange)==T,0,SI_b$share_EMP_ppchange)
-    SI_b = SI_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  SI_b$year = lubridate::ymd(SI_b$year, truncated = 2L)
-  
-  SI_tot = SI_ep %>% filter(code=="TOT")
-  SI_tot$year = lubridate::ymd(SI_tot$year, truncated = 2L)
-  
-  
-}
-
 
 
 # Descriptive -------------------------------------------------------------
