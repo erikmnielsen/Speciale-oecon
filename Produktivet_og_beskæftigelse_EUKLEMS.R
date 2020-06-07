@@ -1356,27 +1356,34 @@ summary(C0_pool)
 summary(C0_fd)
 summary(C0_fe)
 
+c_panel = rbind(DK_tot, SE_tot, US_tot, NL_tot, DE_tot, AT_tot, BE_tot, CZ_tot, EL_tot, FI_tot, FR_tot, 
+                IT_tot, LU_tot, LV_tot, SI_tot, SK_tot)
+
 c_panel = pdata.frame(c_panel, index = c("country", "year"))
 c_panel$prod_logchanges_lag1 = lag(c_panel$prod_logchanges, k = 1, shift = "time")
-c_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges, k = 2, shift = "time")
-c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges, k = 3, shift = "time")
+c_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges_lag1, k = 1, shift = "time")
+c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges_lag2, k = 1, shift = "time")
 c_panel = na.omit(c_panel)
 
 model_linear2 = emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3
+fixed.dum = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year), data=c_panel)
+summary(fixed.dum)
 
 C2_pool = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "pooling")
 C2_fd = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "fd")
-C2_fe = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within")
+C2_fe = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within", effect = "individual")
+C2_fe_tw = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within", effect = "twoway")
 summary(C2_pool)
 summary(C2_fd)
 summary(C2_fe)
-
+summary(C2_fe_tw)
 
 
 
 # Country industry panel --------------------------------------------------
 ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, 
                 IT, LU, LV, SI, SK)
+ci_panel = ci_panel %>% select(c(year, country, code, desc, emp_logchanges, prod_logchanges, wgt))
 
 ci_panel$b2 = ifelse(ci_panel$code == "b2", 1, 0)
 ci_panel$b3 = ifelse(ci_panel$code == "b3", 1, 0)
@@ -1388,11 +1395,23 @@ ci_panel$b8 = ifelse(ci_panel$code == "b8", 1, 0)
 ci_panel$b9 = ifelse(ci_panel$code == "b9", 1, 0)
 ci_panel$b10 = ifelse(ci_panel$code == "b10", 1, 0)
 
-model_linear1 = emp_logchanges ~ prod_logchanges 
+ci_panel$id = ci_panel %>% group_indices(code, country)
 
-poolOLS <- plm(model_linear1, data = dk, index = c("code", "year"), model = "pooling", weight=wgt)
-summary(poolOLS)
+model_linear1 = emp_logchanges ~ prod_logchanges
 
+ci.reg <- plm(model_linear1, data = ci_panel, index = c("id", "year"), model = "within")
+
+summary(ci.reg)
+
+  fixed.dum = lm(emp_logchanges ~ prod_logchanges + factor(id) + factor(year), data=ci_panel)
+summary(fixed.dum)
+
+
+
+
+a = table(index(ci_panel), useNA = "ifany")
+
+table(a)
 #options(digits = 3)
 #pols = coeftest(poolOLS, vcov. = vcovHC, method = "arellano")
 
