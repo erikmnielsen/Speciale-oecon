@@ -1402,20 +1402,10 @@ ci.reg <- plm(model_linear1, data = ci_panel, index = c("id", "year"), model = "
 summary(ci.reg)
 
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt, data=ci_panel)
-summary(fixed.dum)
-
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(code) + factor(country), data=ci_panel)
-summary(fixed.dum)
-
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt  + factor(code) + factor(country) + factor(year), data=ci_panel)
-summary(fixed.dum)
-
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt  + factor(code) + factor(year), data=ci_panel)
-summary(fixed.dum)
-
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(year), data=ci_panel)
-summary(fixed.dum)
-
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country), data=ci_panel)
 summary(fixed.dum)
 
