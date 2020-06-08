@@ -1376,20 +1376,8 @@ summary(C2_fe_tw)
 
 
 # Country industry panel --------------------------------------------------
-ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, 
-                IT, LU, LV, SI, SK)
+ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR,  IT, LU, LV, SI, SK)
 ci_panel = ci_panel %>% select(c(year, country, code, desc, emp_logchanges, prod_logchanges, wgt))
-
-ci_panel$b2 = ifelse(ci_panel$code == "b2", 1, 0)
-ci_panel$b3 = ifelse(ci_panel$code == "b3", 1, 0)
-ci_panel$b4 = ifelse(ci_panel$code == "b4", 1, 0)
-ci_panel$b5 = ifelse(ci_panel$code == "b5", 1, 0)
-ci_panel$b6 = ifelse(ci_panel$code == "b6", 1, 0)
-ci_panel$b7 = ifelse(ci_panel$code == "b7", 1, 0)
-ci_panel$b8 = ifelse(ci_panel$code == "b8", 1, 0)
-ci_panel$b9 = ifelse(ci_panel$code == "b9", 1, 0)
-ci_panel$b10 = ifelse(ci_panel$code == "b10", 1, 0)
-
 ci_panel$id = ci_panel %>% group_indices(code, country)
 
 ci_panel$prod_logchanges_wgt = ci_panel$prod_logchanges*ci_panel$wgt
@@ -1435,25 +1423,31 @@ Arellano
 
 # Sammensætning af mikro og makroelasticiteter --------------------------------------------------
 
-ci_panel = rbind(dk, SE, US, NL, DE)
+ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, IT, LU, LV, SI, SK)
+ci_panel = ci_panel %>% select(c(year, country, code, desc, emp_logchanges, prod_logchanges, wgt))
+ci_panel$id = ci_panel %>% group_indices(code, country)
 
-ci_panel = pdata.frame(c_panel, index = c("country", "year"))
-ci_panel$prod_logchanges_lag1 = lag(c_panel$prod_logchanges, k = 1, shift = "time")
-ci_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges, k = 2, shift = "time")
-ci_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges, k = 3, shift = "time")
+#hvad gør vi med lande hvor nogle industrier mangler?
 
-c_panel = na.omit(c_panel)
+sum_prod_yc <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges))
+ci_panel = merge(ci_panel, sum_prod_yc, by=c( "year", "country"), all.x = TRUE)
+ci_panel$avgLP_oi = (ci_panel$`sum(prod_logchanges)` - ci_panel$prod_logchanges)/(ci_panel$n - 1) #bør det vægtes
 
-model_linear2 = emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3
-
-is the average log change in labor productivity in other industries
-in the same country and time period. In this estimating equation, the coefficient 𝛽+
-  estimates the own-industry employment-productivity elasticity and the coefficient
-vector 𝛽./0 estimates the indirect effect of productivity growth outside of ownindustry
-𝑖 on industry 𝑖′𝑠 employment
+ci_panel = pdata.frame(ci_panel, index = c("id", "year"))
+ci_panel$avgLP_oi_lag1 = lag(ci_panel$avgLP_oi, k = 1, shift = "time")
+ci_panel$avgLP_oi_lag2 = lag(ci_panel$avgLP_oi, k = 2, shift = "time")
+ci_panel$avgLP_oi_lag3 = lag(ci_panel$avgLP_oi, k = 3, shift = "time")
+ci_panel = na.omit(ci_panel)
 
 
-model_linear1 = emp_logchanges ~ prod_logchanges 
+model_linear2 = emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3
+
+fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(code) + factor(year), data=ci_panel)
+fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(year), data=ci_panel)
+fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) , data=ci_panel)
+fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3 , data=ci_panel)
+
+summary(fixed.dum)
 
 
 # Skills..... --------------------------------------------------
