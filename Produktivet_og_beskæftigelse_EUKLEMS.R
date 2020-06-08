@@ -570,7 +570,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
     
   }
  
-
 # Østrig
 {
   AT_emp = read_excel("Data/AT_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
@@ -664,7 +663,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
 }
-
 
 # Tjekkiet
 {
@@ -854,7 +852,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
 }
 
-
 # Italien
 {
   IT_emp = read_excel("Data/IT_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
@@ -901,7 +898,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
 }
-
 
 # Letland
 {
@@ -996,7 +992,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
 }
-
 
 # Slovakiet
 {
@@ -1353,22 +1348,31 @@ fe = coeftest(FixedEffects_indi, vcov. = vcovHC, method = "arellano")
 attributes(Arellano)
 
 Arellano
-}
 
-#Sammensætning af mikro og makroelasticiteter
-{
-GE_tot <- GE_ep %>% filter(code=="TOT")
-GE_tot$TOT = GE_tot$EMP
-GE_tot <- GE_tot %>% select(year, country, TOT)
+# Sammensætning af mikro og makroelasticiteter --------------------------------------------------
 
-}
+ci_panel = rbind(dk, SE, US, NL, DE)
 
-#sapply(DK_ep, class)
-#DK_ep$year <-  as.numeric(as.character(DK_ep[,"year"])) #ændres fordi "year" er en factor variabel
+ci_panel = pdata.frame(c_panel, index = c("country", "year"))
+ci_panel$prod_logchanges_lag1 = lag(c_panel$prod_logchanges, k = 1, shift = "time")
+ci_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges, k = 2, shift = "time")
+ci_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges, k = 3, shift = "time")
 
-#dk <- DK_ep %>% filter(branche=="b-tot", year>1980, year<1990)
+c_panel = na.omit(c_panel)
 
-dk = merge(dk,tot, by=c("year", "country"), all.x = TRUE)
+model_linear2 = emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3
+
+is the average log change in labor productivity in other industries
+in the same country and time period. In this estimating equation, the coefficient 𝛽+
+  estimates the own-industry employment-productivity elasticity and the coefficient
+vector 𝛽./0 estimates the indirect effect of productivity growth outside of ownindustry
+𝑖 on industry 𝑖′𝑠 employment
+
+
+model_linear1 = emp_logchanges ~ prod_logchanges 
+
+
+# Skills..... --------------------------------------------------
 
 
 
