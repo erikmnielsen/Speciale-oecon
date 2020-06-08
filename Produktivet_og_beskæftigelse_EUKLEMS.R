@@ -1392,17 +1392,32 @@ ci_panel$b10 = ifelse(ci_panel$code == "b10", 1, 0)
 
 ci_panel$id = ci_panel %>% group_indices(code, country)
 
-model_linear1 = emp_logchanges ~ prod_logchanges
+ci_panel$prod_logchanges_wgt = ci_panel$prod_logchanges*ci_panel$wgt
+ci_panel$emp_logchanges_wgt = ci_panel$emp_logchanges*ci_panel$wgt
+
+model_linear1 = emp_logchanges_wgt ~ prod_logchanges_wgt
 
 ci.reg <- plm(model_linear1, data = ci_panel, index = c("id", "year"), model = "within")
 
 summary(ci.reg)
 
-  fixed.dum = lm(emp_logchanges ~ prod_logchanges + factor(id) + factor(year), data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt, data=ci_panel)
 summary(fixed.dum)
 
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(code) + factor(country), data=ci_panel)
+summary(fixed.dum)
 
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt  + factor(code) + factor(country) + factor(year), data=ci_panel)
+summary(fixed.dum)
 
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt  + factor(code) + factor(year), data=ci_panel)
+summary(fixed.dum)
+
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(year), data=ci_panel)
+summary(fixed.dum)
+
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country), data=ci_panel)
+summary(fixed.dum)
 
 a = table(index(ci_panel), useNA = "ifany")
 
