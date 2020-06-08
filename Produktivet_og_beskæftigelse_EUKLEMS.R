@@ -1040,6 +1040,55 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
 }
 
+
+# Slovenien
+{
+  SI_emp = read_excel("Data/SI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+  #SI_go = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
+  SI_gop = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  SI_comp = read_excel("Data/SI_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
+  SI_lab = read_excel("Data/SI_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
+  SI_va = read_excel("Data/SI_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
+  
+  #Labour share
+  SI_ls = func_labshare(SI_comp, SI_va, SI_lab, "SI", "COMP", "VA", "LAB")
+  SI_ls$year = lubridate::ymd(SI_ls$year, truncated = 2L)
+  
+  #Employment and productivty
+  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P")
+  
+  #PLM analyse
+  SI_tot = SI_ep %>% filter(code=="TOT")
+  SI_tot$TOT = SI_tot$EMP
+  SI_tot = SI_tot %>% select(year, country, TOT)
+  
+  #SI = SI_ep %>% filter(branche=="b-tot", year!="1975")
+  SI = SI_ep %>% filter(branche=="b-tot")
+  SI = merge(SI,SI_tot, by=c("year", "country"), all.x = TRUE)
+  SI = na.omit(SI)
+  
+  SI$wgt = SI$EMP/SI$TOT
+  
+  #deskriptiv
+  SI_b = SI_ep %>% filter(branche=="b-tot")
+  {
+    sumEMP = SI_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+    SI_b = merge(SI_b, sumEMP, by=c("year"), all.x = TRUE)
+    SI_b$share_EMP = (SI_b$EMP/SI_b$sum_EMP)*100
+    SI_b = pdata.frame(SI_b, index = c("code", "year"))
+    SI_b$share_EMP_ppchange = diff(SI_b$share_EMP, lag = 1, shift = "time")
+    SI_b$share_EMP_ppchange = ifelse(is.na(SI_b$share_EMP_ppchange)==T,0,SI_b$share_EMP_ppchange)
+    SI_b = SI_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
+  }
+  SI_b$year = lubridate::ymd(SI_b$year, truncated = 2L)
+  
+  SI_tot = SI_ep %>% filter(code=="TOT")
+  SI_tot$year = lubridate::ymd(SI_tot$year, truncated = 2L)
+  
+  
+}
+
+
 # Descriptive -------------------------------------------------------------
 
 min <- as.Date("1975-1-1")
@@ -1289,7 +1338,8 @@ max <- NA
 
 # Country panel  -----------------------------------------------------
 
-c_panel = rbind(DK_tot, SE_tot, US_tot, NL_tot, DE_tot, AT_tot, BE_tot)
+c_panel = rbind(DK_tot, SE_tot, US_tot, NL_tot, DE_tot, AT_tot, BE_tot, CZ_tot, EL_tot, FI_tot, FR_tot, 
+                IT_tot, LU_tot, LV_tot, SI_tot, SK_tot)
 c_panel = na.omit(c_panel)
 
 model_linear1 = emp_logchanges ~ prod_logchanges 
@@ -1301,33 +1351,62 @@ summary(C0_pool)
 summary(C0_fd)
 summary(C0_fe)
 
+c_panel = rbind(DK_tot, SE_tot, US_tot, NL_tot, DE_tot, AT_tot, BE_tot, CZ_tot, EL_tot, FI_tot, FR_tot, 
+                IT_tot, LU_tot, LV_tot, SI_tot, SK_tot)
+
 c_panel = pdata.frame(c_panel, index = c("country", "year"))
 c_panel$prod_logchanges_lag1 = lag(c_panel$prod_logchanges, k = 1, shift = "time")
-c_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges, k = 2, shift = "time")
-c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges, k = 3, shift = "time")
-c_panel$prod_logchanges_lag4 = lag(c_panel$prod_logchanges, k = 4, shift = "time")
+c_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges_lag1, k = 1, shift = "time")
+c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges_lag2, k = 1, shift = "time")
 c_panel = na.omit(c_panel)
 
 model_linear2 = emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3
+fixed.dum = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year), data=c_panel)
+summary(fixed.dum)
 
 C2_pool = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "pooling")
 C2_fd = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "fd")
-C2_fe = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within")
+C2_fe = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within", effect = "individual")
+C2_fe_tw = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within", effect = "twoway")
 summary(C2_pool)
 summary(C2_fd)
 summary(C2_fe)
-
+summary(C2_fe_tw)
 
 
 
 # Country industry panel --------------------------------------------------
-ci_panel = rbind(dk, SE, US, NL, DE)
+ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, 
+                IT, LU, LV, SI, SK)
+ci_panel = ci_panel %>% select(c(year, country, code, desc, emp_logchanges, prod_logchanges, wgt))
 
-model_linear1 = emp_logchanges ~ prod_logchanges 
+ci_panel$b2 = ifelse(ci_panel$code == "b2", 1, 0)
+ci_panel$b3 = ifelse(ci_panel$code == "b3", 1, 0)
+ci_panel$b4 = ifelse(ci_panel$code == "b4", 1, 0)
+ci_panel$b5 = ifelse(ci_panel$code == "b5", 1, 0)
+ci_panel$b6 = ifelse(ci_panel$code == "b6", 1, 0)
+ci_panel$b7 = ifelse(ci_panel$code == "b7", 1, 0)
+ci_panel$b8 = ifelse(ci_panel$code == "b8", 1, 0)
+ci_panel$b9 = ifelse(ci_panel$code == "b9", 1, 0)
+ci_panel$b10 = ifelse(ci_panel$code == "b10", 1, 0)
 
-poolOLS <- plm(model_linear1, data = dk, index = c("code", "year"), model = "pooling", weight=wgt)
-summary(poolOLS)
+ci_panel$id = ci_panel %>% group_indices(code, country)
 
+model_linear1 = emp_logchanges ~ prod_logchanges
+
+ci.reg <- plm(model_linear1, data = ci_panel, index = c("id", "year"), model = "within")
+
+summary(ci.reg)
+
+  fixed.dum = lm(emp_logchanges ~ prod_logchanges + factor(id) + factor(year), data=ci_panel)
+summary(fixed.dum)
+
+
+
+
+a = table(index(ci_panel), useNA = "ifany")
+
+table(a)
 #options(digits = 3)
 #pols = coeftest(poolOLS, vcov. = vcovHC, method = "arellano")
 
