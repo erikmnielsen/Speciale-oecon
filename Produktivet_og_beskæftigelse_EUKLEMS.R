@@ -152,41 +152,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   data$country = country
   
   
-  #AutorSalomons Industrier:
+  #data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","R","S","T","U"), 0,1))
   
-  {
-  data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","R","S","T","U"), 0,1))
-  
-  
-  data$sector <- ifelse(data$code %in% c("B", "DtE", "F"), "s1",
-                         ifelse(data$code %in% c("10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33"), "s2", #kan man ikke bare bruge C, Total Manufacturing?
-                                ifelse(data$code %in% c("P","Q","RtS"), "s3",
-                                       ifelse(data$code %in% c("53", "58t60", "61", "62t63", "K", "MtN"), "s4",
-                                              ifelse(data$code %in% c("45", "46", "47", "49t52", "I", "L"), "s5",
-                                                     "s0")))))
-  
-  data$sector_desc <- ifelse(data$sector=="s1","Mining, utilities, and construction", 
-                             ifelse(data$sector=="s2","Manufacturing", 
-                                    ifelse(data$sector=="s3","Education and health services", 
-                                           ifelse(data$sector=="s4","High-tech services",
-                                                  ifelse(data$sector=="s5","Low-tech services",
-                                                         "Not relevant"
-                                                  )))))
-  
-  }
-  
+  data$sel_industries <-factor(ifelse( data$code %in% c("A","B", "DtE", "F","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33",
+                                                        "R","S","53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L","T","U"), 1,0)) #alt pånær O, P, Q (skal RtS, T og U også fjernes?) 
+                                                          
   #Brancher, 10:
   {data$branche <- ifelse(data$code=="A", "b1",
-                                ifelse(data$code %in% c("B","C", "DtE"), "b2",
+                                ifelse(data$code %in% c("B","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33", "DtE"), "b2",
                                        ifelse(data$code=="F", "b3",
-                                              ifelse(data$code %in% c("G","H", "I"), "b4",
-                                                     ifelse(data$code=="J", "b5",
+                                              ifelse(data$code %in% c("45", "46", "47","49t52","53", "I"), "b4",
+                                                     ifelse(data$code %in% c("58t60", "61", "62t63"), "b5",
                                                             ifelse(data$code=="K", "b6",
                                                                    ifelse(data$code=="L", "b7",
                                                                           ifelse(data$code=="MtN", "b8",
-                                                                                 ifelse(data$code %in% c("O","P","Q"), "b9",
-                                                                                        ifelse(data$code %in% c("RtS","T","U"), "b10",
-                                                                                               "b0"))))))))))
+                                                                               #  ifelse(data$code %in% c("O","P","Q"), "b9",
+                                                                                        ifelse(data$code %in% c("R","S","T","U"), "b10",
+                                                                                               "b0")))))))))
   
   data$branche_desc <- ifelse(data$branche=="b1","Landbrug, skovbrug og fiskeri",
                               ifelse(data$branche=="b2","Industri, råstofindvinding og forsyningsvirksomhed",
@@ -196,68 +178,45 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
                                                           ifelse(data$branche=="b6", "Finansiering og forsikring",
                                                                  ifelse(data$branche=="b7","Ejendomshandel og udlejning",
                                                                         ifelse(data$branche=="b8","Erhvervsservice",
-                                                                               ifelse(data$branche=="b9","Offentlig administration, undervisning og sundhed",
+                                                                    #           ifelse(data$branche=="b9","Offentlig administration, undervisning og sundhed",
                                                                                       ifelse(data$branche=="b10","Kultur, fritid og anden service",
-                                                                                             "Ikke relevant"))))))))))
+                                                                                             "Ikke relevant")))))))))
   }
   
 
   #angivelse af branche/industri totaler
-   t2 <- data %>% filter(sector!=0) %>% group_by(year,sector, sector_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
+   t4 <- data %>% filter(branche!=0) %>% group_by(year, branche, branche_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
    
-   
-   t3 <- data %>% filter(branche!=0) %>% group_by(year, branche, branche_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
-
-   t4=rbind(t2,t3)
-   
-   
-   
-  data2 <- data.frame(desc=ifelse(is.na(t4$sector_desc)==T, t4$branche_desc, t4$sector_desc),
-                      code=ifelse(is.na(t4$sector)==T, t4$branche, t4$sector),
+  data2 <- data.frame(desc= t4$branche_desc,
+                      code=t4$branche,
                       year=t4$year,
                       EMP=t4$EMP,
                       GO=t4$GO,
                       country=country,
                       sel_industries=0,
-                      sector=ifelse(is.na(t4$sector)==T, "s0", "s-tot"),
-                      sector_desc=ifelse(is.na(t4$sector)==T, "Not relevant", "Sector Total"),
-                      branche=ifelse(is.na(t4$sector)==T, "b-tot", "b0"),
-                      branche_desc=ifelse(is.na(t4$sector)==T, "Branche Total", "Ikke Relevant"))
+                      branche="b-tot",
+                      branche_desc="Branche Total")
   
   
   #udregning af lande total, hvis visse brancher udelades (fx landbrug, offentlig sektor)
-  {
-  # Totaler ala Autor Salomons
-  
-  #t <- data %>% filter(code=="TOT")
-  #t_A <- data %>% filter(code=="A")
-  #t_O <- data %>% filter(code=="O")
-  #t_T <- data %>% filter(code=="T")
-  
-  #t$EMP = t$EMP -t_A$EMP - t_O$EMP - t_T$EMP
-  #t$desc = "TOTAL INDUSTRIES-AutorSalomons"
-  #t$code = "TOT_AS"
-  
   #Nedenstående skal bruges til hvis vores udvalgte brancher adskiller sig fra "TOTAL INDUSTRIES"
   
-  #b <- data2 %>% filter(code=="b1")
-  #b_2 <- data2 %>% filter(code=="b2")
-  #b_3 <- data2 %>% filter(code=="b3")
-  #b_4 <- data2 %>% filter(code=="b4")
-  #b_5 <- data2 %>% filter(code=="b5")
- # b_6 <- data2 %>% filter(code=="b6")
-  #b_7 <- data2 %>% filter(code=="b7")
-  #b_8 <- data2 %>% filter(code=="b8")
+  b <- data2 %>% filter(code=="b1")
+  b_2 <- data2 %>% filter(code=="b2")
+  b_3 <- data2 %>% filter(code=="b3")
+  b_4 <- data2 %>% filter(code=="b4")
+  b_5 <- data2 %>% filter(code=="b5")
+  b_6 <- data2 %>% filter(code=="b6")
+  b_7 <- data2 %>% filter(code=="b7")
+  b_8 <- data2 %>% filter(code=="b8")
   #b_9 <- data2 %>% filter(code=="b9")
-  #b_10 <- data2 %>% filter(code=="b10")
+  b_10 <- data2 %>% filter(code=="b10")
   
-  #b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP + b_9$EMP + b_10$EMP
-  #b$desc = "TOTAL INDUSTRIES-MunkNielsen"
-  #b$code = "TOT_MN"
-  }
+  b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP + b_10$EMP #+ b_9$EMP 
+  b$desc = "TOTAL INDUSTRIES-MunkNielsen"
+  b$code = "TOT_MN"
   
-  #data_fin <- rbind(data, data2, t)
-  data_fin <- rbind(data, data2)
+  data_fin <- rbind(data, data2, b)
   pdata = pdata.frame(data_fin, index = c("code", "year"))
   
   pdata$emp_log <- log(pdata$EMP)
@@ -282,7 +241,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   pdata = pdata %>% group_by(code) %>% mutate(prod_CGR= order_by(year, CGR(prod_changes2[-1])*100))
   #df = pdata %>% group_by(code) %>% mutate(cumsum = cumsum())
   
-  pdata <- pdata %>% select(year, country, code, desc, sel_industries, sector, sector_desc, branche, branche_desc, EMP, emp_logchanges, GO, prod, prod_logchanges,prod_changes, prod_CGR, prod_logCGR, prod_CGR_logchanges) %>% 
+  pdata <- pdata %>% select(year, country, code, desc, sel_industries, branche, branche_desc, EMP, emp_logchanges, GO, prod, prod_logchanges,prod_changes, prod_CGR, prod_logCGR, prod_CGR_logchanges) %>% 
     filter(code!="b0",code!="s0")
   
   pdata = pdata.frame(pdata, index = c("code", "year"))
@@ -314,16 +273,22 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P")
   
   #PLM analyse
-  DK_tot <- DK_ep %>% filter(code=="TOT")
-  DK_tot$TOT = DK_tot$EMP
-  DK_tot <- DK_tot %>% select(year, country, TOT)
+  DK_tot <- DK_ep %>% filter(code=="TOT_MN")
+  DK_tot$TOTmn = DK_tot$EMP
+  DK_tot <- DK_tot %>% select(year, country, TOTmn)
   
-  #dk <- DK_ep %>% filter(branche=="b-tot", year!="1975")
+  DK_ind = DK_ep %>% filter(sel_industries==1)
+  
   dk <- DK_ep %>% filter(branche=="b-tot")
   dk = merge(dk,DK_tot, by=c("year", "country"), all.x = TRUE)
-  dk <- na.omit(dk)
+  dk$wgt = dk$EMP/dk$TOTmn
+  dk$branche = dk$code
+  dk$emp_logchanges_b = dk$emp_logchanges
+  dk$prod_logchanges_b = dk$prod_logchanges
+  dk = dk %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
   
-  dk$wgt = dk$EMP/dk$TOT
+  DK_ind = merge(DK_ind, dk, by=c("year", "branche"), all.x = TRUE)
+  DK_ind = na.omit(DK_ind)
   
   #deskriptiv
   DK_b = DK_ep %>% filter(branche=="b-tot")
