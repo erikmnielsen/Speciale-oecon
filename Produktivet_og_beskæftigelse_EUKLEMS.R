@@ -185,7 +185,8 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
 
   #angivelse af branche/industri totaler
-   t4 <- data %>% filter(branche!=0) %>% group_by(year, branche, branche_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
+   t4 <- data %>% filter(branche!="b0") %>% group_by(year, branche, branche_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
+
    
   data2 <- data.frame(desc= t4$branche_desc,
                       code=t4$branche,
@@ -215,6 +216,8 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP #+ b_10$EMP + b_9$EMP 
   b$desc = "TOTAL INDUSTRIES-MunkNielsen"
   b$code = "TOT_MN"
+  b$branche = "TOT_MN"
+  b$branche_desc = "Lande Total"
   
   data_fin <- rbind(data, data2, b)
   pdata = pdata.frame(data_fin, index = c("code", "year"))
@@ -1447,12 +1450,10 @@ summary(C2_fe_tw)
 
 
 # Country industry panel --------------------------------------------------
-ci_panel = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
-#ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, IT, LU, LV, SI, SK)
 
+ci_panel = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
 ci_panel = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, wgt)
 ci_panel$id = ci_panel %>% group_indices(code, country)
-
 ci_panel$prod_logchanges_wgt = ci_panel$prod_logchanges*ci_panel$wgt
 ci_panel$emp_logchanges_wgt = ci_panel$emp_logchanges*ci_panel$wgt
 
@@ -1499,10 +1500,6 @@ Arellano
 
 # Sammensætning af mikro og makroelasticiteter --------------------------------------------------
 
-ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, IT, LU, LV, SI, SK)
-ci_panel = ci_panel %>% select(c(year, country, code, desc, emp_logchanges, prod_logchanges, wgt))
-ci_panel$id = ci_panel %>% group_indices(code, country)
-
 #hvad gør vi med lande hvor nogle industrier mangler?
 
 sum_prod_yc <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges))
@@ -1516,7 +1513,7 @@ ci_panel$avgLP_oi_lag3 = lag(ci_panel$avgLP_oi, k = 3, shift = "time")
 ci_panel = na.omit(ci_panel)
 
 
-model_linear2 = emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3
+#model_linear2 = emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3
 
 fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(code) + factor(year), data=ci_panel)
 fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(year), data=ci_panel)
@@ -1524,6 +1521,16 @@ fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avg
 fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3 , data=ci_panel)
 
 summary(fixed.dum)
+
+
+
+
+
+
+
+
+
+
 
 
 # Skills..... --------------------------------------------------
