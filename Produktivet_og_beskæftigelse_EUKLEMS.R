@@ -1452,7 +1452,7 @@ summary(C2_fe_tw)
 # Country industry panel --------------------------------------------------
 
 ci_panel = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
-ci_panel = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, wgt)
+ci_panel = ci_panel %>% select(year, country, code, desc, emp_logchanges, emp_logchanges_b, prod_logchanges, prod_logchanges_b, wgt)
 ci_panel$id = ci_panel %>% group_indices(code, country)
 ci_panel$prod_logchanges_wgt = ci_panel$prod_logchanges*ci_panel$wgt
 ci_panel$emp_logchanges_wgt = ci_panel$emp_logchanges*ci_panel$wgt
