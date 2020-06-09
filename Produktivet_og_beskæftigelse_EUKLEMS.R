@@ -254,287 +254,329 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
 
 #key_table <- read_csv("EUklems-data-master/key_table.csv")
 
-# Country data -----------------------------------------------------------------------
+# Country data  ----------------------------------------------------- 
 
-# Danmark
+  # Danmark
+  {
+    DK_emp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+    #DK_go <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
+    DK_gop <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+    DK_comp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
+    DK_lab <- read_excel("Data/DK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
+    DK_va <- read_excel("Data/DK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
+    
+    #Labour share
+    DK_ls = func_labshare(DK_comp, DK_va, DK_lab, "DK", "COMP", "VA", "LAB")
+    DK_ls$year = lubridate::ymd(DK_ls$year, truncated = 2L)
+    
+    #Employment and productivty
+    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P")
+    
+    #PLM analyse
+    DK_tot <- DK_ep %>% filter(code=="TOT_MN")
+    DK_tot$TOTmn = DK_tot$EMP
+    DK_tot <- DK_tot %>% select(year, country, TOTmn)
+    
+    DK_ind = DK_ep %>% filter(sel_industries==1)
+    
+    dk <- DK_ep %>% filter(branche=="b-tot")
+    dk = merge(dk,DK_tot, by=c("year", "country"), all.x = TRUE)
+    dk$wgt = dk$EMP/dk$TOTmn
+    dk$branche = dk$code
+    dk$emp_logchanges_b = dk$emp_logchanges
+    dk$prod_logchanges_b = dk$prod_logchanges
+    dk = dk %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+    
+    DK_ind = merge(DK_ind, dk, by=c("year", "branche"), all.x = TRUE)
+    DK_ind = na.omit(DK_ind)
+    
+    #deskriptiv
+    DK_b = DK_ep %>% filter(branche=="b-tot")
+    {
+      sumEMP <- DK_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+      DK_b = merge(DK_b, sumEMP, by=c("year"), all.x = TRUE)
+      DK_b$share_EMP = (DK_b$EMP/DK_b$sum_EMP)*100
+      DK_b = pdata.frame(DK_b, index = c("code", "year"))
+      DK_b$share_EMP_ppchange = diff(DK_b$share_EMP, lag = 1, shift = "time")
+      DK_b$share_EMP_ppchange = ifelse(is.na(DK_b$share_EMP_ppchange)==T,0,DK_b$share_EMP_ppchange)
+      DK_b = DK_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
+    }
+    DK_b$year = lubridate::ymd(DK_b$year, truncated = 2L)
+    
+    DK_tot = DK_ep %>% filter(code=="TOT")
+    DK_tot$year = lubridate::ymd(DK_tot$year, truncated = 2L)
+    
+    
+  }
+
+# USA
 {
-  DK_emp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-  #DK_go <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  DK_gop <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
-  DK_comp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
-  DK_lab <- read_excel("Data/DK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
-  DK_va <- read_excel("Data/DK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
+  US_emp <- read_excel("Data/US_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+  #US_go <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
+  US_gop <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  US_comp <- read_excel("Data/US_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
+  US_lab <- read_excel("Data/US_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
+  US_va <- read_excel("Data/US_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
   
   #Labour share
-  DK_ls = func_labshare(DK_comp, DK_va, DK_lab, "DK", "COMP", "VA", "LAB")
-  DK_ls$year = lubridate::ymd(DK_ls$year, truncated = 2L)
+  US_ls = func_labshare(US_comp, US_va, US_lab, "US", "COMP", "VA", "LAB")
+  US_ls$year = lubridate::ymd(US_ls$year, truncated = 2L)
   
   #Employment and productivty
-  DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P")
+  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P")
   
   #PLM analyse
-  DK_tot <- DK_ep %>% filter(code=="TOT_MN")
-  DK_tot$TOTmn = DK_tot$EMP
-  DK_tot <- DK_tot %>% select(year, country, TOTmn)
+  US_tot <- US_ep %>% filter(code=="TOT_MN")
+  US_tot$TOTmn = US_tot$EMP
+  US_tot <- US_tot %>% select(year, country, TOTmn)
   
-  DK_ind = DK_ep %>% filter(sel_industries==1)
+  US_ind = US_ep %>% filter(sel_industries==1)
   
-  dk <- DK_ep %>% filter(branche=="b-tot")
-  dk = merge(dk,DK_tot, by=c("year", "country"), all.x = TRUE)
-  dk$wgt = dk$EMP/dk$TOTmn
-  dk$branche = dk$code
-  dk$emp_logchanges_b = dk$emp_logchanges
-  dk$prod_logchanges_b = dk$prod_logchanges
-  dk = dk %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  US <- US_ep %>% filter(branche=="b-tot")
+  US = merge(US,US_tot, by=c("year", "country"), all.x = TRUE)
+  US$wgt = US$EMP/US$TOTmn
+  US$branche = US$code
+  US$emp_logchanges_b = US$emp_logchanges
+  US$prod_logchanges_b = US$prod_logchanges
+  US = US %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
   
-  DK_ind = merge(DK_ind, dk, by=c("year", "branche"), all.x = TRUE)
-  DK_ind = na.omit(DK_ind)
+  US_ind = merge(US_ind, US, by=c("year", "branche"), all.x = TRUE)
+  US_ind = na.omit(US_ind)
+  
+  #US <- US_ep %>% filter(branche=="b-tot", year!="1975")
+  US <- US_ep %>% filter(branche=="b-tot")
+  US = merge(US,US_tot, by=c("year", "country"), all.x = TRUE)
+  US <- na.omit(US)
+  
+  US$wgt = US$EMP/US$TOT
   
   #deskriptiv
-  DK_b = DK_ep %>% filter(branche=="b-tot")
+  US_b = US_ep %>% filter(branche=="b-tot")
   {
-    sumEMP <- DK_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    DK_b = merge(DK_b, sumEMP, by=c("year"), all.x = TRUE)
-    DK_b$share_EMP = (DK_b$EMP/DK_b$sum_EMP)*100
-    DK_b = pdata.frame(DK_b, index = c("code", "year"))
-    DK_b$share_EMP_ppchange = diff(DK_b$share_EMP, lag = 1, shift = "time")
-    DK_b$share_EMP_ppchange = ifelse(is.na(DK_b$share_EMP_ppchange)==T,0,DK_b$share_EMP_ppchange)
-    DK_b = DK_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
+    sumEMP <- US_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+    US_b = merge(US_b, sumEMP, by=c("year"), all.x = TRUE)
+    US_b$share_EMP = (US_b$EMP/US_b$sum_EMP)*100
+    US_b = pdata.frame(US_b, index = c("code", "year"))
+    US_b$share_EMP_ppchange = diff(US_b$share_EMP, lag = 1, shift = "time")
+    US_b$share_EMP_ppchange = ifelse(is.na(US_b$share_EMP_ppchange)==T,0,US_b$share_EMP_ppchange)
+    US_b = US_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
   }
-  DK_b$year = lubridate::ymd(DK_b$year, truncated = 2L)
+  US_b$year = lubridate::ymd(US_b$year, truncated = 2L)
   
-  DK_tot = DK_ep %>% filter(code=="TOT")
-  DK_tot$year = lubridate::ymd(DK_tot$year, truncated = 2L)
-  
+  US_tot = US_ep %>% filter(code=="TOT")
+  US_tot$year = lubridate::ymd(US_tot$year, truncated = 2L)
   
 }
 
-  # USA
-  {
-    US_emp <- read_excel("Data/US_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-    #US_go <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-    US_gop <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
-    US_comp <- read_excel("Data/US_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
-    US_lab <- read_excel("Data/US_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
-    US_va <- read_excel("Data/US_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
-    
-    #Labour share
-    US_ls = func_labshare(US_comp, US_va, US_lab, "US", "COMP", "VA", "LAB")
-    US_ls$year = lubridate::ymd(US_ls$year, truncated = 2L)
-    
-    #Employment and productivty
-    US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P")
-    
-    #PLM analyse
-    US_tot <- US_ep %>% filter(code=="TOT")
-    US_tot$TOT = US_tot$EMP
-    US_tot <- US_tot %>% select(year, country, TOT)
-    
-    #US <- US_ep %>% filter(branche=="b-tot", year!="1975")
-    US <- US_ep %>% filter(branche=="b-tot")
-    US = merge(US,US_tot, by=c("year", "country"), all.x = TRUE)
-    US <- na.omit(US)
-    
-    US$wgt = US$EMP/US$TOT
-    
-    #deskriptiv
-    US_b = US_ep %>% filter(branche=="b-tot")
-    {
-      sumEMP <- US_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-      US_b = merge(US_b, sumEMP, by=c("year"), all.x = TRUE)
-      US_b$share_EMP = (US_b$EMP/US_b$sum_EMP)*100
-      US_b = pdata.frame(US_b, index = c("code", "year"))
-      US_b$share_EMP_ppchange = diff(US_b$share_EMP, lag = 1, shift = "time")
-      US_b$share_EMP_ppchange = ifelse(is.na(US_b$share_EMP_ppchange)==T,0,US_b$share_EMP_ppchange)
-      US_b = US_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-    }
-    US_b$year = lubridate::ymd(US_b$year, truncated = 2L)
-    
-    US_tot = US_ep %>% filter(code=="TOT")
-    US_tot$year = lubridate::ymd(US_tot$year, truncated = 2L)
-    
-  }
+# UK . faste priser findes ikke
+{
+  UK_emp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+  #UK_go <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
+  UK_gop <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  UK_comp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
+  UK_lab <- read_excel("Data/UK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
+  UK_va <- read_excel("Data/UK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
   
-  # UK . faste priser findes ikke
-  {
-    UK_emp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-    #UK_go <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-    UK_gop <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
-    UK_comp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
-    UK_lab <- read_excel("Data/UK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
-    UK_va <- read_excel("Data/UK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
-    
-    #Labour share
-    UK_ls = func_labshare(UK_comp, UK_va, UK_lab, "UK", "COMP", "VA", "LAB")
-    UK_ls$year = lubridate::ymd(UK_ls$year, truncated = 2L)
-    
-    #Employment and productivty
-    UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P")
-    
-    #PLM analyse
-    UK_tot <- UK_ep %>% filter(code=="TOT")
-    UK_tot$TOT = UK_tot$EMP
-    UK_tot <- UK_tot %>% select(year, country, TOT)
-    
-    UK <- UK_ep %>% filter(branche=="b-tot", year!="1975")
-    UK = merge(UK,UK_tot, by=c("year", "country"), all.x = TRUE)
-    
-    UK$wgt = UK$EMP/UK$TOT
-    
-    #deskriptiv
-    UK_b = UK_ep %>% filter(branche=="b-tot")
-    {
-      sumEMP <- UK_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-      UK_b = merge(UK_b, sumEMP, by=c("year"), all.x = TRUE)
-      UK_b$share_EMP = (UK_b$EMP/UK_b$sum_EMP)*100
-      UK_b = pdata.frame(UK_b, index = c("code", "year"))
-      UK_b$share_EMP_ppchange = diff(UK_b$share_EMP, lag = 1, shift = "time")
-      UK_b$share_EMP_ppchange = ifelse(is.na(UK_b$share_EMP_ppchange)==T,0,UK_b$share_EMP_ppchange)
-      UK_b = UK_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-    }
-    UK_b$year = lubridate::ymd(UK_b$year, truncated = 2L)
-    
-    UK_tot = UK_ep %>% filter(code=="TOT")
-    UK_tot$year = lubridate::ymd(UK_tot$year, truncated = 2L)
-  }
+  #Labour share
+  UK_ls = func_labshare(UK_comp, UK_va, UK_lab, "UK", "COMP", "VA", "LAB")
+  UK_ls$year = lubridate::ymd(UK_ls$year, truncated = 2L)
   
-  # Tyskland
-  {
-    DE_emp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-    #DE_go <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-    DE_gop <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
-    DE_comp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
-    DE_lab <- read_excel("Data/DE_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
-    DE_va <- read_excel("Data/DE_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
-    
-    #Labour share
-    DE_ls = func_labshare(DE_comp, DE_va, DE_lab, "DE", "COMP", "VA", "LAB")
-    DE_ls$year = lubridate::ymd(DE_ls$year, truncated = 2L)
-    
-    #Employment and productivty
-    DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P")
-    
-    #PLM analyse
-    DE_tot <- DE_ep %>% filter(code=="TOT")
-    DE_tot$TOT = DE_tot$EMP
-    DE_tot <- DE_tot %>% select(year, country, TOT)
-    
-    #DE <- DE_ep %>% filter(branche=="b-tot", year!="1975")
-    DE <- DE_ep %>% filter(branche=="b-tot")
-    DE = merge(DE,DE_tot, by=c("year", "country"), all.x = TRUE)
-    DE <- na.omit(DE)
-    
-    DE$wgt = DE$EMP/DE$TOT
-    
-    #deskriptiv
-    DE_b = DE_ep %>% filter(branche=="b-tot")
-    {
-      sumEMP <- DE_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-      DE_b = merge(DE_b, sumEMP, by=c("year"), all.x = TRUE)
-      DE_b$share_EMP = (DE_b$EMP/DE_b$sum_EMP)*100
-      DE_b = pdata.frame(DE_b, index = c("code", "year"))
-      DE_b$share_EMP_ppchange = diff(DE_b$share_EMP, lag = 1, shift = "time")
-      DE_b$share_EMP_ppchange = ifelse(is.na(DE_b$share_EMP_ppchange)==T,0,DE_b$share_EMP_ppchange)
-      DE_b = DE_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-    }
-    DE_b$year = lubridate::ymd(DE_b$year, truncated = 2L)
-    
-    DE_tot = DE_ep %>% filter(code=="TOT")
-    DE_tot$year = lubridate::ymd(DE_tot$year, truncated = 2L)
-  }
+  #Employment and productivty
+  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P")
   
-  # Holland
-  {
-    NL_emp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thoNLands)
-    #NL_go <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-    NL_gop <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
-    NL_comp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
-    NL_lab <- read_excel("Data/NL_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
-    NL_va <- read_excel("Data/NL_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
-    
-    #Labour share
-    NL_ls = func_labshare(NL_comp, NL_va, NL_lab, "NL", "COMP", "VA", "LAB")
-    NL_ls$year = lubridate::ymd(NL_ls$year, truncated = 2L)
-    
-    #Employment and productivty
-    NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P")
-    
-    #PLM analyse
-    NL_tot <- NL_ep %>% filter(code=="TOT")
-    NL_tot$TOT = NL_tot$EMP
-    NL_tot <- NL_tot %>% select(year, country, TOT)
-    
-    NL <- NL_ep %>% filter(branche=="b-tot", year!="1975")
-    NL <- NL_ep %>% filter(branche=="b-tot")
-    NL = merge(NL,NL_tot, by=c("year", "country"), all.x = TRUE)
-    NL = na.omit(NL)
-    
-    NL$wgt = NL$EMP/NL$TOT
-    
-    #deskriptiv
-    NL_b = NL_ep %>% filter(branche=="b-tot")
-    {
-      sumEMP <- NL_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-      NL_b = merge(NL_b, sumEMP, by=c("year"), all.x = TRUE)
-      NL_b$share_EMP = (NL_b$EMP/NL_b$sum_EMP)*100
-      NL_b = pdata.frame(NL_b, index = c("code", "year"))
-      NL_b$share_EMP_ppchange = diff(NL_b$share_EMP, lag = 1, shift = "time")
-      NL_b$share_EMP_ppchange = ifelse(is.na(NL_b$share_EMP_ppchange)==T,0,NL_b$share_EMP_ppchange)
-      NL_b = NL_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-    }
-    NL_b$year = lubridate::ymd(NL_b$year, truncated = 2L)
-    
-    NL_tot = NL_ep %>% filter(code=="TOT")
-    NL_tot$year = lubridate::ymd(NL_tot$year, truncated = 2L)
-  }
+  #PLM analyse
+  UK_tot <- UK_ep %>% filter(code=="TOT")
+  UK_tot$TOT = UK_tot$EMP
+  UK_tot <- UK_tot %>% select(year, country, TOT)
   
-  # Sverige
+  UK <- UK_ep %>% filter(branche=="b-tot", year!="1975")
+  UK = merge(UK,UK_tot, by=c("year", "country"), all.x = TRUE)
+  
+  UK$wgt = UK$EMP/UK$TOT
+  
+  #deskriptiv
+  UK_b = UK_ep %>% filter(branche=="b-tot")
   {
-    SE_emp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-    #SE_go <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-    SE_gop <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
-    SE_comp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
-    SE_lab <- read_excel("Data/SE_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
-    SE_va <- read_excel("Data/SE_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
-    
-    
-    #Labour share
-    SE_ls = func_labshare(SE_comp, SE_va, SE_lab, "SE", "COMP", "VA", "LAB")
-    SE_ls$year = lubridate::ymd(SE_ls$year, truncated = 2L)
-    
-    #Employment and productivty
-    SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P")
-    
-    #PLM analyse
-    SE_tot <- SE_ep %>% filter(code=="TOT")
-    SE_tot$TOT = SE_tot$EMP
-    SE_tot <- SE_tot %>% select(year, country, TOT)
-    
-    #SE <- SE_ep %>% filter(branche=="b-tot", year!="1975")
-    SE <- SE_ep %>% filter(branche=="b-tot")
-    SE = merge(SE,SE_tot, by=c("year", "country"), all.x = TRUE)
-    SE = na.omit(SE)
-    
-    SE$wgt = SE$EMP/SE$TOT
-    
-    #deskriptiv
-    SE_b = SE_ep %>% filter(branche=="b-tot")
-    {
-      sumEMP <- SE_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-      SE_b = merge(SE_b, sumEMP, by=c("year"), all.x = TRUE)
-      SE_b$share_EMP = (SE_b$EMP/SE_b$sum_EMP)*100
-      SE_b = pdata.frame(SE_b, index = c("code", "year"))
-      SE_b$share_EMP_ppchange = diff(SE_b$share_EMP, lag = 1, shift = "time")
-      SE_b$share_EMP_ppchange = ifelse(is.na(SE_b$share_EMP_ppchange)==T,0,SE_b$share_EMP_ppchange)
-      SE_b = SE_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-    }
-    SE_b$year = lubridate::ymd(SE_b$year, truncated = 2L)
-    
-    SE_tot = SE_ep %>% filter(code=="TOT")
-    SE_tot$year = lubridate::ymd(SE_tot$year, truncated = 2L)
-    
+    sumEMP <- UK_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+    UK_b = merge(UK_b, sumEMP, by=c("year"), all.x = TRUE)
+    UK_b$share_EMP = (UK_b$EMP/UK_b$sum_EMP)*100
+    UK_b = pdata.frame(UK_b, index = c("code", "year"))
+    UK_b$share_EMP_ppchange = diff(UK_b$share_EMP, lag = 1, shift = "time")
+    UK_b$share_EMP_ppchange = ifelse(is.na(UK_b$share_EMP_ppchange)==T,0,UK_b$share_EMP_ppchange)
+    UK_b = UK_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
   }
- 
+  UK_b$year = lubridate::ymd(UK_b$year, truncated = 2L)
+  
+  UK_tot = UK_ep %>% filter(code=="TOT")
+  UK_tot$year = lubridate::ymd(UK_tot$year, truncated = 2L)
+}
+
+# Tyskland
+{
+  DE_emp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+  #DE_go <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
+  DE_gop <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  DE_comp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
+  DE_lab <- read_excel("Data/DE_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
+  DE_va <- read_excel("Data/DE_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
+  
+  #Labour share
+  DE_ls = func_labshare(DE_comp, DE_va, DE_lab, "DE", "COMP", "VA", "LAB")
+  DE_ls$year = lubridate::ymd(DE_ls$year, truncated = 2L)
+  
+  #Employment and productivty
+  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P")
+  
+  #PLM analyse
+  DE_tot <- DE_ep %>% filter(code=="TOT_MN")
+  DE_tot$TOTmn = DE_tot$EMP
+  DE_tot <- DE_tot %>% select(year, country, TOTmn)
+  
+  
+  DE_ind = DE_ep %>% filter(sel_indDEtries==1)
+  
+  DE <- DE_ep %>% filter(branche=="b-tot")
+  DE = merge(DE,DE_tot, by=c("year", "country"), all.x = TRUE)
+  DE$wgt = DE$EMP/DE$TOTmn
+  DE$branche = DE$code
+  DE$emp_logchanges_b = DE$emp_logchanges
+  DE$prod_logchanges_b = DE$prod_logchanges
+  DE = DE %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  DE_ind = merge(DE_ind, DE, by=c("year", "branche"), all.x = TRUE)
+  DE_ind = na.omit(DE_ind)
+  #DE <- DE_ep %>% filter(branche=="b-tot", year!="1975")
+  
+  #deskriptiv
+  DE_b = DE_ep %>% filter(branche=="b-tot")
+  {
+    sumEMP <- DE_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+    DE_b = merge(DE_b, sumEMP, by=c("year"), all.x = TRUE)
+    DE_b$share_EMP = (DE_b$EMP/DE_b$sum_EMP)*100
+    DE_b = pdata.frame(DE_b, index = c("code", "year"))
+    DE_b$share_EMP_ppchange = diff(DE_b$share_EMP, lag = 1, shift = "time")
+    DE_b$share_EMP_ppchange = ifelse(is.na(DE_b$share_EMP_ppchange)==T,0,DE_b$share_EMP_ppchange)
+    DE_b = DE_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
+  }
+  DE_b$year = lubridate::ymd(DE_b$year, truncated = 2L)
+  
+  DE_tot = DE_ep %>% filter(code=="TOT")
+  DE_tot$year = lubridate::ymd(DE_tot$year, truncated = 2L)
+}
+
+# Holland
+{
+  NL_emp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thoNLands)
+  #NL_go <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
+  NL_gop <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  NL_comp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
+  NL_lab <- read_excel("Data/NL_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
+  NL_va <- read_excel("Data/NL_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
+  
+  #Labour share
+  NL_ls = func_labshare(NL_comp, NL_va, NL_lab, "NL", "COMP", "VA", "LAB")
+  NL_ls$year = lubridate::ymd(NL_ls$year, truncated = 2L)
+  
+  #Employment and productivty
+  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P")
+  
+  #PLM analyse
+  NL_tot <- NL_ep %>% filter(code=="TOT_MN")
+  NL_tot$TOTmn = NL_tot$EMP
+  NL_tot <- NL_tot %>% select(year, country, TOTmn)
+  
+  
+  NL_ind = NL_ep %>% filter(sel_industries==1)
+  
+  NL <- NL_ep %>% filter(branche=="b-tot")
+  NL = merge(NL,NL_tot, by=c("year", "country"), all.x = TRUE)
+  NL$wgt = NL$EMP/NL$TOTmn
+  NL$branche = NL$code
+  NL$emp_logchanges_b = NL$emp_logchanges
+  NL$prod_logchanges_b = NL$prod_logchanges
+  NL = NL %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  NL_ind = merge(NL_ind, NL, by=c("year", "branche"), all.x = TRUE)
+  NL_ind = na.omit(NL_ind)
+  
+  #deskriptiv
+  NL_b = NL_ep %>% filter(branche=="b-tot")
+  {
+    sumEMP <- NL_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+    NL_b = merge(NL_b, sumEMP, by=c("year"), all.x = TRUE)
+    NL_b$share_EMP = (NL_b$EMP/NL_b$sum_EMP)*100
+    NL_b = pdata.frame(NL_b, index = c("code", "year"))
+    NL_b$share_EMP_ppchange = diff(NL_b$share_EMP, lag = 1, shift = "time")
+    NL_b$share_EMP_ppchange = ifelse(is.na(NL_b$share_EMP_ppchange)==T,0,NL_b$share_EMP_ppchange)
+    NL_b = NL_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
+  }
+  NL_b$year = lubridate::ymd(NL_b$year, truncated = 2L)
+  
+  NL_tot = NL_ep %>% filter(code=="TOT")
+  NL_tot$year = lubridate::ymd(NL_tot$year, truncated = 2L)
+}
+
+# Sverige
+{
+  SE_emp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+  #SE_go <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
+  SE_gop <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  SE_comp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
+  SE_lab <- read_excel("Data/SE_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
+  SE_va <- read_excel("Data/SE_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
+  
+  
+  #Labour share
+  SE_ls = func_labshare(SE_comp, SE_va, SE_lab, "SE", "COMP", "VA", "LAB")
+  SE_ls$year = lubridate::ymd(SE_ls$year, truncated = 2L)
+  
+  #Employment and productivty
+  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P")
+  
+  #PLM analyse
+  SE_tot <- SE_ep %>% filter(code=="TOT_MN")
+  SE_tot$TOTmn = SE_tot$EMP
+  SE_tot <- SE_tot %>% select(year, country, TOTmn)
+  
+  
+  SE_ind = SE_ep %>% filter(sel_industries==1)
+  
+  SE <- SE_ep %>% filter(branche=="b-tot")
+  SE = merge(SE,SE_tot, by=c("year", "country"), all.x = TRUE)
+  SE$wgt = SE$EMP/SE$TOTmn
+  SE$branche = SE$code
+  SE$emp_logchanges_b = SE$emp_logchanges
+  SE$prod_logchanges_b = SE$prod_logchanges
+  SE = SE %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  SE_ind = merge(SE_ind, SE, by=c("year", "branche"), all.x = TRUE)
+  SE_ind = na.omit(SE_ind)
+  
+  #SE <- SE_ep %>% filter(branche=="b-tot", year!="1975")
+  SE <- SE_ep %>% filter(branche=="b-tot")
+  SE = merge(SE,SE_tot, by=c("year", "country"), all.x = TRUE)
+  SE = na.omit(SE)
+  
+  SE$wgt = SE$EMP/SE$TOT
+  
+  #deskriptiv
+  SE_b = SE_ep %>% filter(branche=="b-tot")
+  {
+    sumEMP <- SE_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+    SE_b = merge(SE_b, sumEMP, by=c("year"), all.x = TRUE)
+    SE_b$share_EMP = (SE_b$EMP/SE_b$sum_EMP)*100
+    SE_b = pdata.frame(SE_b, index = c("code", "year"))
+    SE_b$share_EMP_ppchange = diff(SE_b$share_EMP, lag = 1, shift = "time")
+    SE_b$share_EMP_ppchange = ifelse(is.na(SE_b$share_EMP_ppchange)==T,0,SE_b$share_EMP_ppchange)
+    SE_b = SE_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
+  }
+  SE_b$year = lubridate::ymd(SE_b$year, truncated = 2L)
+  
+  SE_tot = SE_ep %>% filter(code=="TOT")
+  SE_tot$year = lubridate::ymd(SE_tot$year, truncated = 2L)
+  
+}
+
 # Østrig
 {
   AT_emp = read_excel("Data/AT_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
@@ -552,16 +594,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P")
   
   #PLM analyse
-  AT_tot = AT_ep %>% filter(code=="TOT")
-  AT_tot$TOT = AT_tot$EMP
-  AT_tot = AT_tot %>% select(year, country, TOT)
+  AT_tot <- AT_ep %>% filter(code=="TOT_MN")
+  AT_tot$TOTmn = AT_tot$EMP
+  AT_tot <- AT_tot %>% select(year, country, TOTmn)
   
-  #AT = AT_ep %>% filter(branche=="b-tot", year!="1975")
-  AT = AT_ep %>% filter(branche=="b-tot")
+  
+  AT_ind = AT_ep %>% filter(sel_industries==1)
+  
+  AT <- AT_ep %>% filter(branche=="b-tot")
   AT = merge(AT,AT_tot, by=c("year", "country"), all.x = TRUE)
-  AT = na.omit(AT)
+  AT$wgt = AT$EMP/AT$TOTmn
+  AT$branche = AT$code
+  AT$emp_logchanges_b = AT$emp_logchanges
+  AT$prod_logchanges_b = AT$prod_logchanges
+  AT = AT %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
   
-  AT$wgt = AT$EMP/AT$TOT
+  AT_ind = merge(AT_ind, AT, by=c("year", "branche"), all.x = TRUE)
+  AT_ind = na.omit(AT_ind)
   
   #deskriptiv
   AT_b = AT_ep %>% filter(branche=="b-tot")
@@ -599,9 +648,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P")
   
   #PLM analyse
-  BE_tot = BE_ep %>% filter(code=="TOT")
-  BE_tot$TOT = BE_tot$EMP
-  BE_tot = BE_tot %>% select(year, country, TOT)
+  BE_tot <- BE_ep %>% filter(code=="TOT_MN")
+  BE_tot$TOTmn = BE_tot$EMP
+  BE_tot <- BE_tot %>% select(year, country, TOTmn)
+  
+  
+  BE_ind = BE_ep %>% filter(sel_industries==1)
+  
+  BE <- BE_ep %>% filter(branche=="b-tot")
+  BE = merge(BE,BE_tot, by=c("year", "country"), all.x = TRUE)
+  BE$wgt = BE$EMP/BE$TOTmn
+  BE$branche = BE$code
+  BE$emp_logchanges_b = BE$emp_logchanges
+  BE$prod_logchanges_b = BE$prod_logchanges
+  BE = BE %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  BE_ind = merge(BE_ind, BE, by=c("year", "branche"), all.x = TRUE)
+  BE_ind = na.omit(BE_ind)
   
   #BE = BE_ep %>% filter(branche=="b-tot", year!="1975")
   BE = BE_ep %>% filter(branche=="b-tot")
@@ -646,16 +709,26 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P")
   
   #PLM analyse
-  CZ_tot = CZ_ep %>% filter(code=="TOT")
-  CZ_tot$TOT = CZ_tot$EMP
-  CZ_tot = CZ_tot %>% select(year, country, TOT)
+  CZ_tot <- CZ_ep %>% filter(code=="TOT_MN")
+  CZ_tot$TOTmn = CZ_tot$EMP
+  CZ_tot <- CZ_tot %>% select(year, country, TOTmn)
+  
+  
+  CZ_ind = CZ_ep %>% filter(sel_industries==1)
+  
+  CZ <- CZ_ep %>% filter(branche=="b-tot")
+  CZ = merge(CZ,CZ_tot, by=c("year", "country"), all.x = TRUE)
+  CZ$wgt = CZ$EMP/CZ$TOTmn
+  CZ$branche = CZ$code
+  CZ$emp_logchanges_b = CZ$emp_logchanges
+  CZ$prod_logchanges_b = CZ$prod_logchanges
+  CZ = CZ %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  CZ_ind = merge(CZ_ind, CZ, by=c("year", "branche"), all.x = TRUE)
+  CZ_ind = na.omit(CZ_ind)
   
   #CZ = CZ_ep %>% filter(branche=="b-tot", year!="1975")
-  CZ = CZ_ep %>% filter(branche=="b-tot")
-  CZ = merge(CZ,CZ_tot, by=c("year", "country"), all.x = TRUE)
-  CZ = na.omit(CZ)
   
-  CZ$wgt = CZ$EMP/CZ$TOT
   
   #deskriptiv
   CZ_b = CZ_ep %>% filter(branche=="b-tot")
@@ -693,9 +766,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P")
   
   #PLM analyse
-  FI_tot = FI_ep %>% filter(code=="TOT")
-  FI_tot$TOT = FI_tot$EMP
-  FI_tot = FI_tot %>% select(year, country, TOT)
+  FI_tot <- FI_ep %>% filter(code=="TOT_MN")
+  FI_tot$TOTmn = FI_tot$EMP
+  FI_tot <- FI_tot %>% select(year, country, TOTmn)
+  
+  
+  FI_ind = FI_ep %>% filter(sel_industries==1)
+  
+  FI <- FI_ep %>% filter(branche=="b-tot")
+  FI = merge(FI,FI_tot, by=c("year", "country"), all.x = TRUE)
+  FI$wgt = FI$EMP/FI$TOTmn
+  FI$branche = FI$code
+  FI$emp_logchanges_b = FI$emp_logchanges
+  FI$prod_logchanges_b = FI$prod_logchanges
+  FI = FI %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  FI_ind = merge(FI_ind, FI, by=c("year", "branche"), all.x = TRUE)
+  FI_ind = na.omit(FI_ind)
   
   #FI = FI_ep %>% filter(branche=="b-tot", year!="1975")
   FI = FI_ep %>% filter(branche=="b-tot")
@@ -740,9 +827,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P")
   
   #PLM analyse
-  FR_tot = FR_ep %>% filter(code=="TOT")
-  FR_tot$TOT = FR_tot$EMP
-  FR_tot = FR_tot %>% select(year, country, TOT)
+  FR_tot <- FR_ep %>% filter(code=="TOT_MN")
+  FR_tot$TOTmn = FR_tot$EMP
+  FR_tot <- FR_tot %>% select(year, country, TOTmn)
+  
+  
+  FR_ind = FR_ep %>% filter(sel_industries==1)
+  
+  FR <- FR_ep %>% filter(branche=="b-tot")
+  FR = merge(FR,FR_tot, by=c("year", "country"), all.x = TRUE)
+  FR$wgt = FR$EMP/FR$TOTmn
+  FR$branche = FR$code
+  FR$emp_logchanges_b = FR$emp_logchanges
+  FR$prod_logchanges_b = FR$prod_logchanges
+  FR = FR %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  FR_ind = merge(FR_ind, FR, by=c("year", "branche"), all.x = TRUE)
+  FR_ind = na.omit(FR_ind)
   
   #FR = FR_ep %>% filter(branche=="b-tot", year!="1975")
   FR = FR_ep %>% filter(branche=="b-tot")
@@ -787,9 +888,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P")
   
   #PLM analyse
-  EL_tot = EL_ep %>% filter(code=="TOT")
-  EL_tot$TOT = EL_tot$EMP
-  EL_tot = EL_tot %>% select(year, country, TOT)
+  EL_tot <- EL_ep %>% filter(code=="TOT_MN")
+  EL_tot$TOTmn = EL_tot$EMP
+  EL_tot <- EL_tot %>% select(year, country, TOTmn)
+  
+  
+  EL_ind = EL_ep %>% filter(sel_industries==1)
+  
+  EL <- EL_ep %>% filter(branche=="b-tot")
+  EL = merge(EL,EL_tot, by=c("year", "country"), all.x = TRUE)
+  EL$wgt = EL$EMP/EL$TOTmn
+  EL$branche = EL$code
+  EL$emp_logchanges_b = EL$emp_logchanges
+  EL$prod_logchanges_b = EL$prod_logchanges
+  EL = EL %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  EL_ind = merge(EL_ind, EL, by=c("year", "branche"), all.x = TRUE)
+  EL_ind = na.omit(EL_ind)
   
   #EL = EL_ep %>% filter(branche=="b-tot", year!="1975")
   EL = EL_ep %>% filter(branche=="b-tot")
@@ -833,10 +948,24 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   #Employment and productivty
   IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P")
   
-  #PLM analyse
-  IT_tot = IT_ep %>% filter(code=="TOT")
-  IT_tot$TOT = IT_tot$EMP
-  IT_tot = IT_tot %>% select(year, country, TOT)
+  #PLM analysis
+  IT_tot <- IT_ep %>% filter(code=="TOT_MN")
+  IT_tot$TOTmn = IT_tot$EMP
+  IT_tot <- IT_tot %>% select(year, country, TOTmn)
+  
+  
+  IT_ind = IT_ep %>% filter(sel_industries==1)
+  
+  IT <- IT_ep %>% filter(branche=="b-tot")
+  IT = merge(IT,IT_tot, by=c("year", "country"), all.x = TRUE)
+  IT$wgt = IT$EMP/IT$TOTmn
+  IT$branche = IT$code
+  IT$emp_logchanges_b = IT$emp_logchanges
+  IT$prod_logchanges_b = IT$prod_logchanges
+  IT = IT %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  IT_ind = merge(IT_ind, IT, by=c("year", "branche"), all.x = TRUE)
+  IT_ind = na.omit(IT_ind)
   
   #IT = IT_ep %>% filter(branche=="b-tot", year!="1975")
   IT = IT_ep %>% filter(branche=="b-tot")
@@ -881,9 +1010,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P")
   
   #PLM analyse
-  LV_tot = LV_ep %>% filter(code=="TOT")
-  LV_tot$TOT = LV_tot$EMP
-  LV_tot = LV_tot %>% select(year, country, TOT)
+  LV_tot <- LV_ep %>% filter(code=="TOT_MN")
+  LV_tot$TOTmn = LV_tot$EMP
+  LV_tot <- LV_tot %>% select(year, country, TOTmn)
+  
+  
+  LV_ind = LV_ep %>% filter(sel_industries==1)
+  
+  LV <- LV_ep %>% filter(branche=="b-tot")
+  LV = merge(LV,LV_tot, by=c("year", "country"), all.x = TRUE)
+  LV$wgt = LV$EMP/LV$TOTmn
+  LV$branche = LV$code
+  LV$emp_logchanges_b = LV$emp_logchanges
+  LV$prod_logchanges_b = LV$prod_logchanges
+  LV = LV %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  LV_ind = merge(LV_ind, LV, by=c("year", "branche"), all.x = TRUE)
+  LV_ind = na.omit(LV_ind)
   
   #LV = LV_ep %>% filter(branche=="b-tot", year!="1975")
   LV = LV_ep %>% filter(branche=="b-tot")
@@ -928,9 +1071,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P")
   
   #PLM analyse
-  LU_tot = LU_ep %>% filter(code=="TOT")
-  LU_tot$TOT = LU_tot$EMP
-  LU_tot = LU_tot %>% select(year, country, TOT)
+  LU_tot <- LU_ep %>% filter(code=="TOT_MN")
+  LU_tot$TOTmn = LU_tot$EMP
+  LU_tot <- LU_tot %>% select(year, country, TOTmn)
+  
+  
+  LU_ind = LU_ep %>% filter(sel_industries==1)
+  
+  LU <- LU_ep %>% filter(branche=="b-tot")
+  LU = merge(LU,LU_tot, by=c("year", "country"), all.x = TRUE)
+  LU$wgt = LU$EMP/LU$TOTmn
+  LU$branche = LU$code
+  LU$emp_logchanges_b = LU$emp_logchanges
+  LU$prod_logchanges_b = LU$prod_logchanges
+  LU = LU %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  LU_ind = merge(LU_ind, LU, by=c("year", "branche"), all.x = TRUE)
+  LU_ind = na.omit(LU_ind)
   
   #LU = LU_ep %>% filter(branche=="b-tot", year!="1975")
   LU = LU_ep %>% filter(branche=="b-tot")
@@ -975,9 +1132,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P")
   
   #PLM analyse
-  SK_tot = SK_ep %>% filter(code=="TOT")
-  SK_tot$TOT = SK_tot$EMP
-  SK_tot = SK_tot %>% select(year, country, TOT)
+  SK_tot <- SK_ep %>% filter(code=="TOT_MN")
+  SK_tot$TOTmn = SK_tot$EMP
+  SK_tot <- SK_tot %>% select(year, country, TOTmn)
+  
+  
+  SK_ind = SK_ep %>% filter(sel_industries==1)
+  
+  SK <- SK_ep %>% filter(branche=="b-tot")
+  SK = merge(SK,SK_tot, by=c("year", "country"), all.x = TRUE)
+  SK$wgt = SK$EMP/SK$TOTmn
+  SK$branche = SK$code
+  SK$emp_logchanges_b = SK$emp_logchanges
+  SK$prod_logchanges_b = SK$prod_logchanges
+  SK = SK %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  SK_ind = merge(SK_ind, SK, by=c("year", "branche"), all.x = TRUE)
+  SK_ind = na.omit(SK_ind)
   
   #SK = SK_ep %>% filter(branche=="b-tot", year!="1975")
   SK = SK_ep %>% filter(branche=="b-tot")
@@ -1023,9 +1194,23 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P")
   
   #PLM analyse
-  SI_tot = SI_ep %>% filter(code=="TOT")
-  SI_tot$TOT = SI_tot$EMP
-  SI_tot = SI_tot %>% select(year, country, TOT)
+  SI_tot <- SI_ep %>% filter(code=="TOT_MN")
+  SI_tot$TOTmn = SI_tot$EMP
+  SI_tot <- SI_tot %>% select(year, country, TOTmn)
+  
+  
+  SI_ind = SI_ep %>% filter(sel_industries==1)
+  
+  SI <- SI_ep %>% filter(branche=="b-tot")
+  SI = merge(SI,SI_tot, by=c("year", "country"), all.x = TRUE)
+  SI$wgt = SI$EMP/SI$TOTmn
+  SI$branche = SI$code
+  SI$emp_logchanges_b = SI$emp_logchanges
+  SI$prod_logchanges_b = SI$prod_logchanges
+  SI = SI %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
+  
+  SI_ind = merge(SI_ind, SI, by=c("year", "branche"), all.x = TRUE)
+  SI_ind = na.omit(SI_ind)
   
   #SI = SI_ep %>% filter(branche=="b-tot", year!="1975")
   SI = SI_ep %>% filter(branche=="b-tot")
@@ -1034,7 +1219,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   SI$wgt = SI$EMP/SI$TOT
   
-  #deskriptiv
+  #deSIriptiv
   SI_b = SI_ep %>% filter(branche=="b-tot")
   {
     sumEMP = SI_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
@@ -1052,7 +1237,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
 }
-
 
 # Descriptive -------------------------------------------------------------
 
