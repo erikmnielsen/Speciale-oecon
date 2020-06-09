@@ -33,11 +33,11 @@ library(dplyr)
 
 {
 country="DK"
-country="US"
+country="SI"
 
-dataset_1 <- read_excel("Data/US_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-dataset_2 <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_P")
-  
+dataset_1 <- read_excel("Data/SI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+dataset_2 <- read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_P")
+ 
 dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP")
 dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO")
 dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -45,9 +45,9 @@ dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross outpu
 measure_1="EMP"
 measure_2="GO_P"
 
-dataset_1 <- read_excel("DK_output_17ii.xlsx", sheet = "COMP")
-dataset_2 <- read_excel("DK_output_17ii.xlsx", sheet = "VA")
-dataset_3 <- read_excel("DK_output_17ii.xlsx", sheet = "LAB")
+dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "COMP")
+dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "VA")
+dataset_3 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "LAB")
 measure_1="COMP"
 measure_2="VA"
 measure_3="LAB"
@@ -155,7 +155,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   #data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","R","S","T","U"), 0,1))
   
   data$sel_industries <-factor(ifelse( data$code %in% c("A","B", "DtE", "F","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33",
-                                                        "R","S","53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L","T","U"), 1,0)) #alt pånær O, P, Q (skal RtS, T og U også fjernes?) 
+                                                        "53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L"), 1,0)) #alt pånær O, P, Q (skal RtS, T og U også fjernes?) 
                                                           
   #Brancher, 10:
   {data$branche <- ifelse(data$code=="A", "b1",
@@ -167,8 +167,8 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
                                                                    ifelse(data$code=="L", "b7",
                                                                           ifelse(data$code=="MtN", "b8",
                                                                                #  ifelse(data$code %in% c("O","P","Q"), "b9",
-                                                                                        ifelse(data$code %in% c("R","S","T","U"), "b10",
-                                                                                               "b0")))))))))
+                                                                                        #ifelse(data$code %in% c("R","S","T","U"), "b10",
+                                                                                               "b0"))))))))
   
   data$branche_desc <- ifelse(data$branche=="b1","Landbrug, skovbrug og fiskeri",
                               ifelse(data$branche=="b2","Industri, råstofindvinding og forsyningsvirksomhed",
@@ -179,8 +179,8 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
                                                                  ifelse(data$branche=="b7","Ejendomshandel og udlejning",
                                                                         ifelse(data$branche=="b8","Erhvervsservice",
                                                                     #           ifelse(data$branche=="b9","Offentlig administration, undervisning og sundhed",
-                                                                                      ifelse(data$branche=="b10","Kultur, fritid og anden service",
-                                                                                             "Ikke relevant")))))))))
+                                                                                 #     ifelse(data$branche=="b10","Kultur, fritid og anden service",
+                                                                                             "Ikke relevant"))))))))
   }
   
 
@@ -210,9 +210,9 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   b_7 <- data2 %>% filter(code=="b7")
   b_8 <- data2 %>% filter(code=="b8")
   #b_9 <- data2 %>% filter(code=="b9")
-  b_10 <- data2 %>% filter(code=="b10")
+  #b_10 <- data2 %>% filter(code=="b10")
   
-  b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP + b_10$EMP #+ b_9$EMP 
+  b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP #+ b_10$EMP + b_9$EMP 
   b$desc = "TOTAL INDUSTRIES-MunkNielsen"
   b$code = "TOT_MN"
   
@@ -342,14 +342,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   US_ind = merge(US_ind, US, by=c("year", "branche"), all.x = TRUE)
   US_ind = na.omit(US_ind)
-  
-  #US <- US_ep %>% filter(branche=="b-tot", year!="1975")
-  US <- US_ep %>% filter(branche=="b-tot")
-  US = merge(US,US_tot, by=c("year", "country"), all.x = TRUE)
-  US <- na.omit(US)
-  
-  US$wgt = US$EMP/US$TOT
-  
+
   #deskriptiv
   US_b = US_ep %>% filter(branche=="b-tot")
   {
@@ -433,7 +426,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   DE_tot <- DE_tot %>% select(year, country, TOTmn)
   
   
-  DE_ind = DE_ep %>% filter(sel_indDEtries==1)
+  DE_ind = DE_ep %>% filter(sel_industries==1)
   
   DE <- DE_ep %>% filter(branche=="b-tot")
   DE = merge(DE,DE_tot, by=c("year", "country"), all.x = TRUE)
@@ -445,8 +438,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   DE_ind = merge(DE_ind, DE, by=c("year", "branche"), all.x = TRUE)
   DE_ind = na.omit(DE_ind)
-  #DE <- DE_ep %>% filter(branche=="b-tot", year!="1975")
-  
+
   #deskriptiv
   DE_b = DE_ep %>% filter(branche=="b-tot")
   {
@@ -551,13 +543,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   SE_ind = merge(SE_ind, SE, by=c("year", "branche"), all.x = TRUE)
   SE_ind = na.omit(SE_ind)
-  
-  #SE <- SE_ep %>% filter(branche=="b-tot", year!="1975")
-  SE <- SE_ep %>% filter(branche=="b-tot")
-  SE = merge(SE,SE_tot, by=c("year", "country"), all.x = TRUE)
-  SE = na.omit(SE)
-  
-  SE$wgt = SE$EMP/SE$TOT
   
   #deskriptiv
   SE_b = SE_ep %>% filter(branche=="b-tot")
@@ -666,13 +651,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   BE_ind = merge(BE_ind, BE, by=c("year", "branche"), all.x = TRUE)
   BE_ind = na.omit(BE_ind)
   
-  #BE = BE_ep %>% filter(branche=="b-tot", year!="1975")
-  BE = BE_ep %>% filter(branche=="b-tot")
-  BE = merge(BE,BE_tot, by=c("year", "country"), all.x = TRUE)
-  BE = na.omit(BE)
-  
-  BE$wgt = BE$EMP/BE$TOT
-  
   #deskriptiv
   BE_b = BE_ep %>% filter(branche=="b-tot")
   {
@@ -726,8 +704,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   CZ_ind = merge(CZ_ind, CZ, by=c("year", "branche"), all.x = TRUE)
   CZ_ind = na.omit(CZ_ind)
-  
-  #CZ = CZ_ep %>% filter(branche=="b-tot", year!="1975")
   
   
   #deskriptiv
@@ -784,13 +760,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   FI_ind = merge(FI_ind, FI, by=c("year", "branche"), all.x = TRUE)
   FI_ind = na.omit(FI_ind)
   
-  #FI = FI_ep %>% filter(branche=="b-tot", year!="1975")
-  FI = FI_ep %>% filter(branche=="b-tot")
-  FI = merge(FI,FI_tot, by=c("year", "country"), all.x = TRUE)
-  FI = na.omit(FI)
-  
-  FI$wgt = FI$EMP/FI$TOT
-  
   #deskriptiv
   FI_b = FI_ep %>% filter(branche=="b-tot")
   {
@@ -844,13 +813,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   FR_ind = merge(FR_ind, FR, by=c("year", "branche"), all.x = TRUE)
   FR_ind = na.omit(FR_ind)
-  
-  #FR = FR_ep %>% filter(branche=="b-tot", year!="1975")
-  FR = FR_ep %>% filter(branche=="b-tot")
-  FR = merge(FR,FR_tot, by=c("year", "country"), all.x = TRUE)
-  FR = na.omit(FR)
-  
-  FR$wgt = FR$EMP/FR$TOT
   
   #deskriptiv
   FR_b = FR_ep %>% filter(branche=="b-tot")
@@ -906,13 +868,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   EL_ind = merge(EL_ind, EL, by=c("year", "branche"), all.x = TRUE)
   EL_ind = na.omit(EL_ind)
   
-  #EL = EL_ep %>% filter(branche=="b-tot", year!="1975")
-  EL = EL_ep %>% filter(branche=="b-tot")
-  EL = merge(EL,EL_tot, by=c("year", "country"), all.x = TRUE)
-  EL = na.omit(EL)
-  
-  EL$wgt = EL$EMP/EL$TOT
-  
   #deskriptiv
   EL_b = EL_ep %>% filter(branche=="b-tot")
   {
@@ -966,13 +921,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   IT_ind = merge(IT_ind, IT, by=c("year", "branche"), all.x = TRUE)
   IT_ind = na.omit(IT_ind)
-  
-  #IT = IT_ep %>% filter(branche=="b-tot", year!="1975")
-  IT = IT_ep %>% filter(branche=="b-tot")
-  IT = merge(IT,IT_tot, by=c("year", "country"), all.x = TRUE)
-  IT = na.omit(IT)
-  
-  IT$wgt = IT$EMP/IT$TOT
   
   #deskriptiv
   IT_b = IT_ep %>% filter(branche=="b-tot")
@@ -1028,13 +976,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   LV_ind = merge(LV_ind, LV, by=c("year", "branche"), all.x = TRUE)
   LV_ind = na.omit(LV_ind)
   
-  #LV = LV_ep %>% filter(branche=="b-tot", year!="1975")
-  LV = LV_ep %>% filter(branche=="b-tot")
-  LV = merge(LV,LV_tot, by=c("year", "country"), all.x = TRUE)
-  LV = na.omit(LV)
-  
-  LV$wgt = LV$EMP/LV$TOT
-  
   #deskriptiv
   LV_b = LV_ep %>% filter(branche=="b-tot")
   {
@@ -1089,13 +1030,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   LU_ind = merge(LU_ind, LU, by=c("year", "branche"), all.x = TRUE)
   LU_ind = na.omit(LU_ind)
   
-  #LU = LU_ep %>% filter(branche=="b-tot", year!="1975")
-  LU = LU_ep %>% filter(branche=="b-tot")
-  LU = merge(LU,LU_tot, by=c("year", "country"), all.x = TRUE)
-  LU = na.omit(LU)
-  
-  LU$wgt = LU$EMP/LU$TOT
-  
+
   #deskriptiv
   LU_b = LU_ep %>% filter(branche=="b-tot")
   {
@@ -1150,12 +1085,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   SK_ind = merge(SK_ind, SK, by=c("year", "branche"), all.x = TRUE)
   SK_ind = na.omit(SK_ind)
   
-  #SK = SK_ep %>% filter(branche=="b-tot", year!="1975")
-  SK = SK_ep %>% filter(branche=="b-tot")
-  SK = merge(SK,SK_tot, by=c("year", "country"), all.x = TRUE)
-  SK = na.omit(SK)
-  
-  SK$wgt = SK$EMP/SK$TOT
   
   #deskriptiv
   SK_b = SK_ep %>% filter(branche=="b-tot")
@@ -1211,14 +1140,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   SI_ind = merge(SI_ind, SI, by=c("year", "branche"), all.x = TRUE)
   SI_ind = na.omit(SI_ind)
-  
-  #SI = SI_ep %>% filter(branche=="b-tot", year!="1975")
-  SI = SI_ep %>% filter(branche=="b-tot")
-  SI = merge(SI,SI_tot, by=c("year", "country"), all.x = TRUE)
-  SI = na.omit(SI)
-  
-  SI$wgt = SI$EMP/SI$TOT
-  
+
   #deSIriptiv
   SI_b = SI_ep %>% filter(branche=="b-tot")
   {
@@ -1525,30 +1447,35 @@ summary(C2_fe_tw)
 
 
 # Country industry panel --------------------------------------------------
-ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR,  IT, LU, LV, SI, SK)
-ci_panel = ci_panel %>% select(c(year, country, code, desc, emp_logchanges, prod_logchanges, wgt))
+ci_panel = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
+#ci_panel = rbind(dk, SE, US, NL, DE, AT, BE, CZ, EL, FI, FR, IT, LU, LV, SI, SK)
+
+ci_panel = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, wgt)
 ci_panel$id = ci_panel %>% group_indices(code, country)
 
 ci_panel$prod_logchanges_wgt = ci_panel$prod_logchanges*ci_panel$wgt
 ci_panel$emp_logchanges_wgt = ci_panel$emp_logchanges*ci_panel$wgt
 
+#ci_panel = na.omit(ci_panel)
+
 model_linear1 = emp_logchanges_wgt ~ prod_logchanges_wgt
+model_linear1 = emp_logchanges ~ prod_logchanges
 
 ci.reg <- plm(model_linear1, data = ci_panel, index = c("id", "year"), model = "within")
 
 summary(ci.reg)
 
+fixed.dum = lm(emp_logchanges ~ prod_logchanges, data=ci_panel)
+
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt, data=ci_panel)
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(code) + factor(country), data=ci_panel)
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt  + factor(code) + factor(country) + factor(year), data=ci_panel)
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt  + factor(code) + factor(year), data=ci_panel)
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(year), data=ci_panel)
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country), data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(code), data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(code) + factor(year), data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(code) + factor(year), data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(year), data=ci_panel)
+
 summary(fixed.dum)
 
-a = table(index(ci_panel), useNA = "ifany")
-
-table(a)
 #options(digits = 3)
 #pols = coeftest(poolOLS, vcov. = vcovHC, method = "arellano")
 
