@@ -266,20 +266,17 @@ if (Emma==T) {
 
 func_regpanel <- function(dataset_1, type) {
   
-  if (type==1) {
+if (type==1) {
 
-  tot <- dataset_1 %>% filter(code=="TOT_MN")
+  tot = dataset_1 %>% filter(code=="TOT_MN")
   tot$TOTmn = tot$EMP
   tot <- tot %>% select(year, country, TOTmn)
-  
   ind = dataset_1 %>% filter(sel_industries==1)
-  
   b <- dataset_1 %>% filter(branche=="b-tot")
   b$branche = b$code
   #dk$emp_logchanges_b = dk$emp_logchanges
   b$prod_logchanges_b = b$prod_logchanges
   b = b %>% select(year, branche, prod_logchanges_b)
-  
   b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1)
   b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% select(prod_logchanges_b2)
   b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
@@ -288,20 +285,15 @@ func_regpanel <- function(dataset_1, type) {
   b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
   b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
   b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
-  
   b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
-  
   ind = merge(ind, b, by=c("year"), all.x = TRUE)
   ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
   ind$wgt = ind$EMP/ind$TOTmn
   
   ind
-  }
-  
-  if (type==2) {
+} else if (type==2) {
     
     b = dataset_1 %>% filter(branche=="b-tot")
-    
     sumEMP <- b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
     b = merge(b, sumEMP, by=c("year"), all.x = TRUE)
     b$share_EMP = (b$EMP/b$sum_EMP)*100
@@ -309,18 +301,19 @@ func_regpanel <- function(dataset_1, type) {
     b$share_EMP_ppchange = diff(b$share_EMP, lag = 1, shift = "time")
     b$share_EMP_ppchange = ifelse(is.na(b$share_EMP_ppchange)==T,0,b$share_EMP_ppchange)
     b = b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-    
     b$year = lubridate::ymd(b$year, truncated = 2L)
     
     b
-  }
-  
-  if (type==3) {
+  } else if (type==3) {
     
     tot = dataset_1 %>% filter(code=="TOT")
     tot$year = lubridate::ymd(tot$year, truncated = 2L)
     
     tot
+    
+  } else {
+    
+    NA
   }
   
 
@@ -349,7 +342,7 @@ func_regpanel <- function(dataset_1, type) {
     DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", T)
     
     #PLM analyse
-    DK_ind = func_regpanel(DK_ep, 1)
+     DK_ep = func_regpanel(DK_ep, 1)
     DK_tot = func_regpanel(DK_ep, 3)
     
     #deskriptiv
