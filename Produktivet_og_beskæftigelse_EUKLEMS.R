@@ -123,7 +123,7 @@ func_labshare <- function(dataset_1, dataset_2, dataset_3, country, measure_1="C
   
 }
 
-func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure_2="GO") {
+func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure_2="GO", Emma) {
   
   colnames(dataset_1) <- gsub(measure_1, "", colnames(dataset_1))
   colnames(dataset_2) <- gsub(measure_2, "", colnames(dataset_2))
@@ -150,9 +150,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   data$GO <-  as.numeric(as.character(data[,"GO"]))
   data$code =gsub("-", "t", data[,2])
   data$country = country
-  
-  
-  #data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","R","S","T","U"), 0,1))
   
   data$sel_industries <-factor(ifelse( data$code %in% c("A","B", "DtE", "F","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33",
                                                         "53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L"), 1,0)) #alt pånær O, P, Q (skal RtS, T og U også fjernes?) 
@@ -238,6 +235,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   pdata$prod_logchanges<- diff(pdata$prod_log, lag = 1, shift = "time")*100
   pdata$prod_logdiff<- diff(pdata$prod_log, lag = 1, shift = "time")
   
+if (Emma==F) {
   pdata = pdata %>% group_by(code) %>% mutate(prod_CGR_logchanges =  order_by(year,cumprod(1+prod_logdiff[-1])*100)) #metode 1
   pdata = pdata %>% group_by(code) %>% mutate(prod_logCGR = order_by(year, CGR(prod_logdiff[-1])*100)) #metode 2
   
@@ -251,16 +249,90 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   pdata$prod_logCGR <- lag(pdata$prod_logCGR, k=1, shift="time")
   pdata$prod_CGR <- lag(pdata$prod_CGR, k=1, shift="time")
+}
+  
+if (Emma==T) {
+  
+  pdata <- pdata %>% select(year, country, code, desc, sel_industries, branche, branche_desc, EMP, emp_logchanges, GO, prod, prod_logchanges,prod_changes) %>% 
+  filter(code!="b0")
+  pdata = pdata.frame(pdata, index = c("code", "year"))
+                      
+      }
 
   pdata
+  
+
 }
+
+func_regpanel <- function(dataset_1, type) {
+  
+  if (type==1) {
+
+  tot <- dataset_1 %>% filter(code=="TOT_MN")
+  tot$TOTmn = tot$EMP
+  tot <- tot %>% select(year, country, TOTmn)
+  
+  ind = dataset_1 %>% filter(sel_industries==1)
+  
+  b <- dataset_1 %>% filter(branche=="b-tot")
+  b$branche = b$code
+  #dk$emp_logchanges_b = dk$emp_logchanges
+  b$prod_logchanges_b = b$prod_logchanges
+  b = b %>% select(year, branche, prod_logchanges_b)
+  
+  b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1)
+  b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% select(prod_logchanges_b2)
+  b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
+  b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% select(prod_logchanges_b4)
+  b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5=prod_logchanges_b) %>% select(prod_logchanges_b5)
+  b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
+  b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
+  b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
+  
+  b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
+  
+  ind = merge(ind, b, by=c("year"), all.x = TRUE)
+  ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
+  ind$wgt = ind$EMP/ind$TOTmn
+  
+  ind
+  }
+  
+  if (type==2) {
+    
+    b = dataset_1 %>% filter(branche=="b-tot")
+    
+    sumEMP <- b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
+    b = merge(b, sumEMP, by=c("year"), all.x = TRUE)
+    b$share_EMP = (b$EMP/b$sum_EMP)*100
+    b = pdata.frame(b, index = c("code", "year"))
+    b$share_EMP_ppchange = diff(b$share_EMP, lag = 1, shift = "time")
+    b$share_EMP_ppchange = ifelse(is.na(b$share_EMP_ppchange)==T,0,b$share_EMP_ppchange)
+    b = b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
+    
+    b$year = lubridate::ymd(b$year, truncated = 2L)
+    
+    b
+  }
+  
+  if (type==3) {
+    
+    tot = dataset_1 %>% filter(code=="TOT")
+    tot$year = lubridate::ymd(tot$year, truncated = 2L)
+    
+    tot
+  }
+  
+
+}
+
 
 #key_table <- read_csv("EUklems-data-master/key_table.csv")
 
 # Country data  ----------------------------------------------------- 
 
-  # Danmark
-  {
+# Danmark
+{
     DK_emp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
     #DK_go <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
     DK_gop <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -273,42 +345,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
     DK_ls$year = lubridate::ymd(DK_ls$year, truncated = 2L)
     
     #Employment and productivty
-    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P")
+    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", F)
+    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", T)
     
     #PLM analyse
-    DK_tot <- DK_ep %>% filter(code=="TOT_MN")
-    DK_tot$TOTmn = DK_tot$EMP
-    DK_tot <- DK_tot %>% select(year, country, TOTmn)
-    
-    DK_ind = DK_ep %>% filter(sel_industries==1)
-    
-    dk <- DK_ep %>% filter(branche=="b-tot")
-    dk = merge(dk,DK_tot, by=c("year", "country"), all.x = TRUE)
-    dk$wgt = dk$EMP/dk$TOTmn
-    dk$branche = dk$code
-    dk$emp_logchanges_b = dk$emp_logchanges
-    dk$prod_logchanges_b = dk$prod_logchanges
-    dk = dk %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-    
-    DK_ind = merge(DK_ind, dk, by=c("year", "branche"), all.x = TRUE)
-    DK_ind = na.omit(DK_ind)
+    DK_ind = func_regpanel(DK_ep, 1)
+    DK_tot = func_regpanel(DK_ep, 3)
     
     #deskriptiv
-    DK_b = DK_ep %>% filter(branche=="b-tot")
-    {
-      sumEMP <- DK_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-      DK_b = merge(DK_b, sumEMP, by=c("year"), all.x = TRUE)
-      DK_b$share_EMP = (DK_b$EMP/DK_b$sum_EMP)*100
-      DK_b = pdata.frame(DK_b, index = c("code", "year"))
-      DK_b$share_EMP_ppchange = diff(DK_b$share_EMP, lag = 1, shift = "time")
-      DK_b$share_EMP_ppchange = ifelse(is.na(DK_b$share_EMP_ppchange)==T,0,DK_b$share_EMP_ppchange)
-      DK_b = DK_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-    }
-    DK_b$year = lubridate::ymd(DK_b$year, truncated = 2L)
-    
-    DK_tot = DK_ep %>% filter(code=="TOT")
-    DK_tot$year = lubridate::ymd(DK_tot$year, truncated = 2L)
-    
+    DK_b = func_regpanel(DK_ep, 2)
     
   }
 
@@ -326,42 +371,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   US_ls$year = lubridate::ymd(US_ls$year, truncated = 2L)
   
   #Employment and productivty
-  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P")
+  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P", F)
+  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P", T)
   
   #PLM analyse
-  US_tot <- US_ep %>% filter(code=="TOT_MN")
-  US_tot$TOTmn = US_tot$EMP
-  US_tot <- US_tot %>% select(year, country, TOTmn)
+  US_ind = func_regpanel(US_ep, 1)
+  US_tot = func_regpanel(US_ep, 3)
   
-  US_ind = US_ep %>% filter(sel_industries==1)
-  
-  US <- US_ep %>% filter(branche=="b-tot")
-  US = merge(US,US_tot, by=c("year", "country"), all.x = TRUE)
-  US$wgt = US$EMP/US$TOTmn
-  US$branche = US$code
-  US$emp_logchanges_b = US$emp_logchanges
-  US$prod_logchanges_b = US$prod_logchanges
-  US = US %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  US_ind = merge(US_ind, US, by=c("year", "branche"), all.x = TRUE)
-  US_ind = na.omit(US_ind)
-
   #deskriptiv
-  US_b = US_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP <- US_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    US_b = merge(US_b, sumEMP, by=c("year"), all.x = TRUE)
-    US_b$share_EMP = (US_b$EMP/US_b$sum_EMP)*100
-    US_b = pdata.frame(US_b, index = c("code", "year"))
-    US_b$share_EMP_ppchange = diff(US_b$share_EMP, lag = 1, shift = "time")
-    US_b$share_EMP_ppchange = ifelse(is.na(US_b$share_EMP_ppchange)==T,0,US_b$share_EMP_ppchange)
-    US_b = US_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  US_b$year = lubridate::ymd(US_b$year, truncated = 2L)
-  
-  US_tot = US_ep %>% filter(code=="TOT")
-  US_tot$year = lubridate::ymd(US_tot$year, truncated = 2L)
-  
+  US_b = func_regpanel(US_ep, 2)
 }
 
 # UK . faste priser findes ikke
@@ -378,33 +396,16 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   UK_ls$year = lubridate::ymd(UK_ls$year, truncated = 2L)
   
   #Employment and productivty
-  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P")
+  #Employment and productivty
+  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P", F)
+  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P", T)
   
   #PLM analyse
-  UK_tot <- UK_ep %>% filter(code=="TOT")
-  UK_tot$TOT = UK_tot$EMP
-  UK_tot <- UK_tot %>% select(year, country, TOT)
-  
-  UK <- UK_ep %>% filter(branche=="b-tot", year!="1975")
-  UK = merge(UK,UK_tot, by=c("year", "country"), all.x = TRUE)
-  
-  UK$wgt = UK$EMP/UK$TOT
+  UK_ind = func_regpanel(UK_ep, 1)
+  UK_tot = func_regpanel(UK_ep, 3)
   
   #deskriptiv
-  UK_b = UK_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP <- UK_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    UK_b = merge(UK_b, sumEMP, by=c("year"), all.x = TRUE)
-    UK_b$share_EMP = (UK_b$EMP/UK_b$sum_EMP)*100
-    UK_b = pdata.frame(UK_b, index = c("code", "year"))
-    UK_b$share_EMP_ppchange = diff(UK_b$share_EMP, lag = 1, shift = "time")
-    UK_b$share_EMP_ppchange = ifelse(is.na(UK_b$share_EMP_ppchange)==T,0,UK_b$share_EMP_ppchange)
-    UK_b = UK_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  UK_b$year = lubridate::ymd(UK_b$year, truncated = 2L)
-  
-  UK_tot = UK_ep %>% filter(code=="TOT")
-  UK_tot$year = lubridate::ymd(UK_tot$year, truncated = 2L)
+  UK_b = func_regpanel(UK_ep, 2)
 }
 
 # Tyskland
@@ -421,42 +422,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   DE_ls$year = lubridate::ymd(DE_ls$year, truncated = 2L)
   
   #Employment and productivty
-  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P")
+  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P", F)
+  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P", T)
   
   #PLM analyse
-  DE_tot <- DE_ep %>% filter(code=="TOT_MN")
-  DE_tot$TOTmn = DE_tot$EMP
-  DE_tot <- DE_tot %>% select(year, country, TOTmn)
+  DE_ind = func_regpanel(DE_ep, 1)
+  DE_tot = func_regpanel(DE_ep, 3)
   
-  
-  DE_ind = DE_ep %>% filter(sel_industries==1)
-  
-  DE <- DE_ep %>% filter(branche=="b-tot")
-  DE = merge(DE,DE_tot, by=c("year", "country"), all.x = TRUE)
-  DE$wgt = DE$EMP/DE$TOTmn
-  DE$branche = DE$code
-  DE$emp_logchanges_b = DE$emp_logchanges
-  DE$prod_logchanges_b = DE$prod_logchanges
-  DE = DE %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  DE_ind = merge(DE_ind, DE, by=c("year", "branche"), all.x = TRUE)
-  DE_ind = na.omit(DE_ind)
-
   #deskriptiv
-  DE_b = DE_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP <- DE_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    DE_b = merge(DE_b, sumEMP, by=c("year"), all.x = TRUE)
-    DE_b$share_EMP = (DE_b$EMP/DE_b$sum_EMP)*100
-    DE_b = pdata.frame(DE_b, index = c("code", "year"))
-    DE_b$share_EMP_ppchange = diff(DE_b$share_EMP, lag = 1, shift = "time")
-    DE_b$share_EMP_ppchange = ifelse(is.na(DE_b$share_EMP_ppchange)==T,0,DE_b$share_EMP_ppchange)
-    DE_b = DE_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  DE_b$year = lubridate::ymd(DE_b$year, truncated = 2L)
-  
-  DE_tot = DE_ep %>% filter(code=="TOT")
-  DE_tot$year = lubridate::ymd(DE_tot$year, truncated = 2L)
+  DE_b = func_regpanel(DE_ep, 2)
 }
 
 # Holland
@@ -473,42 +447,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   NL_ls$year = lubridate::ymd(NL_ls$year, truncated = 2L)
   
   #Employment and productivty
-  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P")
+  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P", F)
+  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P", T)
   
   #PLM analyse
-  NL_tot <- NL_ep %>% filter(code=="TOT_MN")
-  NL_tot$TOTmn = NL_tot$EMP
-  NL_tot <- NL_tot %>% select(year, country, TOTmn)
-  
-  
-  NL_ind = NL_ep %>% filter(sel_industries==1)
-  
-  NL <- NL_ep %>% filter(branche=="b-tot")
-  NL = merge(NL,NL_tot, by=c("year", "country"), all.x = TRUE)
-  NL$wgt = NL$EMP/NL$TOTmn
-  NL$branche = NL$code
-  NL$emp_logchanges_b = NL$emp_logchanges
-  NL$prod_logchanges_b = NL$prod_logchanges
-  NL = NL %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  NL_ind = merge(NL_ind, NL, by=c("year", "branche"), all.x = TRUE)
-  NL_ind = na.omit(NL_ind)
+  NL_ind = func_regpanel(NL_ep, 1)
+  NL_tot = func_regpanel(NL_ep, 3)
   
   #deskriptiv
-  NL_b = NL_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP <- NL_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    NL_b = merge(NL_b, sumEMP, by=c("year"), all.x = TRUE)
-    NL_b$share_EMP = (NL_b$EMP/NL_b$sum_EMP)*100
-    NL_b = pdata.frame(NL_b, index = c("code", "year"))
-    NL_b$share_EMP_ppchange = diff(NL_b$share_EMP, lag = 1, shift = "time")
-    NL_b$share_EMP_ppchange = ifelse(is.na(NL_b$share_EMP_ppchange)==T,0,NL_b$share_EMP_ppchange)
-    NL_b = NL_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  NL_b$year = lubridate::ymd(NL_b$year, truncated = 2L)
-  
-  NL_tot = NL_ep %>% filter(code=="TOT")
-  NL_tot$year = lubridate::ymd(NL_tot$year, truncated = 2L)
+  NL_b = func_regpanel(NL_ep, 2)
 }
 
 # Sverige
@@ -526,43 +473,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   SE_ls$year = lubridate::ymd(SE_ls$year, truncated = 2L)
   
   #Employment and productivty
-  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P")
+  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P", F)
+  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P", T)
   
   #PLM analyse
-  SE_tot <- SE_ep %>% filter(code=="TOT_MN")
-  SE_tot$TOTmn = SE_tot$EMP
-  SE_tot <- SE_tot %>% select(year, country, TOTmn)
-  
-  
-  SE_ind = SE_ep %>% filter(sel_industries==1)
-  
-  SE <- SE_ep %>% filter(branche=="b-tot")
-  SE = merge(SE,SE_tot, by=c("year", "country"), all.x = TRUE)
-  SE$wgt = SE$EMP/SE$TOTmn
-  SE$branche = SE$code
-  SE$emp_logchanges_b = SE$emp_logchanges
-  SE$prod_logchanges_b = SE$prod_logchanges
-  SE = SE %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  SE_ind = merge(SE_ind, SE, by=c("year", "branche"), all.x = TRUE)
-  SE_ind = na.omit(SE_ind)
+  SE_ind = func_regpanel(SE_ep, 1)
+  SE_tot = func_regpanel(SE_ep, 3)
   
   #deskriptiv
-  SE_b = SE_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP <- SE_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    SE_b = merge(SE_b, sumEMP, by=c("year"), all.x = TRUE)
-    SE_b$share_EMP = (SE_b$EMP/SE_b$sum_EMP)*100
-    SE_b = pdata.frame(SE_b, index = c("code", "year"))
-    SE_b$share_EMP_ppchange = diff(SE_b$share_EMP, lag = 1, shift = "time")
-    SE_b$share_EMP_ppchange = ifelse(is.na(SE_b$share_EMP_ppchange)==T,0,SE_b$share_EMP_ppchange)
-    SE_b = SE_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  SE_b$year = lubridate::ymd(SE_b$year, truncated = 2L)
-  
-  SE_tot = SE_ep %>% filter(code=="TOT")
-  SE_tot$year = lubridate::ymd(SE_tot$year, truncated = 2L)
-  
+  SE_b = func_regpanel(SE_ep, 2)
 }
 
 # Østrig
@@ -579,43 +498,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   AT_ls$year = lubridate::ymd(AT_ls$year, truncated = 2L)
   
   #Employment and productivty
-  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P")
+  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P", F)
+  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P", T)
   
   #PLM analyse
-  AT_tot <- AT_ep %>% filter(code=="TOT_MN")
-  AT_tot$TOTmn = AT_tot$EMP
-  AT_tot <- AT_tot %>% select(year, country, TOTmn)
-  
-  
-  AT_ind = AT_ep %>% filter(sel_industries==1)
-  
-  AT <- AT_ep %>% filter(branche=="b-tot")
-  AT = merge(AT,AT_tot, by=c("year", "country"), all.x = TRUE)
-  AT$wgt = AT$EMP/AT$TOTmn
-  AT$branche = AT$code
-  AT$emp_logchanges_b = AT$emp_logchanges
-  AT$prod_logchanges_b = AT$prod_logchanges
-  AT = AT %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  AT_ind = merge(AT_ind, AT, by=c("year", "branche"), all.x = TRUE)
-  AT_ind = na.omit(AT_ind)
+  AT_ind = func_regpanel(AT_ep, 1)
+  AT_tot = func_regpanel(AT_ep, 3)
   
   #deskriptiv
-  AT_b = AT_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = AT_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    AT_b = merge(AT_b, sumEMP, by=c("year"), all.x = TRUE)
-    AT_b$share_EMP = (AT_b$EMP/AT_b$sum_EMP)*100
-    AT_b = pdata.frame(AT_b, index = c("code", "year"))
-    AT_b$share_EMP_ppchange = diff(AT_b$share_EMP, lag = 1, shift = "time")
-    AT_b$share_EMP_ppchange = ifelse(is.na(AT_b$share_EMP_ppchange)==T,0,AT_b$share_EMP_ppchange)
-    AT_b = AT_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  AT_b$year = lubridate::ymd(AT_b$year, truncated = 2L)
-  
-  AT_tot = AT_ep %>% filter(code=="TOT")
-  AT_tot$year = lubridate::ymd(AT_tot$year, truncated = 2L)
-  
+  AT_b = func_regpanel(AT_ep, 2)
   
 } 
 
@@ -633,43 +524,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   BE_ls$year = lubridate::ymd(BE_ls$year, truncated = 2L)
   
   #Employment and productivty
-  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P")
+  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P", F)
+  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P", T)
   
   #PLM analyse
-  BE_tot <- BE_ep %>% filter(code=="TOT_MN")
-  BE_tot$TOTmn = BE_tot$EMP
-  BE_tot <- BE_tot %>% select(year, country, TOTmn)
-  
-  
-  BE_ind = BE_ep %>% filter(sel_industries==1)
-  
-  BE <- BE_ep %>% filter(branche=="b-tot")
-  BE = merge(BE,BE_tot, by=c("year", "country"), all.x = TRUE)
-  BE$wgt = BE$EMP/BE$TOTmn
-  BE$branche = BE$code
-  BE$emp_logchanges_b = BE$emp_logchanges
-  BE$prod_logchanges_b = BE$prod_logchanges
-  BE = BE %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  BE_ind = merge(BE_ind, BE, by=c("year", "branche"), all.x = TRUE)
-  BE_ind = na.omit(BE_ind)
+  BE_ind = func_regpanel(BE_ep, 1)
+  BE_tot = func_regpanel(BE_ep, 3)
   
   #deskriptiv
-  BE_b = BE_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = BE_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    BE_b = merge(BE_b, sumEMP, by=c("year"), all.x = TRUE)
-    BE_b$share_EMP = (BE_b$EMP/BE_b$sum_EMP)*100
-    BE_b = pdata.frame(BE_b, index = c("code", "year"))
-    BE_b$share_EMP_ppchange = diff(BE_b$share_EMP, lag = 1, shift = "time")
-    BE_b$share_EMP_ppchange = ifelse(is.na(BE_b$share_EMP_ppchange)==T,0,BE_b$share_EMP_ppchange)
-    BE_b = BE_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  BE_b$year = lubridate::ymd(BE_b$year, truncated = 2L)
-  
-  BE_tot = BE_ep %>% filter(code=="TOT")
-  BE_tot$year = lubridate::ymd(BE_tot$year, truncated = 2L)
-  
+  BE_b = func_regpanel(BE_ep, 2)
   
 }
 
@@ -687,44 +550,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   CZ_ls$year = lubridate::ymd(CZ_ls$year, truncated = 2L)
   
   #Employment and productivty
-  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P")
+  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P", F)
+  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P", T)
   
   #PLM analyse
-  CZ_tot <- CZ_ep %>% filter(code=="TOT_MN")
-  CZ_tot$TOTmn = CZ_tot$EMP
-  CZ_tot <- CZ_tot %>% select(year, country, TOTmn)
-  
-  
-  CZ_ind = CZ_ep %>% filter(sel_industries==1)
-  
-  CZ <- CZ_ep %>% filter(branche=="b-tot")
-  CZ = merge(CZ,CZ_tot, by=c("year", "country"), all.x = TRUE)
-  CZ$wgt = CZ$EMP/CZ$TOTmn
-  CZ$branche = CZ$code
-  CZ$emp_logchanges_b = CZ$emp_logchanges
-  CZ$prod_logchanges_b = CZ$prod_logchanges
-  CZ = CZ %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  CZ_ind = merge(CZ_ind, CZ, by=c("year", "branche"), all.x = TRUE)
-  CZ_ind = na.omit(CZ_ind)
-  
+  CZ_ind = func_regpanel(CZ_ep, 1)
+  CZ_tot = func_regpanel(CZ_ep, 3)
   
   #deskriptiv
-  CZ_b = CZ_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = CZ_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    CZ_b = merge(CZ_b, sumEMP, by=c("year"), all.x = TRUE)
-    CZ_b$share_EMP = (CZ_b$EMP/CZ_b$sum_EMP)*100
-    CZ_b = pdata.frame(CZ_b, index = c("code", "year"))
-    CZ_b$share_EMP_ppchange = diff(CZ_b$share_EMP, lag = 1, shift = "time")
-    CZ_b$share_EMP_ppchange = ifelse(is.na(CZ_b$share_EMP_ppchange)==T,0,CZ_b$share_EMP_ppchange)
-    CZ_b = CZ_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  CZ_b$year = lubridate::ymd(CZ_b$year, truncated = 2L)
-  
-  CZ_tot = CZ_ep %>% filter(code=="TOT")
-  CZ_tot$year = lubridate::ymd(CZ_tot$year, truncated = 2L)
-  
+  CZ_b = func_regpanel(CZ_ep, 2)
   
 }
 
@@ -742,44 +576,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   FI_ls$year = lubridate::ymd(FI_ls$year, truncated = 2L)
   
   #Employment and productivty
-  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P")
+  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P", F)
+  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P", T)
   
   #PLM analyse
-  FI_tot <- FI_ep %>% filter(code=="TOT_MN")
-  FI_tot$TOTmn = FI_tot$EMP
-  FI_tot <- FI_tot %>% select(year, country, TOTmn)
-  
-  
-  FI_ind = FI_ep %>% filter(sel_industries==1)
-  
-  FI <- FI_ep %>% filter(branche=="b-tot")
-  FI = merge(FI,FI_tot, by=c("year", "country"), all.x = TRUE)
-  FI$wgt = FI$EMP/FI$TOTmn
-  FI$branche = FI$code
-  FI$emp_logchanges_b = FI$emp_logchanges
-  FI$prod_logchanges_b = FI$prod_logchanges
-  FI = FI %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  FI_ind = merge(FI_ind, FI, by=c("year", "branche"), all.x = TRUE)
-  FI_ind = na.omit(FI_ind)
+  FI_ind = func_regpanel(FI_ep, 1)
+  FI_tot = func_regpanel(FI_ep, 3)
   
   #deskriptiv
-  FI_b = FI_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = FI_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    FI_b = merge(FI_b, sumEMP, by=c("year"), all.x = TRUE)
-    FI_b$share_EMP = (FI_b$EMP/FI_b$sum_EMP)*100
-    FI_b = pdata.frame(FI_b, index = c("code", "year"))
-    FI_b$share_EMP_ppchange = diff(FI_b$share_EMP, lag = 1, shift = "time")
-    FI_b$share_EMP_ppchange = ifelse(is.na(FI_b$share_EMP_ppchange)==T,0,FI_b$share_EMP_ppchange)
-    FI_b = FI_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  FI_b$year = lubridate::ymd(FI_b$year, truncated = 2L)
-  
-  FI_tot = FI_ep %>% filter(code=="TOT")
-  FI_tot$year = lubridate::ymd(FI_tot$year, truncated = 2L)
-  
-  
+  FI_b = func_regpanel(FI_ep, 2)
 }
 
 # Frankrig
@@ -796,43 +601,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   FR_ls$year = lubridate::ymd(FR_ls$year, truncated = 2L)
   
   #Employment and productivty
-  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P")
+  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P", F)
+  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P", T)
   
   #PLM analyse
-  FR_tot <- FR_ep %>% filter(code=="TOT_MN")
-  FR_tot$TOTmn = FR_tot$EMP
-  FR_tot <- FR_tot %>% select(year, country, TOTmn)
-  
-  
-  FR_ind = FR_ep %>% filter(sel_industries==1)
-  
-  FR <- FR_ep %>% filter(branche=="b-tot")
-  FR = merge(FR,FR_tot, by=c("year", "country"), all.x = TRUE)
-  FR$wgt = FR$EMP/FR$TOTmn
-  FR$branche = FR$code
-  FR$emp_logchanges_b = FR$emp_logchanges
-  FR$prod_logchanges_b = FR$prod_logchanges
-  FR = FR %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  FR_ind = merge(FR_ind, FR, by=c("year", "branche"), all.x = TRUE)
-  FR_ind = na.omit(FR_ind)
+  FR_ind = func_regpanel(FR_ep, 1)
+  FR_tot = func_regpanel(FR_ep, 3)
   
   #deskriptiv
-  FR_b = FR_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = FR_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    FR_b = merge(FR_b, sumEMP, by=c("year"), all.x = TRUE)
-    FR_b$share_EMP = (FR_b$EMP/FR_b$sum_EMP)*100
-    FR_b = pdata.frame(FR_b, index = c("code", "year"))
-    FR_b$share_EMP_ppchange = diff(FR_b$share_EMP, lag = 1, shift = "time")
-    FR_b$share_EMP_ppchange = ifelse(is.na(FR_b$share_EMP_ppchange)==T,0,FI_b$share_EMP_ppchange)
-    FR_b = FR_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  FR_b$year = lubridate::ymd(FR_b$year, truncated = 2L)
-  
-  FR_tot = FR_ep %>% filter(code=="TOT")
-  FR_tot$year = lubridate::ymd(FR_tot$year, truncated = 2L)
-  
+  FR_b = func_regpanel(FR_ep, 2)
   
 }
 
@@ -850,44 +627,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   EL_ls$year = lubridate::ymd(EL_ls$year, truncated = 2L)
   
   #Employment and productivty
-  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P")
+  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P", F)
+  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P", T)
   
   #PLM analyse
-  EL_tot <- EL_ep %>% filter(code=="TOT_MN")
-  EL_tot$TOTmn = EL_tot$EMP
-  EL_tot <- EL_tot %>% select(year, country, TOTmn)
-  
-  
-  EL_ind = EL_ep %>% filter(sel_industries==1)
-  
-  EL <- EL_ep %>% filter(branche=="b-tot")
-  EL = merge(EL,EL_tot, by=c("year", "country"), all.x = TRUE)
-  EL$wgt = EL$EMP/EL$TOTmn
-  EL$branche = EL$code
-  EL$emp_logchanges_b = EL$emp_logchanges
-  EL$prod_logchanges_b = EL$prod_logchanges
-  EL = EL %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  EL_ind = merge(EL_ind, EL, by=c("year", "branche"), all.x = TRUE)
-  EL_ind = na.omit(EL_ind)
+  EL_ind = func_regpanel(EL_ep, 1)
+  EL_tot = func_regpanel(EL_ep, 3)
   
   #deskriptiv
-  EL_b = EL_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = EL_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    EL_b = merge(EL_b, sumEMP, by=c("year"), all.x = TRUE)
-    EL_b$share_EMP = (EL_b$EMP/EL_b$sum_EMP)*100
-    EL_b = pdata.frame(EL_b, index = c("code", "year"))
-    EL_b$share_EMP_ppchange = diff(EL_b$share_EMP, lag = 1, shift = "time")
-    EL_b$share_EMP_ppchange = ifelse(is.na(EL_b$share_EMP_ppchange)==T,0,EL_b$share_EMP_ppchange)
-    EL_b = EL_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  EL_b$year = lubridate::ymd(EL_b$year, truncated = 2L)
-  
-  EL_tot = EL_ep %>% filter(code=="TOT")
-  EL_tot$year = lubridate::ymd(EL_tot$year, truncated = 2L)
-  
-  
+  EL_b = func_regpanel(EL_ep, 2)
 }
 
 # Italien
@@ -904,43 +652,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   IT_ls$year = lubridate::ymd(IT_ls$year, truncated = 2L)
   
   #Employment and productivty
-  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P")
+  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P", F)
+  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P", T)
   
-  #PLM analysis
-  IT_tot <- IT_ep %>% filter(code=="TOT_MN")
-  IT_tot$TOTmn = IT_tot$EMP
-  IT_tot <- IT_tot %>% select(year, country, TOTmn)
-  
-  
-  IT_ind = IT_ep %>% filter(sel_industries==1)
-  
-  IT <- IT_ep %>% filter(branche=="b-tot")
-  IT = merge(IT,IT_tot, by=c("year", "country"), all.x = TRUE)
-  IT$wgt = IT$EMP/IT$TOTmn
-  IT$branche = IT$code
-  IT$emp_logchanges_b = IT$emp_logchanges
-  IT$prod_logchanges_b = IT$prod_logchanges
-  IT = IT %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  IT_ind = merge(IT_ind, IT, by=c("year", "branche"), all.x = TRUE)
-  IT_ind = na.omit(IT_ind)
+  #PLM analyse
+  IT_ind = func_regpanel(IT_ep, 1)
+  IT_tot = func_regpanel(IT_ep, 3)
   
   #deskriptiv
-  IT_b = IT_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = IT_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    IT_b = merge(IT_b, sumEMP, by=c("year"), all.x = TRUE)
-    IT_b$share_EMP = (IT_b$EMP/IT_b$sum_EMP)*100
-    IT_b = pdata.frame(IT_b, index = c("code", "year"))
-    IT_b$share_EMP_ppchange = diff(IT_b$share_EMP, lag = 1, shift = "time")
-    IT_b$share_EMP_ppchange = ifelse(is.na(IT_b$share_EMP_ppchange)==T,0,IT_b$share_EMP_ppchange)
-    IT_b = IT_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  IT_b$year = lubridate::ymd(IT_b$year, truncated = 2L)
-  
-  IT_tot = IT_ep %>% filter(code=="TOT")
-  IT_tot$year = lubridate::ymd(IT_tot$year, truncated = 2L)
-  
+  IT_b = func_regpanel(IT_ep, 2)
   
 }
 
@@ -958,44 +678,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   LV_ls$year = lubridate::ymd(LV_ls$year, truncated = 2L)
   
   #Employment and productivty
-  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P")
+  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P", F)
+  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P", T)
   
   #PLM analyse
-  LV_tot <- LV_ep %>% filter(code=="TOT_MN")
-  LV_tot$TOTmn = LV_tot$EMP
-  LV_tot <- LV_tot %>% select(year, country, TOTmn)
-  
-  
-  LV_ind = LV_ep %>% filter(sel_industries==1)
-  
-  LV <- LV_ep %>% filter(branche=="b-tot")
-  LV = merge(LV,LV_tot, by=c("year", "country"), all.x = TRUE)
-  LV$wgt = LV$EMP/LV$TOTmn
-  LV$branche = LV$code
-  LV$emp_logchanges_b = LV$emp_logchanges
-  LV$prod_logchanges_b = LV$prod_logchanges
-  LV = LV %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  LV_ind = merge(LV_ind, LV, by=c("year", "branche"), all.x = TRUE)
-  LV_ind = na.omit(LV_ind)
+  LV_ind = func_regpanel(LV_ep, 1)
+  LV_tot = func_regpanel(LV_ep, 3)
   
   #deskriptiv
-  LV_b = LV_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = LV_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    LV_b = merge(LV_b, sumEMP, by=c("year"), all.x = TRUE)
-    LV_b$share_EMP = (LV_b$EMP/LV_b$sum_EMP)*100
-    LV_b = pdata.frame(LV_b, index = c("code", "year"))
-    LV_b$share_EMP_ppchange = diff(LV_b$share_EMP, lag = 1, shift = "time")
-    LV_b$share_EMP_ppchange = ifelse(is.na(LV_b$share_EMP_ppchange)==T,0,LV_b$share_EMP_ppchange)
-    LV_b = LV_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  LV_b$year = lubridate::ymd(LV_b$year, truncated = 2L)
-  
-  LV_tot = LV_ep %>% filter(code=="TOT")
-  LV_tot$year = lubridate::ymd(LV_tot$year, truncated = 2L)
-  
-  
+  LV_b = func_regpanel(LV_ep, 2) 
 }
 
 # Luxenborg
@@ -1012,44 +703,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   LU_ls$year = lubridate::ymd(LU_ls$year, truncated = 2L)
   
   #Employment and productivty
-  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P")
+  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P", F)
+  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P", T)
   
   #PLM analyse
-  LU_tot <- LU_ep %>% filter(code=="TOT_MN")
-  LU_tot$TOTmn = LU_tot$EMP
-  LU_tot <- LU_tot %>% select(year, country, TOTmn)
+  LU_ind = func_regpanel(LU_ep, 1)
+  LU_tot = func_regpanel(LU_ep, 3)
   
-  
-  LU_ind = LU_ep %>% filter(sel_industries==1)
-  
-  LU <- LU_ep %>% filter(branche=="b-tot")
-  LU = merge(LU,LU_tot, by=c("year", "country"), all.x = TRUE)
-  LU$wgt = LU$EMP/LU$TOTmn
-  LU$branche = LU$code
-  LU$emp_logchanges_b = LU$emp_logchanges
-  LU$prod_logchanges_b = LU$prod_logchanges
-  LU = LU %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  LU_ind = merge(LU_ind, LU, by=c("year", "branche"), all.x = TRUE)
-  LU_ind = na.omit(LU_ind)
-  
-
   #deskriptiv
-  LU_b = LU_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = LU_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    LU_b = merge(LU_b, sumEMP, by=c("year"), all.x = TRUE)
-    LU_b$share_EMP = (LU_b$EMP/LU_b$sum_EMP)*100
-    LU_b = pdata.frame(LU_b, index = c("code", "year"))
-    LU_b$share_EMP_ppchange = diff(LU_b$share_EMP, lag = 1, shift = "time")
-    LU_b$share_EMP_ppchange = ifelse(is.na(LU_b$share_EMP_ppchange)==T,0,LU_b$share_EMP_ppchange)
-    LU_b = LU_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  LU_b$year = lubridate::ymd(LU_b$year, truncated = 2L)
-  
-  LU_tot = LU_ep %>% filter(code=="TOT")
-  LU_tot$year = lubridate::ymd(LU_tot$year, truncated = 2L)
-  
+  LU_b = func_regpanel(LU_ep, 2)
   
 }
 
@@ -1067,45 +729,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   SK_ls$year = lubridate::ymd(SK_ls$year, truncated = 2L)
   
   #Employment and productivty
-  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P")
+  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P", F)
+  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P", T)
   
   #PLM analyse
-  SK_tot <- SK_ep %>% filter(code=="TOT_MN")
-  SK_tot$TOTmn = SK_tot$EMP
-  SK_tot <- SK_tot %>% select(year, country, TOTmn)
-  
-  
-  SK_ind = SK_ep %>% filter(sel_industries==1)
-  
-  SK <- SK_ep %>% filter(branche=="b-tot")
-  SK = merge(SK,SK_tot, by=c("year", "country"), all.x = TRUE)
-  SK$wgt = SK$EMP/SK$TOTmn
-  SK$branche = SK$code
-  SK$emp_logchanges_b = SK$emp_logchanges
-  SK$prod_logchanges_b = SK$prod_logchanges
-  SK = SK %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  SK_ind = merge(SK_ind, SK, by=c("year", "branche"), all.x = TRUE)
-  SK_ind = na.omit(SK_ind)
-  
+  SK_ind = func_regpanel(SK_ep, 1)
+  SK_tot = func_regpanel(SK_ep, 3)
   
   #deskriptiv
-  SK_b = SK_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = SK_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    SK_b = merge(SK_b, sumEMP, by=c("year"), all.x = TRUE)
-    SK_b$share_EMP = (SK_b$EMP/SK_b$sum_EMP)*100
-    SK_b = pdata.frame(SK_b, index = c("code", "year"))
-    SK_b$share_EMP_ppchange = diff(SK_b$share_EMP, lag = 1, shift = "time")
-    SK_b$share_EMP_ppchange = ifelse(is.na(SK_b$share_EMP_ppchange)==T,0,SK_b$share_EMP_ppchange)
-    SK_b = SK_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  SK_b$year = lubridate::ymd(SK_b$year, truncated = 2L)
-  
-  SK_tot = SK_ep %>% filter(code=="TOT")
-  SK_tot$year = lubridate::ymd(SK_tot$year, truncated = 2L)
-  
-  
+  SK_b = func_regpanel(SK_ep, 2)
 }
 
 
@@ -1123,44 +755,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   SI_ls$year = lubridate::ymd(SI_ls$year, truncated = 2L)
   
   #Employment and productivty
-  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P")
+  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P", F)
+  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P", T)
   
   #PLM analyse
-  SI_tot <- SI_ep %>% filter(code=="TOT_MN")
-  SI_tot$TOTmn = SI_tot$EMP
-  SI_tot <- SI_tot %>% select(year, country, TOTmn)
+  SI_ind = func_regpanel(SI_ep, 1)
+  SI_tot = func_regpanel(SI_ep, 3)
   
-  
-  SI_ind = SI_ep %>% filter(sel_industries==1)
-  
-  SI <- SI_ep %>% filter(branche=="b-tot")
-  SI = merge(SI,SI_tot, by=c("year", "country"), all.x = TRUE)
-  SI$wgt = SI$EMP/SI$TOTmn
-  SI$branche = SI$code
-  SI$emp_logchanges_b = SI$emp_logchanges
-  SI$prod_logchanges_b = SI$prod_logchanges
-  SI = SI %>% select(year, branche,emp_logchanges_b,prod_logchanges_b,wgt)
-  
-  SI_ind = merge(SI_ind, SI, by=c("year", "branche"), all.x = TRUE)
-  SI_ind = na.omit(SI_ind)
-
-  #deSIriptiv
-  SI_b = SI_ep %>% filter(branche=="b-tot")
-  {
-    sumEMP = SI_b %>% group_by(year) %>% summarize(sum_EMP=sum(EMP))
-    SI_b = merge(SI_b, sumEMP, by=c("year"), all.x = TRUE)
-    SI_b$share_EMP = (SI_b$EMP/SI_b$sum_EMP)*100
-    SI_b = pdata.frame(SI_b, index = c("code", "year"))
-    SI_b$share_EMP_ppchange = diff(SI_b$share_EMP, lag = 1, shift = "time")
-    SI_b$share_EMP_ppchange = ifelse(is.na(SI_b$share_EMP_ppchange)==T,0,SI_b$share_EMP_ppchange)
-    SI_b = SI_b %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
-  }
-  SI_b$year = lubridate::ymd(SI_b$year, truncated = 2L)
-  
-  SI_tot = SI_ep %>% filter(code=="TOT")
-  SI_tot$year = lubridate::ymd(SI_tot$year, truncated = 2L)
-  
-  
+  #deskriptiv
+  SI_b = func_regpanel(SI_ep, 2)
 }
 
 # Descriptive -------------------------------------------------------------
@@ -1456,8 +1059,7 @@ ci_panel = ci_panel %>% select(year, country, code, desc, emp_logchanges, emp_lo
 ci_panel$id = ci_panel %>% group_indices(code, country)
 ci_panel$prod_logchanges_wgt = ci_panel$prod_logchanges*ci_panel$wgt
 ci_panel$emp_logchanges_wgt = ci_panel$emp_logchanges*ci_panel$wgt
-
-#ci_panel = na.omit(ci_panel)
+ci_panel = na.omit(ci_panel) #obs vigtigt at køre efter unødvendige variable er fjernet
 
 model_linear1 = emp_logchanges_wgt ~ prod_logchanges_wgt
 model_linear1 = emp_logchanges ~ prod_logchanges
@@ -1502,9 +1104,9 @@ Arellano
 
 #hvad gør vi med lande hvor nogle industrier mangler?
 
-sum_prod_yc <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges))
+sum_prod_yc <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges_wgt))
 ci_panel = merge(ci_panel, sum_prod_yc, by=c( "year", "country"), all.x = TRUE)
-ci_panel$avgLP_oi = (ci_panel$`sum(prod_logchanges)` - ci_panel$prod_logchanges)/(ci_panel$n - 1) #bør det vægtes
+ci_panel$avgLP_oi = (ci_panel$`sum(prod_logchanges_wgt)` - ci_panel$prod_logchanges_wgt)/(ci_panel$n - 1) #bør det vægtes?
 
 ci_panel = pdata.frame(ci_panel, index = c("id", "year"))
 ci_panel$avgLP_oi_lag1 = lag(ci_panel$avgLP_oi, k = 1, shift = "time")
@@ -1515,14 +1117,15 @@ ci_panel = na.omit(ci_panel)
 
 #model_linear2 = emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3
 
-fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(code) + factor(year), data=ci_panel)
-fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(year), data=ci_panel)
-fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) , data=ci_panel)
-fixed.dum = lm(emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3 , data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(code) + factor(year), data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(year), data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) , data=ci_panel)
+fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3 , data=ci_panel)
 
 summary(fixed.dum)
 
 
+# Sector spillover --------------------------------------------------
 
 
 
