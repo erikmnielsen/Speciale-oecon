@@ -1055,7 +1055,7 @@ summary(C2_fe_tw)
 # Country industry panel --------------------------------------------------
 
 ci_panel = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
-ci_panel = ci_panel %>% select(year, country, code, desc, emp_logchanges, emp_logchanges_b, prod_logchanges, prod_logchanges_b, wgt)
+ci_panel = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, wgt)
 ci_panel$id = ci_panel %>% group_indices(code, country)
 ci_panel$prod_logchanges_wgt = ci_panel$prod_logchanges*ci_panel$wgt
 ci_panel$emp_logchanges_wgt = ci_panel$emp_logchanges*ci_panel$wgt
@@ -1129,22 +1129,25 @@ summary(fixed.dum)
 
 # Sector spillover --------------------------------------------------
 
-sum_prod_yc_1 <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges))
+ci_panel_ss = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
+ci_panel_ss = ci_panel %>% select(year, country, code, branche, desc, emp_logchanges, prod_logchanges, wgt, prod_logchanges_b1,
+                                  prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5, prod_logchanges_b6, 
+                                  prod_logchanges_b7, prod_logchanges_b8)
+ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
+ci_panel_ss$prod_logchanges_wgt = ci_panel_ss$prod_logchanges*ci_panel$wgt
+ci_panel_ss$emp_logchanges_wgt = ci_panel_ss$emp_logchanges*ci_panel$wgt
+ci_panel_ss = na.omit(ci_panel_ss) #obs vigtigt at køre efter unødvendige variable er fjernet
+
+sum_prod_yc_1 <- ci_panel_ss %>% group_by(year, country, branche) %>% count(sum(prod_logchanges))
+
+
+ci_panel_ny = merge(ci_panel_ss, sum_prod_yc_1, by=c( "year", "country", "branche"), all.x = TRUE)
+
+b1 = ci_panel_ny %>% filter(branche=="b1")
 
 
 
-
-ci_panel_ny = merge(ci_panel, sum_prod_yc_1, by=c( "year", "country"), all.x = TRUE)
-c1 = ci_panel_ny %>% filter(branche %in% c("b2","b3","b4","b5","b6","b7","b8"))
-c1$avgLP_c1 = (c1$`sum(prod_logchanges)` - c1$prod_logchanges)/(c1$n - 1)
-c2 = ci_panel_ny %>% filter(branche %in% c("b1","b3","b4","b5","b6","b7","b8"))
-c2$avgLP_c2 = (c2$`sum(prod_logchanges)` - c2$prod_logchanges)/(c2$n - 1)
-
-c1_b1 = c1 %>% ci %>% filter(branche == "b1")
-
-
-
-
+ci_panel_ny$avgLP_c1 = (b1$`sum(prod_logchanges)` - b1$prod_logchanges)/(b1$n - 1)
 
 
 # Skills..... --------------------------------------------------
