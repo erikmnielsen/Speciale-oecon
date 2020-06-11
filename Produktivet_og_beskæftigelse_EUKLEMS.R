@@ -33,11 +33,11 @@ library(dplyr)
 
 {
 country="DK"
-country="SI"
+country="FR"
 
-dataset_1 <- read_excel("Data/SI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-dataset_2 <- read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_P")
- 
+dataset_1 <- read_excel("Data/FR_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
+dataset_2 <- read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_P")
+
 dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP")
 dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO")
 dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -53,6 +53,8 @@ measure_2="VA"
 measure_3="LAB"
 
 }
+
+
 
 CGR = function(x){
   sapply(1:length(x), function(y){
@@ -123,8 +125,8 @@ func_labshare <- function(dataset_1, dataset_2, dataset_3, country, measure_1="C
   
 }
 
-func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure_2="GO", Emma) {
-  
+func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure_2="GO", Emma, method) {
+
   colnames(dataset_1) <- gsub(measure_1, "", colnames(dataset_1))
   colnames(dataset_2) <- gsub(measure_2, "", colnames(dataset_2))
   
@@ -151,11 +153,37 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   data$code =gsub("-", "t", data[,2])
   data$country = country
   
-  data$sel_industries <-factor(ifelse( data$code %in% c("A","B", "DtE", "F","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33",
-                                                        "53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L"), 1,0)) #alt pånær O, P, Q (skal RtS, T og U også fjernes?) 
+  
+  if (method=="AS") {
+  #AutorSalomons Industrier:
+  
+    data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","RtS","T","U"), 0,1))
+    
+    
+    data$branche <- ifelse(data$code %in% c("B", "DtE", "F"), "b1",
+                          ifelse(data$code %in% c("10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33"), "b2", #kan man ikke bare bruge C, Total Manufacturing?
+                                 ifelse(data$code %in% c("P","Q","R", "S"), "b3",
+                                        ifelse(data$code %in% c("53", "58t60", "61", "62t63", "K", "MtN"), "b4",
+                                               ifelse(data$code %in% c("45", "46", "47", "49t52", "I", "L"), "b5", 
+                                                      "b0")))))
+    
+    data$branche_desc <- ifelse(data$branche=="b1","Mining, utilities, and construction", 
+                               ifelse(data$branche=="b2","Manufacturing", 
+                                      ifelse(data$branche=="b3","Education and health services", 
+                                             ifelse(data$branche=="b4","High-tech services",
+                                                    ifelse(data$branche=="b5","Low-tech services",
+                                                           "Not relevant"
+                                                    )))))
+    
+  } else {
+    
+    #Brancher, 10:
+    
+    data$sel_industries <-factor(ifelse( data$code %in% c("A","B", "DtE", "F","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33",
+                                                          "53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L"), 1,0)) #alt pånær O, P, Q (skal RtS, T og U også fjernes?) 
+    
                                                           
-  #Brancher, 10:
-  {data$branche <- ifelse(data$code=="A", "b1",
+    data$branche <- ifelse(data$code=="A", "b1",
                                 ifelse(data$code %in% c("B","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33", "DtE"), "b2",
                                        ifelse(data$code=="F", "b3",
                                               ifelse(data$code %in% c("45", "46", "47","49t52","53", "I"), "b4",
@@ -204,6 +232,8 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   b_3 <- data2 %>% filter(code=="b3")
   b_4 <- data2 %>% filter(code=="b4")
   b_5 <- data2 %>% filter(code=="b5")
+  
+  if (method!="AS") {
   b_6 <- data2 %>% filter(code=="b6")
   b_7 <- data2 %>% filter(code=="b7")
   b_8 <- data2 %>% filter(code=="b8")
@@ -213,7 +243,17 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP #+ b_10$EMP + b_9$EMP 
   b$desc = "TOTAL INDUSTRIES-MunkNielsen"
   b$code = "TOT_MN"
-  b$branche = "TOT_MN"
+  b$branche = "TOT"
+  
+  } else {
+    
+    b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP
+    b$desc = "TOTAL INDUSTRIES-AutorSalomons"
+    b$code = "TOT_AS"
+    b$branche = "TOT" #lettere at de begge hedder "TOT" i brancher når der skal filtreres
+  }
+  
+ 
   b$branche_desc = "Lande Total"
   
   data_fin <- rbind(data, data2, b)
@@ -265,14 +305,12 @@ if (Emma==T) {
 }
 
 func_regpanel <- function(dataset_1, type) {
-
-  dataset1 = DK_ep
     
 if (type==1) {
 
-  tot = dataset_1 %>% filter(code=="TOT_MN")
-  tot$TOTmn = tot$EMP
-  tot <- tot %>% select(year, country, TOTmn)
+  tot = dataset_1 %>% filter(branche=="TOT")
+  tot$TOT = tot$EMP
+  tot <- tot %>% select(year, country, TOT)
   ind = dataset_1 %>% filter(sel_industries==1)
   b <- dataset_1 %>% filter(branche=="b-tot")
   b$branche = b$code
@@ -284,14 +322,23 @@ if (type==1) {
   b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
   b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% select(prod_logchanges_b4)
   b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5=prod_logchanges_b) %>% select(prod_logchanges_b5)
+  
+  test = b %>% count(branche) %>% nrow
+  
+  if (test==8) {
+  
   b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
   b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
   b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
-  
   b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
+  } else {
+    
+    b = cbind(b1,b2,b3,b4,b5)
+  }
+  
   ind = merge(ind, b, by=c("year"), all.x = TRUE)
   ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
-  ind$wgt = ind$EMP/ind$TOTmn
+  ind$wgt = ind$EMP/ind$TOT
   
   
   
@@ -331,6 +378,8 @@ if (type==1) {
 
 # Country data  ----------------------------------------------------- 
 
+# nogle af industrierne (eller subkategorierne) findes ikke i alle lande, fx findes 45,46,47 ikke i Frankrig før 1995, selvom overkategorien G findes
+
 # Danmark
     DK_emp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
     #DK_go <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
@@ -343,7 +392,7 @@ if (type==1) {
     
     #Employment and productivty
     DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", F)
-    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", T)
+    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", T, "AS")
     
     #PLM analyse
     DK_ind = func_regpanel(DK_ep, 1)
@@ -372,7 +421,7 @@ if (type==1) {
   
   #Employment and productivty
   US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P", F)
-  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P", T)
+  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P", T,"AS")
   
   #PLM analyse
   US_ind = func_regpanel(US_ep, 1)
@@ -398,7 +447,7 @@ if (type==1) {
   #Employment and productivty
   #Employment and productivty
   UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P", F)
-  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P", T)
+  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   UK_ind = func_regpanel(UK_ep, 1)
@@ -423,7 +472,7 @@ if (type==1) {
   
   #Employment and productivty
   DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P", F)
-  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P", T)
+  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   DE_ind = func_regpanel(DE_ep, 1)
@@ -448,7 +497,7 @@ if (type==1) {
   
   #Employment and productivty
   NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P", F)
-  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P", T)
+  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   NL_ind = func_regpanel(NL_ep, 1)
@@ -474,7 +523,7 @@ if (type==1) {
   
   #Employment and productivty
   SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P", F)
-  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P", T)
+  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   SE_ind = func_regpanel(SE_ep, 1)
@@ -499,7 +548,7 @@ if (type==1) {
   
   #Employment and productivty
   AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P", F)
-  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P", T)
+  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   AT_ind = func_regpanel(AT_ep, 1)
@@ -525,7 +574,7 @@ if (type==1) {
   
   #Employment and productivty
   BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P", F)
-  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P", T)
+  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   BE_ind = func_regpanel(BE_ep, 1)
@@ -551,7 +600,7 @@ if (type==1) {
   
   #Employment and productivty
   CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P", F)
-  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P", T)
+  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   CZ_ind = func_regpanel(CZ_ep, 1)
@@ -577,7 +626,7 @@ if (type==1) {
   
   #Employment and productivty
   FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P", F)
-  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P", T)
+  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   FI_ind = func_regpanel(FI_ep, 1)
@@ -602,7 +651,7 @@ if (type==1) {
   
   #Employment and productivty
   FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P", F)
-  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P", T)
+  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   FR_ind = func_regpanel(FR_ep, 1)
@@ -628,7 +677,7 @@ if (type==1) {
   
   #Employment and productivty
   EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P", F)
-  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P", T)
+  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   EL_ind = func_regpanel(EL_ep, 1)
@@ -653,7 +702,7 @@ if (type==1) {
   
   #Employment and productivty
   IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P", F)
-  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P", T)
+  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   IT_ind = func_regpanel(IT_ep, 1)
@@ -679,7 +728,7 @@ if (type==1) {
   
   #Employment and productivty
   LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P", F)
-  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P", T)
+  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   LV_ind = func_regpanel(LV_ep, 1)
@@ -704,7 +753,7 @@ if (type==1) {
   
   #Employment and productivty
   LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P", F)
-  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P", T)
+  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   LU_ind = func_regpanel(LU_ep, 1)
@@ -730,7 +779,7 @@ if (type==1) {
   
   #Employment and productivty
   SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P", F)
-  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P", T)
+  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   SK_ind = func_regpanel(SK_ep, 1)
@@ -756,7 +805,7 @@ if (type==1) {
   
   #Employment and productivty
   SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P", F)
-  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P", T)
+  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P", T, "AS")
   
   #PLM analyse
   SI_ind = func_regpanel(SI_ep, 1)
@@ -1130,15 +1179,45 @@ summary(fixed.dum)
 # Sector spillover --------------------------------------------------
 
 ci_panel_ss = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
-ci_panel_ss = ci_panel %>% select(year, country, code, branche, desc, emp_logchanges, prod_logchanges, wgt, prod_logchanges_b1,
-                                  prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5, prod_logchanges_b6, 
-                                  prod_logchanges_b7, prod_logchanges_b8)
+
+ci_panel_ss = ci_panel_ss%>% select(year, country, code, desc, branche, branche_desc, emp_logchanges, prod_logchanges, wgt, prod_logchanges_b1,
+                                  prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5
+                                  #, prod_logchanges_b6, prod_logchanges_b7, prod_logchanges_b8
+                                  )
+
 ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
-ci_panel_ss$prod_logchanges_wgt = ci_panel_ss$prod_logchanges*ci_panel$wgt
-ci_panel_ss$emp_logchanges_wgt = ci_panel_ss$emp_logchanges*ci_panel$wgt
+
+#ci_panel_ss$prod_logchanges_wgt = ci_panel_ss$prod_logchanges*ci_panel$wgt
+#ci_panel_ss$emp_logchanges_wgt = ci_panel_ss$emp_logchanges*ci_panel$wgt
+
 ci_panel_ss = na.omit(ci_panel_ss) #obs vigtigt at køre efter unødvendige variable er fjernet
 
-sum_prod_yc_1 <- ci_panel_ss %>% group_by(year, country, branche) %>% count(sum(prod_logchanges))
+sum_prod_yc_1 <- ci_panel_ss %>% group_by(year, country, branche) %>% count(sum(prod_logchanges)) #antal industrier i en sektor varierer i landene
+
+b = sum_prod_yc_1 %>% select(year, country, branche, `sum(prod_logchanges)`)
+
+b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1_sum=`sum(prod_logchanges)`) %>% select(year, country, prod_logchanges_b1_sum )
+
+b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2_sum=`sum(prod_logchanges)`) %>% select(year, country,prod_logchanges_b2_sum)
+
+b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3_sum=`sum(prod_logchanges)`) %>% select(prod_logchanges_b3_sum)
+b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4_sum=`sum(prod_logchanges)`) %>% select(prod_logchanges_b4_sum)
+b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5_sum=`sum(prod_logchanges)`) %>% select(prod_logchanges_b5_sum)
+
+b = cbind(b1,b2,b3,b4,b5)
+b = b %>% select(year, country, prod_logchanges_b1_sum, prod_logchanges_b2_sum, prod_logchanges_b3_sum, prod_logchanges_b4_sum, prod_logchanges_b5_sum) %>% ungroup()
+
+#
+b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
+b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
+b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
+#
+
+
+b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
+ind = merge(ind, b, by=c("year"), all.x = TRUE)
+ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
+ind$wgt = ind$EMP/ind$TOTmn
 
 
 ci_panel_ny = merge(ci_panel_ss, sum_prod_yc_1, by=c( "year", "country", "branche"), all.x = TRUE)
