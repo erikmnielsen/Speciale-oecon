@@ -255,7 +255,7 @@ if (Emma==T) {
   
   pdata <- pdata %>% select(year, country, code, desc, sel_industries, branche, branche_desc, EMP, emp_logchanges, GO, prod, prod_logchanges,prod_changes) %>% 
   filter(code!="b0")
-  pdata = pdata.frame(pdata, index = c("code", "year"))
+  #pdata = pdata.frame(pdata, index = c("code", "year"))
                       
       }
 
@@ -265,7 +265,9 @@ if (Emma==T) {
 }
 
 func_regpanel <- function(dataset_1, type) {
-  
+
+  dataset1 = DK_ep
+    
 if (type==1) {
 
   tot = dataset_1 %>% filter(code=="TOT_MN")
@@ -276,8 +278,8 @@ if (type==1) {
   b$branche = b$code
   #dk$emp_logchanges_b = dk$emp_logchanges
   b$prod_logchanges_b = b$prod_logchanges
-  b = b %>% select(year, branche, prod_logchanges_b)
-  b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1)
+  b = b %>% select(year, branche, prod_logchanges_b, emp_logchanges_b)
+  b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1 )
   b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% select(prod_logchanges_b2)
   b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
   b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% select(prod_logchanges_b4)
@@ -285,10 +287,17 @@ if (type==1) {
   b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
   b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
   b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
-  b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
+  
+  c1 = b %>% filter(branche %in% c("b2","b3","b4","b5","b6","b7","b8"))
+  c1$avgLP_c1 = (c1$`sum(prod_logchanges_b)` - c1$prod_logchanges_b)/(c1$n - 1)
+  
+  b = cbind(b1,b2,b3,b4,b5,b6,b7,b8,c1)
   ind = merge(ind, b, by=c("year"), all.x = TRUE)
   ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
   ind$wgt = ind$EMP/ind$TOTmn
+  
+  
+  
   
   ind
 } else if (type==2) {
@@ -325,7 +334,6 @@ if (type==1) {
 # Country data  ----------------------------------------------------- 
 
 # Danmark
-{
     DK_emp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
     #DK_go <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
     DK_gop <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -333,25 +341,26 @@ if (type==1) {
     DK_lab <- read_excel("Data/DK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
     DK_va <- read_excel("Data/DK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
     
-    #Labour share
-    DK_ls = func_labshare(DK_comp, DK_va, DK_lab, "DK", "COMP", "VA", "LAB")
-    DK_ls$year = lubridate::ymd(DK_ls$year, truncated = 2L)
+    
     
     #Employment and productivty
     DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", F)
     DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", T)
     
     #PLM analyse
-     DK_ep = func_regpanel(DK_ep, 1)
+    DK_ind = func_regpanel(DK_ep, 1)
     DK_tot = func_regpanel(DK_ep, 3)
     
     #deskriptiv
     DK_b = func_regpanel(DK_ep, 2)
     
-  }
+    #Labour share
+    DK_ls = func_labshare(DK_comp, DK_va, DK_lab, "DK", "COMP", "VA", "LAB")
+    DK_ls$year = lubridate::ymd(DK_ls$year, truncated = 2L)
+    
 
 # USA
-{
+
   US_emp <- read_excel("Data/US_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #US_go <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   US_gop <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
@@ -373,10 +382,10 @@ if (type==1) {
   
   #deskriptiv
   US_b = func_regpanel(US_ep, 2)
-}
+
 
 # UK . faste priser findes ikke
-{
+
   UK_emp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #UK_go <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   UK_gop <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
@@ -399,10 +408,10 @@ if (type==1) {
   
   #deskriptiv
   UK_b = func_regpanel(UK_ep, 2)
-}
+
 
 # Tyskland
-{
+
   DE_emp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #DE_go <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   DE_gop <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
@@ -424,10 +433,10 @@ if (type==1) {
   
   #deskriptiv
   DE_b = func_regpanel(DE_ep, 2)
-}
+
 
 # Holland
-{
+
   NL_emp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thoNLands)
   #NL_go <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   NL_gop <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
@@ -449,10 +458,10 @@ if (type==1) {
   
   #deskriptiv
   NL_b = func_regpanel(NL_ep, 2)
-}
+
 
 # Sverige
-{
+
   SE_emp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #SE_go <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   SE_gop <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
@@ -475,10 +484,10 @@ if (type==1) {
   
   #deskriptiv
   SE_b = func_regpanel(SE_ep, 2)
-}
+
 
 # Østrig
-{
+
   AT_emp = read_excel("Data/AT_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #AT_go = read_excel("Data/AT_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   AT_gop = read_excel("Data/AT_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -501,10 +510,10 @@ if (type==1) {
   #deskriptiv
   AT_b = func_regpanel(AT_ep, 2)
   
-} 
+
 
 # Belgium
-{
+
   BE_emp = read_excel("Data/BE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #BE_go = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   BE_gop = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -527,10 +536,10 @@ if (type==1) {
   #deskriptiv
   BE_b = func_regpanel(BE_ep, 2)
   
-}
+
 
 # Tjekkiet
-{
+
   CZ_emp = read_excel("Data/CZ_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #CZ_go = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   CZ_gop = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -553,10 +562,10 @@ if (type==1) {
   #deskriptiv
   CZ_b = func_regpanel(CZ_ep, 2)
   
-}
+
 
 # Finland
-{
+
   FI_emp = read_excel("Data/FI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #FI_go = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   FI_gop = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -578,10 +587,10 @@ if (type==1) {
   
   #deskriptiv
   FI_b = func_regpanel(FI_ep, 2)
-}
+
 
 # Frankrig
-{
+
   FR_emp = read_excel("Data/FR_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #FR_go = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   FR_gop = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -604,10 +613,10 @@ if (type==1) {
   #deskriptiv
   FR_b = func_regpanel(FR_ep, 2)
   
-}
+
 
 # Grækenland
-{
+
   EL_emp = read_excel("Data/EL_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #EL_go = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   EL_gop = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -629,10 +638,10 @@ if (type==1) {
   
   #deskriptiv
   EL_b = func_regpanel(EL_ep, 2)
-}
+
 
 # Italien
-{
+
   IT_emp = read_excel("Data/IT_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #IT_go = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   IT_gop = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -655,10 +664,10 @@ if (type==1) {
   #deskriptiv
   IT_b = func_regpanel(IT_ep, 2)
   
-}
+
 
 # Letland
-{
+
   LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #LV_go = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -680,10 +689,10 @@ if (type==1) {
   
   #deskriptiv
   LV_b = func_regpanel(LV_ep, 2) 
-}
+
 
 # Luxenborg
-{
+
   LU_emp = read_excel("Data/LU_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #LU_go = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   LU_gop = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -705,11 +714,11 @@ if (type==1) {
   
   #deskriptiv
   LU_b = func_regpanel(LU_ep, 2)
-  
-}
+
+
 
 # Slovakiet
-{
+
   SK_emp = read_excel("Data/SK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #SK_go = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   SK_gop = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -731,11 +740,11 @@ if (type==1) {
   
   #deskriptiv
   SK_b = func_regpanel(SK_ep, 2)
-}
+
 
 
 # Slovenien
-{
+
   SI_emp = read_excel("Data/SI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #SI_go = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
   SI_gop = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
@@ -757,7 +766,7 @@ if (type==1) {
   
   #deskriptiv
   SI_b = func_regpanel(SI_ep, 2)
-}
+
 
 # Descriptive -------------------------------------------------------------
 
@@ -1101,6 +1110,8 @@ sum_prod_yc <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchange
 ci_panel = merge(ci_panel, sum_prod_yc, by=c( "year", "country"), all.x = TRUE)
 ci_panel$avgLP_oi = (ci_panel$`sum(prod_logchanges_wgt)` - ci_panel$prod_logchanges_wgt)/(ci_panel$n - 1) #bør det vægtes?
 
+
+
 ci_panel = pdata.frame(ci_panel, index = c("id", "year"))
 ci_panel$avgLP_oi_lag1 = lag(ci_panel$avgLP_oi, k = 1, shift = "time")
 ci_panel$avgLP_oi_lag2 = lag(ci_panel$avgLP_oi, k = 2, shift = "time")
@@ -1120,7 +1131,12 @@ summary(fixed.dum)
 
 # Sector spillover --------------------------------------------------
 
-
+sum_prod_yc_1 <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges))
+ci_panel_ny = merge(ci_panel, sum_prod_yc_1, by=c( "year", "country"), all.x = TRUE)
+c1 = ci_panel_ny %>% filter(branche %in% c("b2","b3","b4","b5","b6","b7","b8"))
+c1$avgLP_c1 = (c1$`sum(prod_logchanges)` - c1$prod_logchanges)/(c1$n - 1)
+c2 = ci_panel_ny %>% filter(branche %in% c("b1","b3","b4","b5","b6","b7","b8"))
+c2$avgLP_c2 = (c2$`sum(prod_logchanges)` - c2$prod_logchanges)/(c2$n - 1)
 
 
 
