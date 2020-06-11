@@ -288,9 +288,6 @@ if (type==1) {
   b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
   b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
   
-  c1 = b %>% filter(branche %in% c("b2","b3","b4","b5","b6","b7","b8"))
-  c1$avgLP_c1 = (c1$`sum(prod_logchanges_b)` - c1$prod_logchanges_b)/(c1$n - 1)
-  
   b = cbind(b1,b2,b3,b4,b5,b6,b7,b8,c1)
   ind = merge(ind, b, by=c("year"), all.x = TRUE)
   ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
@@ -1132,13 +1129,17 @@ summary(fixed.dum)
 # Sector spillover --------------------------------------------------
 
 sum_prod_yc_1 <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges))
+
+
+
+
 ci_panel_ny = merge(ci_panel, sum_prod_yc_1, by=c( "year", "country"), all.x = TRUE)
 c1 = ci_panel_ny %>% filter(branche %in% c("b2","b3","b4","b5","b6","b7","b8"))
 c1$avgLP_c1 = (c1$`sum(prod_logchanges)` - c1$prod_logchanges)/(c1$n - 1)
 c2 = ci_panel_ny %>% filter(branche %in% c("b1","b3","b4","b5","b6","b7","b8"))
 c2$avgLP_c2 = (c2$`sum(prod_logchanges)` - c2$prod_logchanges)/(c2$n - 1)
 
-
+c1_b1 = c1 %>% ci %>% filter(branche == "b1")
 
 
 
