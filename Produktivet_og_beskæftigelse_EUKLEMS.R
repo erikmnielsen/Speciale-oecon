@@ -278,7 +278,7 @@ if (type==1) {
   b$branche = b$code
   #dk$emp_logchanges_b = dk$emp_logchanges
   b$prod_logchanges_b = b$prod_logchanges
-  b = b %>% select(year, branche, prod_logchanges_b, emp_logchanges_b)
+  b = b %>% select(year, branche, prod_logchanges_b)
   b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1 )
   b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% select(prod_logchanges_b2)
   b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
