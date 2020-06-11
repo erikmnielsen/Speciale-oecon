@@ -1233,9 +1233,8 @@ ci_panel_ny = ci_panel_ny %>% select(year, country, branche, emp_logchanges, pro
                                      prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5,
                                      prod_logchanges_b1_avg, prod_logchanges_b2_avg, prod_logchanges_b3_avg, 
                                      prod_logchanges_b4_avg, prod_logchanges_b5_avg)
-                                    
 
-
+ci_panel_ny = pdata.frame(ci_panel, index=c("year","country"))                                  
 ci_panel_ny$prod_logchanges_b1_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 1, shift = "time")
 ci_panel_ny$prod_logchanges_b1_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 2, shift = "time")
 ci_panel_ny$prod_logchanges_b1_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 3, shift = "time")
