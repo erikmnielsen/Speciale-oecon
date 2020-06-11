@@ -1213,38 +1213,44 @@ b = b %>% select(year, country, prod_logchanges_b1_sum, prod_logchanges_b2_sum, 
 ci_panel_ny = merge(ci_panel_ss, b, by=c("year", "country"), all.x = TRUE)
 
 
-
+ci_panel_ny = pdata.frame(ci_panel_ny, index = c("year", "country"))
 ci_panel_ny$prod_logchanges_b1_avg =  ifelse(ci_panel_ny$branche=="b1",(ci_panel_ny$prod_logchanges_b1_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_1-1), 
                                                         ci_panel_ny$prod_logchanges_b1_sum/ci_panel_ny$n_1)
+
+ci_panel_ny$prod_logchanges_b2_avg =  ifelse(ci_panel_ny$branche=="b2",(ci_panel_ny$prod_logchanges_b2_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_2-1), 
+                                             ci_panel_ny$prod_logchanges_b2_sum/ci_panel_ny$n_2)
+
+ci_panel_ny$prod_logchanges_b3_avg =  ifelse(ci_panel_ny$branche=="b3",(ci_panel_ny$prod_logchanges_b3_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_3-1), 
+                                             ci_panel_ny$prod_logchanges_b3_sum/ci_panel_ny$n_3)
+
+ci_panel_ny$prod_logchanges_b4_avg =  ifelse(ci_panel_ny$branche=="b4",(ci_panel_ny$prod_logchanges_b4_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_4-1), 
+                                             ci_panel_ny$prod_logchanges_b4_sum/ci_panel_ny$n_4)
+
+ci_panel_ny$prod_logchanges_b5_avg =  ifelse(ci_panel_ny$branche=="b5",(ci_panel_ny$prod_logchanges_b5_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_5-1), 
+                                             ci_panel_ny$prod_logchanges_b5_sum/ci_panel_ny$n_5)
+
+ci_panel_ny = ci_panel_ny %>% select(year, country, branche, emp_logchanges, prod_logchanges, prod_logchanges_b1,
+                                     prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5,
+                                     prod_logchanges_b1_avg, prod_logchanges_b2_avg, prod_logchanges_b3_avg, 
+                                     prod_logchanges_b4_avg, prod_logchanges_b5_avg)
+                                    
 
 
 ci_panel_ny$prod_logchanges_b1_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 1, shift = "time")
 ci_panel_ny$prod_logchanges_b1_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 2, shift = "time")
 ci_panel_ny$prod_logchanges_b1_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 3, shift = "time")
 
-ci_panel_ny$prod_logchanges_b2_avg =  ifelse(ci_panel_ny$branche=="b2",(ci_panel_ny$prod_logchanges_b2_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_2-1), 
-                                             ci_panel_ny$prod_logchanges_b2_sum/ci_panel_ny$n_2)
-
 ci_panel_ny$prod_logchanges_b2_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b2_avg, k = 1, shift = "time")
 ci_panel_ny$prod_logchanges_b2_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b2_avg, k = 2, shift = "time")
 ci_panel_ny$prod_logchanges_b2_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b2_avg, k = 3, shift = "time")
-
-ci_panel_ny$prod_logchanges_b3_avg =  ifelse(ci_panel_ny$branche=="b3",(ci_panel_ny$prod_logchanges_b3_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_3-1), 
-                                             ci_panel_ny$prod_logchanges_b3_sum/ci_panel_ny$n_3)
 
 ci_panel_ny$prod_logchanges_b3_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b3_avg, k = 1, shift = "time")
 ci_panel_ny$prod_logchanges_b3_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b3_avg, k = 2, shift = "time")
 ci_panel_ny$prod_logchanges_b3_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b3_avg, k = 3, shift = "time")
 
-ci_panel_ny$prod_logchanges_b4_avg =  ifelse(ci_panel_ny$branche=="b4",(ci_panel_ny$prod_logchanges_b4_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_4-1), 
-                                             ci_panel_ny$prod_logchanges_b4_sum/ci_panel_ny$n_4)
-
 ci_panel_ny$prod_logchanges_b4_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b4_avg, k = 1, shift = "time")
 ci_panel_ny$prod_logchanges_b4_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b4_avg, k = 2, shift = "time")
 ci_panel_ny$prod_logchanges_b4_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b4_avg, k = 3, shift = "time")
-
-ci_panel_ny$prod_logchanges_b5_avg =  ifelse(ci_panel_ny$branche=="b5",(ci_panel_ny$prod_logchanges_b5_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_5-1), 
-                                             ci_panel_ny$prod_logchanges_b5_sum/ci_panel_ny$n_5)
 
 ci_panel_ny$prod_logchanges_b5_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b5_avg, k = 1, shift = "time")
 ci_panel_ny$prod_logchanges_b5_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b5_avg, k = 2, shift = "time")
@@ -1260,9 +1266,42 @@ fixed.dum = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_l
                  prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3, data=ci_panel_ny)
                
                
-                 
-                 
-summary(fixed.dum)
+summary(fixed.dum_cy)
+fixed.dum_cy = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
+                 prod_logchanges_b5 + prod_logchanges_b1_avg + prod_logchanges_b1_avg_lag1 + prod_logchanges_b1_avg_lag2 + prod_logchanges_b1_avg_lag3 + 
+                 prod_logchanges_b2_avg + prod_logchanges_b2_avg_lag1 + prod_logchanges_b2_avg_lag2 + prod_logchanges_b2_avg_lag3 + 
+                 prod_logchanges_b3_avg + prod_logchanges_b3_avg_lag1 + prod_logchanges_b3_avg_lag2 + prod_logchanges_b3_avg_lag3 +  
+                 prod_logchanges_b4_avg + prod_logchanges_b4_avg_lag1 + prod_logchanges_b4_avg_lag2 + prod_logchanges_b4_avg_lag3 +
+                 prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3 +
+                   factor(country) + factor(year), data=ci_panel_ny)
+
+fixed.dum_ci = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
+                    prod_logchanges_b5 + prod_logchanges_b1_avg + prod_logchanges_b1_avg_lag1 + prod_logchanges_b1_avg_lag2 + prod_logchanges_b1_avg_lag3 + 
+                    prod_logchanges_b2_avg + prod_logchanges_b2_avg_lag1 + prod_logchanges_b2_avg_lag2 + prod_logchanges_b2_avg_lag3 + 
+                    prod_logchanges_b3_avg + prod_logchanges_b3_avg_lag1 + prod_logchanges_b3_avg_lag2 + prod_logchanges_b3_avg_lag3 +  
+                    prod_logchanges_b4_avg + prod_logchanges_b4_avg_lag1 + prod_logchanges_b4_avg_lag2 + prod_logchanges_b4_avg_lag3 +
+                    prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3 +
+                    factor(country) + factor(code), data=ci_panel_ny)
+
+fixed.dum_yi = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
+                    prod_logchanges_b5 + prod_logchanges_b1_avg + prod_logchanges_b1_avg_lag1 + prod_logchanges_b1_avg_lag2 + prod_logchanges_b1_avg_lag3 + 
+                    prod_logchanges_b2_avg + prod_logchanges_b2_avg_lag1 + prod_logchanges_b2_avg_lag2 + prod_logchanges_b2_avg_lag3 + 
+                    prod_logchanges_b3_avg + prod_logchanges_b3_avg_lag1 + prod_logchanges_b3_avg_lag2 + prod_logchanges_b3_avg_lag3 +  
+                    prod_logchanges_b4_avg + prod_logchanges_b4_avg_lag1 + prod_logchanges_b4_avg_lag2 + prod_logchanges_b4_avg_lag3 +
+                    prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3 +
+                    factor(year) + factor(code), data=ci_panel_ny)
+
+
+
+library(lmtest)
+fixed.dum = coeftest(fixed.dum, vcov. = vcovHC, type = "HC1")
+fixed.dum_ci = coeftest(fixed.dum_ci, vcov. = vcovHC, type = "HC1")
+fixed.dum_cy = coeftest(fixed.dum_cy, vcov. = vcovHC, type = "HC1")
+fixed.dum_yi = coeftest(fixed.dum_yi, vcov. = vcovHC, type = "HC1")
+
+#coeftest(fixed.dum, vcov. = vcovHC, method = "arellano")
+
+write.csv(rbind(fixed.dum, fixed.dum_ci, fixed.dum_cy, fixed.dum_yi), "fixeddum_ci_panel.csv")
 
 #
 b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
