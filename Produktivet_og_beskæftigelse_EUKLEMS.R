@@ -288,10 +288,11 @@ if (type==1) {
   b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
   b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
   
-  b = cbind(b1,b2,b3,b4,b5,b6,b7,b8,c1)
+  b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
   ind = merge(ind, b, by=c("year"), all.x = TRUE)
   ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
   ind$wgt = ind$EMP/ind$TOTmn
+  
   
   
   
