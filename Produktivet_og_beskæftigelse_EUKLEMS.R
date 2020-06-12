@@ -55,7 +55,6 @@ measure_3="LAB"
 }
 
 
-
 CGR = function(x){
   sapply(1:length(x), function(y){
     prod(1+x[1:y]) - 1
@@ -1250,74 +1249,54 @@ ci_panel_ss$prod_logchanges_c5_lag1 = lag(ci_panel_ss$prod_logchanges_c5, k = 1,
 ci_panel_ss$prod_logchanges_c5_lag2 = lag(ci_panel_ss$prod_logchanges_c5, k = 2, shift = "time")
 ci_panel_ss$prod_logchanges_c5_lag3 = lag(ci_panel_ss$prod_logchanges_c5, k = 3, shift = "time")
 
+ci_panel_ss =na.omit(ci_panel_ss)
 
-
-fixed.dum = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                prod_logchanges_b5 + prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 + 
+lsdv.ss_pool = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 + prod_logchanges_b5 +
+                 prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 +
                  prod_logchanges_c2 + prod_logchanges_c2_lag1 + prod_logchanges_c2_lag2 + prod_logchanges_c2_lag3 + 
                  prod_logchanges_c3 + prod_logchanges_c3_lag1 + prod_logchanges_c3_lag2 + prod_logchanges_c3_lag3 +  
-                prod_logchanges_c4 + prod_logchanges_c4_lag1 + prod_logchanges_c4_lag2 + prod_logchanges_c4_lag3 +
+                 prod_logchanges_c4 + prod_logchanges_c4_lag1 + prod_logchanges_c4_lag2 + prod_logchanges_c4_lag3 +
                  prod_logchanges_c5 + prod_logchanges_c5_lag1 + prod_logchanges_c5_lag2 + prod_logchanges_c5_lag3, data=ci_panel_ss)
                
-               
-summary(fixed.dum_cy)
-fixed.dum_cy = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                 prod_logchanges_b5 + prod_logchanges_b1 + prod_logchanges_b1_lag1 + prod_logchanges_b1_lag2 + prod_logchanges_b1_lag3 + 
-                 prod_logchanges_b2 + prod_logchanges_b2_lag1 + prod_logchanges_b2_lag2 + prod_logchanges_b2_lag3 + 
-                 prod_logchanges_b3 + prod_logchanges_b3_lag1 + prod_logchanges_b3_lag2 + prod_logchanges_b3_lag3 +  
-                 prod_logchanges_b4 + prod_logchanges_b4_lag1 + prod_logchanges_b4_lag2 + prod_logchanges_b4_lag3 +
-                 prod_logchanges_b5 + prod_logchanges_b5_lag1 + prod_logchanges_b5_lag2 + prod_logchanges_b5_lag3 +
+summary(lsdv.ss_pool)               
+lsdv.ss_fecy = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 + prod_logchanges_b5 + 
+                    prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 +
+                    prod_logchanges_c2 + prod_logchanges_c2_lag1 + prod_logchanges_c2_lag2 + prod_logchanges_c2_lag3 + 
+                    prod_logchanges_c3 + prod_logchanges_c3_lag1 + prod_logchanges_c3_lag2 + prod_logchanges_c3_lag3 +  
+                    prod_logchanges_c4 + prod_logchanges_c4_lag1 + prod_logchanges_c4_lag2 + prod_logchanges_c4_lag3 +
+                    prod_logchanges_c5 + prod_logchanges_c5_lag1 + prod_logchanges_c5_lag2 + prod_logchanges_c5_lag3 +
                    factor(country) + factor(year), data=ci_panel_ss)
 
-fixed.dum_ci = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                    prod_logchanges_b5 + prod_logchanges_b1 + prod_logchanges_b1_lag1 + prod_logchanges_b1_lag2 + prod_logchanges_b1_lag3 + 
-                    prod_logchanges_b2 + prod_logchanges_b2_lag1 + prod_logchanges_b2_lag2 + prod_logchanges_b2_lag3 + 
-                    prod_logchanges_b3 + prod_logchanges_b3_lag1 + prod_logchanges_b3_lag2 + prod_logchanges_b3_lag3 +  
-                    prod_logchanges_b4 + prod_logchanges_b4_lag1 + prod_logchanges_b4_lag2 + prod_logchanges_b4_lag3 +
-                    prod_logchanges_b5 + prod_logchanges_b5_lag1 + prod_logchanges_b5_lag2 + prod_logchanges_b5_lag3 +
+lsdv.ss_feci = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 + prod_logchanges_b5 +
+                  prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 +
+                    prod_logchanges_c2 + prod_logchanges_c2_lag1 + prod_logchanges_c2_lag2 + prod_logchanges_c2_lag3 + 
+                    prod_logchanges_c3 + prod_logchanges_c3_lag1 + prod_logchanges_c3_lag2 + prod_logchanges_c3_lag3 +  
+                    prod_logchanges_c4 + prod_logchanges_c4_lag1 + prod_logchanges_c4_lag2 + prod_logchanges_c4_lag3 +
+                    prod_logchanges_c5 + prod_logchanges_c5_lag1 + prod_logchanges_c5_lag2 + prod_logchanges_c5_lag3 +
                     factor(country) + factor(code), data=ci_panel_ss)
 
-fixed.dum_yi = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                    prod_logchanges_b5 + prod_logchanges_b1 + prod_logchanges_b1_lag1 + prod_logchanges_b1_lag2 + prod_logchanges_b1_lag3 + 
-                    prod_logchanges_b2 + prod_logchanges_b2_lag1 + prod_logchanges_b2_lag2 + prod_logchanges_b2_lag3 + 
-                    prod_logchanges_b3 + prod_logchanges_b3_lag1 + prod_logchanges_b3_lag2 + prod_logchanges_b3_lag3 +  
-                    prod_logchanges_b4 + prod_logchanges_b4_lag1 + prod_logchanges_b4_lag2 + prod_logchanges_b4_lag3 +
-                    prod_logchanges_b5 + prod_logchanges_b5_lag1 + prod_logchanges_b5_lag2 + prod_logchanges_b5_lag3 +
+lsdv.ss_feyi = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 + prod_logchanges_b5 + 
+                    prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 +
+                    prod_logchanges_c2 + prod_logchanges_c2_lag1 + prod_logchanges_c2_lag2 + prod_logchanges_c2_lag3 + 
+                    prod_logchanges_c3 + prod_logchanges_c3_lag1 + prod_logchanges_c3_lag2 + prod_logchanges_c3_lag3 +  
+                    prod_logchanges_c4 + prod_logchanges_c4_lag1 + prod_logchanges_c4_lag2 + prod_logchanges_c4_lag3 +
+                    prod_logchanges_c5 + prod_logchanges_c5_lag1 + prod_logchanges_c5_lag2 + prod_logchanges_c5_lag3 +
                     factor(year) + factor(code), data=ci_panel_ss)
 
 
+options(digits = 3)
+options("scipen"=100, "digits"=4)
 
 library(lmtest)
-fixed.dum = coeftest(fixed.dum, vcov. = vcovHC, type = "HC1")
-fixed.dum_ci = coeftest(fixed.dum_ci, vcov. = vcovHC, type = "HC1")
-fixed.dum_cy = coeftest(fixed.dum_cy, vcov. = vcovHC, type = "HC1")
-fixed.dum_yi = coeftest(fixed.dum_yi, vcov. = vcovHC, type = "HC1")
+lsdv.ss_pool_coef = coeftest(lsdv.ss_pool, vcov. = vcovHC, type = "HC1")
+lsdv.ss_pool_coef
+lsdv.ss_feci_coef = coeftest(lsdv.ss_feci, vcov. = vcovHC, type = "HC1")
+lsdv.ss_fecy_coef = coeftest(lsdv.ss_fecy, vcov. = vcovHC, type = "HC1")
+lsdv.ss_feyi_coef = coeftest(lsdv.ss_feyi, vcov. = vcovHC, type = "HC1")
 
 #coeftest(fixed.dum, vcov. = vcovHC, method = "arellano")
 
-write.csv(rbind(fixed.dum, fixed.dum_ci, fixed.dum_cy, fixed.dum_yi), "fixeddum_ci_panel.csv")
-
-#
-b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
-b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
-b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
-#
-
-
-b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
-ind = merge(ind, b, by=c("year"), all.x = TRUE)
-ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
-ind$wgt = ind$EMP/ind$TOTmn
-
-
-ci_panel_ss = merge(ci_panel_ss, sum_prod_yc_1, by=c( "year", "country", "branche"), all.x = TRUE)
-
-b1 = ci_panel_ss %>% filter(branche=="b1")
-
-
-
-ci_panel_ss$avgLP_c1 = (b1$`sum(prod_logchanges)` - b1$prod_logchanges)/(b1$n - 1)
-
+write.csv(rbind(lsdv.ss_pool_coef, lsdv.ss_feci_coef, lsdv.ss_fecy_coef, lsdv.ss_feyi_coef), "fixeddum_ci_panel.csv")
 
 # Skills..... --------------------------------------------------
 
