@@ -36,14 +36,14 @@ country="DK"
 country="FR"
 
 dataset_1 <- read_excel("Data/FR_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
-dataset_2 <- read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_P")
+dataset_2 <- read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_QI")
 
 dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP")
 dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO")
-dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_QI") #Gross output, faste priser 2010=100
 
 measure_1="EMP"
-measure_2="GO_P"
+measure_2="GO_QI"
 
 dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "COMP")
 dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "VA")
@@ -144,7 +144,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
                value.name= "GO")
   
   data = merge(dataset_1, dataset_2, by=c("desc","code", "year"), all.x = TRUE)
-  
   data <- na.omit(data)
   
   #sapply(data, class)
@@ -210,9 +209,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
 
   #angivelse af branche/industri totaler
-   t4 <- data %>% filter(branche!="b0") %>% group_by(year, branche, branche_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
-
-   
+  t4 <- data %>% filter(branche!="b0") %>% group_by(year, branche, branche_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
   data2 <- data.frame(desc= t4$branche_desc,
                       code=t4$branche,
                       year=t4$year,
@@ -241,6 +238,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   #b_10 <- data2 %>% filter(code=="b10")
   
   b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP #+ b_10$EMP + b_9$EMP 
+  b$GO = b$GO + b_2$GO + b_3$GO + b_4$GO + b_5$GO + b_6$GO + b_7$GO + b_8$GO #+ b_10$GO + b_9$GO 
   b$desc = "TOTAL INDUSTRIES-MunkNielsen"
   b$code = "TOT_MN"
   b$branche = "TOT"
@@ -248,16 +246,18 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   } else {
     
     b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP
+    b$GO = b$GO + b_2$GO + b_3$GO + b_4$GO + b_5$GO
     b$desc = "TOTAL INDUSTRIES-AutorSalomons"
     b$code = "TOT_AS"
     b$branche = "TOT" #lettere at de begge hedder "TOT" i brancher når der skal filtreres
   }
   
- 
   b$branche_desc = "Lande Total"
   
   data_fin <- rbind(data, data2, b)
   pdata = pdata.frame(data_fin, index = c("code", "year"))
+  
+  #Kodning af variable:
   
   pdata$emp_log <- log(pdata$EMP)
   pdata$emp_diff = diff(pdata$EMP, lag = 1, shift = "time")
@@ -309,15 +309,30 @@ func_regpanel <- function(dataset_1, type) {
 if (type==1) {
 
   tot = dataset_1 %>% filter(branche=="TOT")
-  tot$TOT = tot$EMP
-  tot <- tot %>% select(year, country, TOT)
+  tot$EMP_tot = tot$EMP
+  tot$GO_tot = tot$GO
+  tot <- tot %>% select(year, EMP_tot, GO_tot)
+  
   ind = dataset_1 %>% filter(sel_industries==1)
+  
   b <- dataset_1 %>% filter(branche=="b-tot")
   b$branche = b$code
-  #dk$emp_logchanges_b = dk$emp_logchanges
   b$prod_logchanges_b = b$prod_logchanges
-  b = b %>% select(year, branche, prod_logchanges_b)
-  b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1 )
+  b$EMP_b = b$EMP
+  b$GO_b = b$GO
+
+  b = b %>% select(year, branche, EMP_b, GO_b, prod_logchanges_b)
+  ind = merge(ind, b, by=c("year", "branche"), all.x = TRUE) 
+  
+  #----------- nedenstående skal bruges hvis vi siger sektor minus industri i vores variable--------------
+  #b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, prod_logchanges_b1, EMP_b1,GO_b1)
+  #b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(prod_logchanges_b2, EMP_b2, GO_b2)
+  #b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(prod_logchanges_b3, EMP_b3, GO_b3)
+  #b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(prod_logchanges_b4, EMP_b4, GO_b4)
+  #b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5=prod_logchanges_b) %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(prod_logchanges_b5, EMP_b5, GO_b5)
+  #---------------------------------------------------------------------------------------------------------
+  
+  b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1)
   b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% select(prod_logchanges_b2)
   b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
   b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% select(prod_logchanges_b4)
@@ -326,25 +341,48 @@ if (type==1) {
   test = b %>% count(branche) %>% nrow
   
   if (test==8) {
-  
+    
   b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
   b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
   b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
   b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
+  
   } else {
     
-    b = cbind(b1,b2,b3,b4,b5)
+  b = cbind(b1,b2,b3,b4,b5)
   }
   
   ind = merge(ind, b, by=c("year"), all.x = TRUE)
-  ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
-  ind$wgt = ind$EMP/ind$TOT
+  ind = merge(ind, tot, by=c("year"), all.x = TRUE)
   
+  ind$wgt_i = ind$EMP/ind$EMP_tot
+  ind$wgt_b = ind$EMP_b/ind$EMP_tot
   
+  ind = pdata.frame(ind, index = c("code", "year"))
   
+  ind$prod_logchanges_c1 = ifelse(ind$branche=="b1", 
+                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
+                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
   
+  ind$prod_logchanges_c2 = ifelse(ind$branche=="b2", 
+                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
+                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  
+  ind$prod_logchanges_c3 = ifelse(ind$branche=="b3", 
+                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
+                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  
+  ind$prod_logchanges_c4 = ifelse(ind$branche=="b4", 
+                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
+                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  
+  ind$prod_logchanges_c5 = ifelse(ind$branche=="b5", 
+                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
+                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
   
   ind
+  
+  
 } else if (type==2) {
     
     b = dataset_1 %>% filter(branche=="b-tot")
@@ -383,16 +421,14 @@ if (type==1) {
 # Danmark
     DK_emp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
     #DK_go <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-    DK_gop <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+    DK_gop <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_QI") #Gross output, volume (2010 prices)
     DK_comp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
     DK_lab <- read_excel("Data/DK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
     DK_va <- read_excel("Data/DK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
     
-    
-    
     #Employment and productivty
-    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", F)
-    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_P", T, "AS")
+    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_QI", F)
+    DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_QI", T, "AS")
     
     #PLM analyse
     DK_ind = func_regpanel(DK_ep, 1)
@@ -410,7 +446,7 @@ if (type==1) {
 
   US_emp <- read_excel("Data/US_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #US_go <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  US_gop <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  US_gop <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_QI") #Gross Output at current basic prices (in millions of national currency)
   US_comp <- read_excel("Data/US_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   US_lab <- read_excel("Data/US_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   US_va <- read_excel("Data/US_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -420,8 +456,8 @@ if (type==1) {
   US_ls$year = lubridate::ymd(US_ls$year, truncated = 2L)
   
   #Employment and productivty
-  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P", F)
-  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_P", T,"AS")
+  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_QI", F)
+  US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_QI", T,"AS")
   
   #PLM analyse
   US_ind = func_regpanel(US_ep, 1)
@@ -435,7 +471,7 @@ if (type==1) {
 
   UK_emp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #UK_go <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  UK_gop <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  UK_gop <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO_QI") #Gross Output at current basic prices (in millions of national currency)
   UK_comp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   UK_lab <- read_excel("Data/UK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   UK_va <- read_excel("Data/UK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -446,8 +482,8 @@ if (type==1) {
   
   #Employment and productivty
   #Employment and productivty
-  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P", F)
-  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_P", T, "AS")
+  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_QI", F)
+  UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   UK_ind = func_regpanel(UK_ep, 1)
@@ -461,7 +497,7 @@ if (type==1) {
 
   DE_emp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #DE_go <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  DE_gop <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  DE_gop <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO_QI") #Gross Output at current basic prices (in millions of national currency)
   DE_comp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   DE_lab <- read_excel("Data/DE_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   DE_va <- read_excel("Data/DE_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -471,8 +507,8 @@ if (type==1) {
   DE_ls$year = lubridate::ymd(DE_ls$year, truncated = 2L)
   
   #Employment and productivty
-  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P", F)
-  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_P", T, "AS")
+  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_QI", F)
+  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   DE_ind = func_regpanel(DE_ep, 1)
@@ -486,7 +522,7 @@ if (type==1) {
 
   NL_emp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thoNLands)
   #NL_go <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  NL_gop <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  NL_gop <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO_QI") #Gross Output at current basic prices (in millions of national currency)
   NL_comp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   NL_lab <- read_excel("Data/NL_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   NL_va <- read_excel("Data/NL_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -496,8 +532,8 @@ if (type==1) {
   NL_ls$year = lubridate::ymd(NL_ls$year, truncated = 2L)
   
   #Employment and productivty
-  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P", F)
-  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_P", T, "AS")
+  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_QI", F)
+  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   NL_ind = func_regpanel(NL_ep, 1)
@@ -511,7 +547,7 @@ if (type==1) {
 
   SE_emp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #SE_go <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  SE_gop <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO_P") #Gross Output at current basic prices (in millions of national currency)
+  SE_gop <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO_QI") #Gross Output at current basic prices (in millions of national currency)
   SE_comp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   SE_lab <- read_excel("Data/SE_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   SE_va <- read_excel("Data/SE_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -522,8 +558,8 @@ if (type==1) {
   SE_ls$year = lubridate::ymd(SE_ls$year, truncated = 2L)
   
   #Employment and productivty
-  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P", F)
-  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_P", T, "AS")
+  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_QI", F)
+  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   SE_ind = func_regpanel(SE_ep, 1)
@@ -537,7 +573,7 @@ if (type==1) {
 
   AT_emp = read_excel("Data/AT_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #AT_go = read_excel("Data/AT_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  AT_gop = read_excel("Data/AT_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  AT_gop = read_excel("Data/AT_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   AT_comp = read_excel("Data/AT_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   AT_lab = read_excel("Data/AT_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   AT_va = read_excel("Data/AT_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -547,8 +583,8 @@ if (type==1) {
   AT_ls$year = lubridate::ymd(AT_ls$year, truncated = 2L)
   
   #Employment and productivty
-  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P", F)
-  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_P", T, "AS")
+  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_QI", F)
+  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   AT_ind = func_regpanel(AT_ep, 1)
@@ -563,7 +599,7 @@ if (type==1) {
 
   BE_emp = read_excel("Data/BE_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #BE_go = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  BE_gop = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  BE_gop = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   BE_comp = read_excel("Data/BE_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   BE_lab = read_excel("Data/BE_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   BE_va = read_excel("Data/BE_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -573,8 +609,8 @@ if (type==1) {
   BE_ls$year = lubridate::ymd(BE_ls$year, truncated = 2L)
   
   #Employment and productivty
-  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P", F)
-  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_P", T, "AS")
+  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_QI", F)
+  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   BE_ind = func_regpanel(BE_ep, 1)
@@ -589,7 +625,7 @@ if (type==1) {
 
   CZ_emp = read_excel("Data/CZ_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #CZ_go = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  CZ_gop = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  CZ_gop = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   CZ_comp = read_excel("Data/CZ_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   CZ_lab = read_excel("Data/CZ_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   CZ_va = read_excel("Data/CZ_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -599,8 +635,8 @@ if (type==1) {
   CZ_ls$year = lubridate::ymd(CZ_ls$year, truncated = 2L)
   
   #Employment and productivty
-  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P", F)
-  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_P", T, "AS")
+  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_QI", F)
+  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   CZ_ind = func_regpanel(CZ_ep, 1)
@@ -615,7 +651,7 @@ if (type==1) {
 
   FI_emp = read_excel("Data/FI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #FI_go = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  FI_gop = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  FI_gop = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   FI_comp = read_excel("Data/FI_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   FI_lab = read_excel("Data/FI_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   FI_va = read_excel("Data/FI_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -625,8 +661,8 @@ if (type==1) {
   FI_ls$year = lubridate::ymd(FI_ls$year, truncated = 2L)
   
   #Employment and productivty
-  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P", F)
-  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_P", T, "AS")
+  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_QI", F)
+  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   FI_ind = func_regpanel(FI_ep, 1)
@@ -640,7 +676,7 @@ if (type==1) {
 
   FR_emp = read_excel("Data/FR_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #FR_go = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  FR_gop = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  FR_gop = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   FR_comp = read_excel("Data/FR_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   FR_lab = read_excel("Data/FR_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   FR_va = read_excel("Data/FR_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -650,8 +686,8 @@ if (type==1) {
   FR_ls$year = lubridate::ymd(FR_ls$year, truncated = 2L)
   
   #Employment and productivty
-  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P", F)
-  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_P", T, "AS")
+  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_QI", F)
+  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   FR_ind = func_regpanel(FR_ep, 1)
@@ -666,7 +702,7 @@ if (type==1) {
 
   EL_emp = read_excel("Data/EL_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #EL_go = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  EL_gop = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  EL_gop = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   EL_comp = read_excel("Data/EL_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   EL_lab = read_excel("Data/EL_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   EL_va = read_excel("Data/EL_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -676,8 +712,8 @@ if (type==1) {
   EL_ls$year = lubridate::ymd(EL_ls$year, truncated = 2L)
   
   #Employment and productivty
-  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P", F)
-  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_P", T, "AS")
+  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", F)
+  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   EL_ind = func_regpanel(EL_ep, 1)
@@ -691,7 +727,7 @@ if (type==1) {
 
   IT_emp = read_excel("Data/IT_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #IT_go = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  IT_gop = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  IT_gop = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   IT_comp = read_excel("Data/IT_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   IT_lab = read_excel("Data/IT_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   IT_va = read_excel("Data/IT_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -701,8 +737,8 @@ if (type==1) {
   IT_ls$year = lubridate::ymd(IT_ls$year, truncated = 2L)
   
   #Employment and productivty
-  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P", F)
-  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_P", T, "AS")
+  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_QI", F)
+  IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   IT_ind = func_regpanel(IT_ep, 1)
@@ -717,7 +753,7 @@ if (type==1) {
 
   LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #LV_go = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   LV_comp = read_excel("Data/LV_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   LV_lab = read_excel("Data/LV_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   LV_va = read_excel("Data/LV_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -727,8 +763,8 @@ if (type==1) {
   LV_ls$year = lubridate::ymd(LV_ls$year, truncated = 2L)
   
   #Employment and productivty
-  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P", F)
-  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_P", T, "AS")
+  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", F)
+  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   LV_ind = func_regpanel(LV_ep, 1)
@@ -742,7 +778,7 @@ if (type==1) {
 
   LU_emp = read_excel("Data/LU_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #LU_go = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  LU_gop = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  LU_gop = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   LU_comp = read_excel("Data/LU_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   LU_lab = read_excel("Data/LU_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   LU_va = read_excel("Data/LU_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -752,8 +788,8 @@ if (type==1) {
   LU_ls$year = lubridate::ymd(LU_ls$year, truncated = 2L)
   
   #Employment and productivty
-  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P", F)
-  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_P", T, "AS")
+  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_QI", F)
+  LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   LU_ind = func_regpanel(LU_ep, 1)
@@ -768,7 +804,7 @@ if (type==1) {
 
   SK_emp = read_excel("Data/SK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #SK_go = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  SK_gop = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  SK_gop = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   SK_comp = read_excel("Data/SK_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   SK_lab = read_excel("Data/SK_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   SK_va = read_excel("Data/SK_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -778,8 +814,8 @@ if (type==1) {
   SK_ls$year = lubridate::ymd(SK_ls$year, truncated = 2L)
   
   #Employment and productivty
-  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P", F)
-  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_P", T, "AS")
+  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_QI", F)
+  SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   SK_ind = func_regpanel(SK_ep, 1)
@@ -794,7 +830,7 @@ if (type==1) {
 
   SI_emp = read_excel("Data/SI_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
   #SI_go = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
-  SI_gop = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_P") #Gross output, price indices, 2010 = 100
+  SI_gop = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_QI") #Gross output, price indices, 2010 = 100
   SI_comp = read_excel("Data/SI_output_17ii.xlsx", sheet = "COMP") #Compensation of employees  (in millions of national currency)
   SI_lab = read_excel("Data/SI_output_17ii.xlsx", sheet = "LAB") #Labour compensation (in millions of national currency)
   SI_va = read_excel("Data/SI_output_17ii.xlsx", sheet = "VA") #Gross value added at current basic prices (in millions of national currency), svarer labour + capital compensation
@@ -804,8 +840,8 @@ if (type==1) {
   SI_ls$year = lubridate::ymd(SI_ls$year, truncated = 2L)
   
   #Employment and productivty
-  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P", F)
-  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_P", T, "AS")
+  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_QI", F)
+  SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_QI", T, "AS")
   
   #PLM analyse
   SI_ind = func_regpanel(SI_ep, 1)
@@ -1157,8 +1193,6 @@ sum_prod_yc <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchange
 ci_panel = merge(ci_panel, sum_prod_yc, by=c( "year", "country"), all.x = TRUE)
 ci_panel$avgLP_oi = (ci_panel$`sum(prod_logchanges_wgt)` - ci_panel$prod_logchanges_wgt)/(ci_panel$n - 1) #bør det vægtes?
 
-
-
 ci_panel = pdata.frame(ci_panel, index = c("id", "year"))
 ci_panel$avgLP_oi_lag1 = lag(ci_panel$avgLP_oi, k = 1, shift = "time")
 ci_panel$avgLP_oi_lag2 = lag(ci_panel$avgLP_oi, k = 2, shift = "time")
@@ -1182,10 +1216,9 @@ summary(fixed.dum)
 
 ci_panel_ss = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
 
-ci_panel_ss = ci_panel_ss%>% select(year, country, code, desc, branche, branche_desc, emp_logchanges, prod_logchanges, wgt, prod_logchanges_b1,
-                                  prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5
-                                  #, prod_logchanges_b6, prod_logchanges_b7, prod_logchanges_b8
-                                  )
+ci_panel_ss = ci_panel_ss%>% select(year, country, code, desc, branche, branche_desc, emp_logchanges, prod_logchanges, 
+                                    prod_logchanges_b1, prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5, #, prod_logchanges_b6, prod_logchanges_b7, prod_logchanges_b8
+                                    prod_logchanges_c1, prod_logchanges_c2, prod_logchanges_c3, prod_logchanges_c4, prod_logchanges_c5)
 
 ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
 
@@ -1194,101 +1227,63 @@ ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
 
 ci_panel_ss = na.omit(ci_panel_ss) #obs vigtigt at køre efter unødvendige variable er fjernet
 
-sum_prod_yc_1 <- ci_panel_ss %>% group_by(year, country, branche) %>% count(sum(prod_logchanges)) %>% ungroup #antal industrier i en sektor varierer i landene
+ci_panel_ss = as.data.frame(ci_panel_ss)
+ci_panel_ss = pdata.frame(ci_panel_ss, index=c("id","year"))
 
-b = sum_prod_yc_1 %>% select(year, country, branche, `sum(prod_logchanges)`, n)
+ci_panel_ss$prod_logchanges_c1_lag1 = lag(ci_panel_ss$prod_logchanges_c1, k = 1, shift = "time")
+ci_panel_ss$prod_logchanges_c1_lag2 = lag(ci_panel_ss$prod_logchanges_c1, k = 2, shift = "time")
+ci_panel_ss$prod_logchanges_c1_lag3 = lag(ci_panel_ss$prod_logchanges_c1, k = 3, shift = "time")
 
-b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1_sum=`sum(prod_logchanges)`) %>% mutate(n_1 = n) %>% select(n_1, year, country, prod_logchanges_b1_sum )
+ci_panel_ss$prod_logchanges_c2_lag1 = lag(ci_panel_ss$prod_logchanges_c2, k = 1, shift = "time")
+ci_panel_ss$prod_logchanges_c2_lag2 = lag(ci_panel_ss$prod_logchanges_c2, k = 2, shift = "time")
+ci_panel_ss$prod_logchanges_c2_lag3 = lag(ci_panel_ss$prod_logchanges_c2, k = 3, shift = "time")
 
+ci_panel_ss$prod_logchanges_c3_lag1 = lag(ci_panel_ss$prod_logchanges_c3, k = 1, shift = "time")
+ci_panel_ss$prod_logchanges_c3_lag2 = lag(ci_panel_ss$prod_logchanges_c3, k = 2, shift = "time")
+ci_panel_ss$prod_logchanges_c3_lag3 = lag(ci_panel_ss$prod_logchanges_c3, k = 3, shift = "time")
 
+ci_panel_ss$prod_logchanges_c4_lag1 = lag(ci_panel_ss$prod_logchanges_c4, k = 1, shift = "time")
+ci_panel_ss$prod_logchanges_c4_lag2 = lag(ci_panel_ss$prod_logchanges_c4, k = 2, shift = "time")
+ci_panel_ss$prod_logchanges_c4_lag3 = lag(ci_panel_ss$prod_logchanges_c4, k = 3, shift = "time")
 
-b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2_sum=`sum(prod_logchanges)`) %>% mutate(n_2 = n) %>% select(n_2, prod_logchanges_b2_sum)
-
-b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3_sum=`sum(prod_logchanges)`) %>% mutate(n_3 = n) %>% select(n_3, prod_logchanges_b3_sum)
-b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4_sum=`sum(prod_logchanges)`) %>% mutate(n_4 = n) %>% select(n_4, prod_logchanges_b4_sum)
-b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5_sum=`sum(prod_logchanges)`) %>% mutate(n_5 = n) %>% select(n_5, prod_logchanges_b5_sum)
-
-b = cbind(b1,b2,b3,b4,b5)
-b = b %>% select(year, country, prod_logchanges_b1_sum, prod_logchanges_b2_sum, prod_logchanges_b3_sum, prod_logchanges_b4_sum, prod_logchanges_b5_sum, n_1, n_2, n_3, n_4, n_5)
-ci_panel_ny = merge(ci_panel_ss, b, by=c("year", "country"), all.x = TRUE)
-
-
-ci_panel_ny = pdata.frame(ci_panel_ny, index = c("year", "country"))
-ci_panel_ny$prod_logchanges_b1_avg =  ifelse(ci_panel_ny$branche=="b1",(ci_panel_ny$prod_logchanges_b1_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_1-1), 
-                                                        ci_panel_ny$prod_logchanges_b1_sum/ci_panel_ny$n_1)
-
-ci_panel_ny$prod_logchanges_b2_avg =  ifelse(ci_panel_ny$branche=="b2",(ci_panel_ny$prod_logchanges_b2_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_2-1), 
-                                             ci_panel_ny$prod_logchanges_b2_sum/ci_panel_ny$n_2)
-
-ci_panel_ny$prod_logchanges_b3_avg =  ifelse(ci_panel_ny$branche=="b3",(ci_panel_ny$prod_logchanges_b3_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_3-1), 
-                                             ci_panel_ny$prod_logchanges_b3_sum/ci_panel_ny$n_3)
-
-ci_panel_ny$prod_logchanges_b4_avg =  ifelse(ci_panel_ny$branche=="b4",(ci_panel_ny$prod_logchanges_b4_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_4-1), 
-                                             ci_panel_ny$prod_logchanges_b4_sum/ci_panel_ny$n_4)
-
-ci_panel_ny$prod_logchanges_b5_avg =  ifelse(ci_panel_ny$branche=="b5",(ci_panel_ny$prod_logchanges_b5_sum-ci_panel_ny$prod_logchanges)/(ci_panel_ny$n_5-1), 
-                                             ci_panel_ny$prod_logchanges_b5_sum/ci_panel_ny$n_5)
-
-ci_panel_ny = ci_panel_ny %>% select(year, country, branche, emp_logchanges, prod_logchanges, prod_logchanges_b1,
-                                     prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5,
-                                     prod_logchanges_b1_avg, prod_logchanges_b2_avg, prod_logchanges_b3_avg, 
-                                     prod_logchanges_b4_avg, prod_logchanges_b5_avg)
-
-ci_panel_ny = pdata.frame(ci_panel, index=c("year","country"))                                  
-ci_panel_ny$prod_logchanges_b1_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 1, shift = "time")
-ci_panel_ny$prod_logchanges_b1_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 2, shift = "time")
-ci_panel_ny$prod_logchanges_b1_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b1_avg, k = 3, shift = "time")
-
-ci_panel_ny$prod_logchanges_b2_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b2_avg, k = 1, shift = "time")
-ci_panel_ny$prod_logchanges_b2_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b2_avg, k = 2, shift = "time")
-ci_panel_ny$prod_logchanges_b2_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b2_avg, k = 3, shift = "time")
-
-ci_panel_ny$prod_logchanges_b3_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b3_avg, k = 1, shift = "time")
-ci_panel_ny$prod_logchanges_b3_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b3_avg, k = 2, shift = "time")
-ci_panel_ny$prod_logchanges_b3_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b3_avg, k = 3, shift = "time")
-
-ci_panel_ny$prod_logchanges_b4_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b4_avg, k = 1, shift = "time")
-ci_panel_ny$prod_logchanges_b4_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b4_avg, k = 2, shift = "time")
-ci_panel_ny$prod_logchanges_b4_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b4_avg, k = 3, shift = "time")
-
-ci_panel_ny$prod_logchanges_b5_avg_lag1 = lag(ci_panel_ny$prod_logchanges_b5_avg, k = 1, shift = "time")
-ci_panel_ny$prod_logchanges_b5_avg_lag2 = lag(ci_panel_ny$prod_logchanges_b5_avg, k = 2, shift = "time")
-ci_panel_ny$prod_logchanges_b5_avg_lag3 = lag(ci_panel_ny$prod_logchanges_b5_avg, k = 3, shift = "time")
+ci_panel_ss$prod_logchanges_c5_lag1 = lag(ci_panel_ss$prod_logchanges_c5, k = 1, shift = "time")
+ci_panel_ss$prod_logchanges_c5_lag2 = lag(ci_panel_ss$prod_logchanges_c5, k = 2, shift = "time")
+ci_panel_ss$prod_logchanges_c5_lag3 = lag(ci_panel_ss$prod_logchanges_c5, k = 3, shift = "time")
 
 
 
 fixed.dum = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                prod_logchanges_b5 + prod_logchanges_b1_avg + prod_logchanges_b1_avg_lag1 + prod_logchanges_b1_avg_lag2 + prod_logchanges_b1_avg_lag3 + 
-                 prod_logchanges_b2_avg + prod_logchanges_b2_avg_lag1 + prod_logchanges_b2_avg_lag2 + prod_logchanges_b2_avg_lag3 + 
-                 prod_logchanges_b3_avg + prod_logchanges_b3_avg_lag1 + prod_logchanges_b3_avg_lag2 + prod_logchanges_b3_avg_lag3 +  
-                prod_logchanges_b4_avg + prod_logchanges_b4_avg_lag1 + prod_logchanges_b4_avg_lag2 + prod_logchanges_b4_avg_lag3 +
-                 prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3, data=ci_panel_ny)
+                prod_logchanges_b5 + prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 + 
+                 prod_logchanges_c2 + prod_logchanges_c2_lag1 + prod_logchanges_c2_lag2 + prod_logchanges_c2_lag3 + 
+                 prod_logchanges_c3 + prod_logchanges_c3_lag1 + prod_logchanges_c3_lag2 + prod_logchanges_c3_lag3 +  
+                prod_logchanges_c4 + prod_logchanges_c4_lag1 + prod_logchanges_c4_lag2 + prod_logchanges_c4_lag3 +
+                 prod_logchanges_c5 + prod_logchanges_c5_lag1 + prod_logchanges_c5_lag2 + prod_logchanges_c5_lag3, data=ci_panel_ss)
                
                
 summary(fixed.dum_cy)
 fixed.dum_cy = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                 prod_logchanges_b5 + prod_logchanges_b1_avg + prod_logchanges_b1_avg_lag1 + prod_logchanges_b1_avg_lag2 + prod_logchanges_b1_avg_lag3 + 
-                 prod_logchanges_b2_avg + prod_logchanges_b2_avg_lag1 + prod_logchanges_b2_avg_lag2 + prod_logchanges_b2_avg_lag3 + 
-                 prod_logchanges_b3_avg + prod_logchanges_b3_avg_lag1 + prod_logchanges_b3_avg_lag2 + prod_logchanges_b3_avg_lag3 +  
-                 prod_logchanges_b4_avg + prod_logchanges_b4_avg_lag1 + prod_logchanges_b4_avg_lag2 + prod_logchanges_b4_avg_lag3 +
-                 prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3 +
-                   factor(country) + factor(year), data=ci_panel_ny)
+                 prod_logchanges_b5 + prod_logchanges_b1 + prod_logchanges_b1_lag1 + prod_logchanges_b1_lag2 + prod_logchanges_b1_lag3 + 
+                 prod_logchanges_b2 + prod_logchanges_b2_lag1 + prod_logchanges_b2_lag2 + prod_logchanges_b2_lag3 + 
+                 prod_logchanges_b3 + prod_logchanges_b3_lag1 + prod_logchanges_b3_lag2 + prod_logchanges_b3_lag3 +  
+                 prod_logchanges_b4 + prod_logchanges_b4_lag1 + prod_logchanges_b4_lag2 + prod_logchanges_b4_lag3 +
+                 prod_logchanges_b5 + prod_logchanges_b5_lag1 + prod_logchanges_b5_lag2 + prod_logchanges_b5_lag3 +
+                   factor(country) + factor(year), data=ci_panel_ss)
 
 fixed.dum_ci = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                    prod_logchanges_b5 + prod_logchanges_b1_avg + prod_logchanges_b1_avg_lag1 + prod_logchanges_b1_avg_lag2 + prod_logchanges_b1_avg_lag3 + 
-                    prod_logchanges_b2_avg + prod_logchanges_b2_avg_lag1 + prod_logchanges_b2_avg_lag2 + prod_logchanges_b2_avg_lag3 + 
-                    prod_logchanges_b3_avg + prod_logchanges_b3_avg_lag1 + prod_logchanges_b3_avg_lag2 + prod_logchanges_b3_avg_lag3 +  
-                    prod_logchanges_b4_avg + prod_logchanges_b4_avg_lag1 + prod_logchanges_b4_avg_lag2 + prod_logchanges_b4_avg_lag3 +
-                    prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3 +
-                    factor(country) + factor(code), data=ci_panel_ny)
+                    prod_logchanges_b5 + prod_logchanges_b1 + prod_logchanges_b1_lag1 + prod_logchanges_b1_lag2 + prod_logchanges_b1_lag3 + 
+                    prod_logchanges_b2 + prod_logchanges_b2_lag1 + prod_logchanges_b2_lag2 + prod_logchanges_b2_lag3 + 
+                    prod_logchanges_b3 + prod_logchanges_b3_lag1 + prod_logchanges_b3_lag2 + prod_logchanges_b3_lag3 +  
+                    prod_logchanges_b4 + prod_logchanges_b4_lag1 + prod_logchanges_b4_lag2 + prod_logchanges_b4_lag3 +
+                    prod_logchanges_b5 + prod_logchanges_b5_lag1 + prod_logchanges_b5_lag2 + prod_logchanges_b5_lag3 +
+                    factor(country) + factor(code), data=ci_panel_ss)
 
 fixed.dum_yi = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 +
-                    prod_logchanges_b5 + prod_logchanges_b1_avg + prod_logchanges_b1_avg_lag1 + prod_logchanges_b1_avg_lag2 + prod_logchanges_b1_avg_lag3 + 
-                    prod_logchanges_b2_avg + prod_logchanges_b2_avg_lag1 + prod_logchanges_b2_avg_lag2 + prod_logchanges_b2_avg_lag3 + 
-                    prod_logchanges_b3_avg + prod_logchanges_b3_avg_lag1 + prod_logchanges_b3_avg_lag2 + prod_logchanges_b3_avg_lag3 +  
-                    prod_logchanges_b4_avg + prod_logchanges_b4_avg_lag1 + prod_logchanges_b4_avg_lag2 + prod_logchanges_b4_avg_lag3 +
-                    prod_logchanges_b5_avg + prod_logchanges_b5_avg_lag1 + prod_logchanges_b5_avg_lag2 + prod_logchanges_b5_avg_lag3 +
-                    factor(year) + factor(code), data=ci_panel_ny)
+                    prod_logchanges_b5 + prod_logchanges_b1 + prod_logchanges_b1_lag1 + prod_logchanges_b1_lag2 + prod_logchanges_b1_lag3 + 
+                    prod_logchanges_b2 + prod_logchanges_b2_lag1 + prod_logchanges_b2_lag2 + prod_logchanges_b2_lag3 + 
+                    prod_logchanges_b3 + prod_logchanges_b3_lag1 + prod_logchanges_b3_lag2 + prod_logchanges_b3_lag3 +  
+                    prod_logchanges_b4 + prod_logchanges_b4_lag1 + prod_logchanges_b4_lag2 + prod_logchanges_b4_lag3 +
+                    prod_logchanges_b5 + prod_logchanges_b5_lag1 + prod_logchanges_b5_lag2 + prod_logchanges_b5_lag3 +
+                    factor(year) + factor(code), data=ci_panel_ss)
 
 
 
@@ -1315,13 +1310,13 @@ ind = merge(ind,tot, by=c("year", "country"), all.x = TRUE)
 ind$wgt = ind$EMP/ind$TOTmn
 
 
-ci_panel_ny = merge(ci_panel_ss, sum_prod_yc_1, by=c( "year", "country", "branche"), all.x = TRUE)
+ci_panel_ss = merge(ci_panel_ss, sum_prod_yc_1, by=c( "year", "country", "branche"), all.x = TRUE)
 
-b1 = ci_panel_ny %>% filter(branche=="b1")
+b1 = ci_panel_ss %>% filter(branche=="b1")
 
 
 
-ci_panel_ny$avgLP_c1 = (b1$`sum(prod_logchanges)` - b1$prod_logchanges)/(b1$n - 1)
+ci_panel_ss$avgLP_c1 = (b1$`sum(prod_logchanges)` - b1$prod_logchanges)/(b1$n - 1)
 
 
 # Skills..... --------------------------------------------------
