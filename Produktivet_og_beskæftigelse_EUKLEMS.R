@@ -292,7 +292,7 @@ if (Emma==F) {
   
 if (Emma==T) {
   
-  pdata <- pdata %>% select(year, country, code, desc, sel_industries, branche, branche_desc, EMP, emp_logchanges, GO, prod, prod_logchanges,prod_changes) %>% 
+  pdata <- pdata %>% select(year, country, code, desc, sel_industries, branche, branche_desc, EMP, emp_logchanges, GO, prod_logchanges) %>% 
   filter(code!="b0")
   #pdata = pdata.frame(pdata, index = c("code", "year"))
                       
@@ -302,6 +302,9 @@ if (Emma==T) {
   
 
 }
+
+
+#dataset_1 = DK_ep
 
 func_regpanel <- function(dataset_1, type) {
     
@@ -320,22 +323,32 @@ if (type==1) {
   b$EMP_b = b$EMP
   b$GO_b = b$GO
 
-  b = b %>% select(year, branche, EMP_b, GO_b, prod_logchanges_b)
+  b = b %>% select(year, branche, EMP_b, GO_b)
   ind = merge(ind, b, by=c("year", "branche"), all.x = TRUE) 
   
-  #----------- nedenstående skal bruges hvis vi siger sektor minus industri i vores variable--------------
+  #----------- nedenstående skal bruges hvis vi siger sektor minus industri i vores beta2 variable--------------
+  b1 = b %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, EMP_b1,GO_b1)
+  b2 = b %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
+  b3 = b %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
+  b4 = b %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
+  b5 = b %>% filter(branche=="b5") %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(EMP_b5, GO_b5)
+  
   #b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, prod_logchanges_b1, EMP_b1,GO_b1)
   #b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(prod_logchanges_b2, EMP_b2, GO_b2)
   #b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(prod_logchanges_b3, EMP_b3, GO_b3)
   #b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(prod_logchanges_b4, EMP_b4, GO_b4)
   #b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5=prod_logchanges_b) %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(prod_logchanges_b5, EMP_b5, GO_b5)
-  #---------------------------------------------------------------------------------------------------------
   
-  b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1)
-  b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% select(prod_logchanges_b2)
-  b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
-  b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% select(prod_logchanges_b4)
-  b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5=prod_logchanges_b) %>% select(prod_logchanges_b5)
+  
+  #----------nedenstående skal bruges hvis vi bruger sektor produktiviteter som vores beta1 variable----
+  
+  # b1 = b %>% filter(branche=="b1") %>% mutate(prod_logchanges_b1=prod_logchanges_b) %>% select(year, prod_logchanges_b1)
+  #b2 = b %>% filter(branche=="b2") %>% mutate(prod_logchanges_b2=prod_logchanges_b) %>% select(prod_logchanges_b2)
+  #b3 = b %>% filter(branche=="b3") %>% mutate(prod_logchanges_b3=prod_logchanges_b) %>% select(prod_logchanges_b3)
+  #b4 = b %>% filter(branche=="b4") %>% mutate(prod_logchanges_b4=prod_logchanges_b) %>% select(prod_logchanges_b4)
+  #b5 = b %>% filter(branche=="b5") %>% mutate(prod_logchanges_b5=prod_logchanges_b) %>% select(prod_logchanges_b5)
+  
+  #-------------------------------------------------------------------------------------------------------
   
   test = b %>% count(branche) %>% nrow
   
@@ -357,27 +370,59 @@ if (type==1) {
   ind$wgt_i = ind$EMP/ind$EMP_tot
   ind$wgt_b = ind$EMP_b/ind$EMP_tot
   
+  
   ind = pdata.frame(ind, index = c("code", "year"))
   
-  ind$prod_logchanges_c1 = ifelse(ind$branche=="b1", 
-                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
-                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  #Beta2 variable og lags, mikro + makro
+  ind$dLP_CwoI =diff(log((ind$GO_tot-ind$GO)/(ind$EMP_tot-ind$EMP)), lag = 1, shift = "time")*100
+  ind$dLP_CwoI_lag1 = lag(ind$dLP_CwoI, k = 1, shift = "time")
+  ind$dLP_CwoI_lag2 = lag(ind$dLP_CwoI, k = 2, shift = "time")
+  ind$dLP_CwoI_lag3 = lag(ind$dLP_CwoI, k = 3, shift = "time")
   
-  ind$prod_logchanges_c2 = ifelse(ind$branche=="b2", 
-                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
-                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
   
-  ind$prod_logchanges_c3 = ifelse(ind$branche=="b3", 
-                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
-                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  #Beta2 variable og lags, sektor spillover
+  ind$dLP_BwoI_b1 = ifelse(ind$branche=="b1", diff(log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b1/ind$EMP_b1), lag = 1, shift = "time")*100)
+  ind$dLP_BwoI_b2 = ifelse(ind$branche=="b2", diff(log((ind$GO_b2-ind$GO)/(ind$EMP_b2-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b2/ind$EMP_b2), lag = 1, shift = "time")*100)
+  ind$dLP_BwoI_b3 = ifelse(ind$branche=="b3", diff(log((ind$GO_b3-ind$GO)/(ind$EMP_b3-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b3/ind$EMP_b3), lag = 1, shift = "time")*100)
+  ind$dLP_BwoI_b4 = ifelse(ind$branche=="b4", diff(log((ind$GO_b4-ind$GO)/(ind$EMP_b4-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b4/ind$EMP_b4), lag = 1, shift = "time")*100)
+  ind$dLP_BwoI_b5 = ifelse(ind$branche=="b5", diff(log((ind$GO_b5-ind$GO)/(ind$EMP_b5-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b5/ind$EMP_b5), lag = 1, shift = "time")*100)
   
-  ind$prod_logchanges_c4 = ifelse(ind$branche=="b4", 
-                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
-                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  ind$dLP_BwoI_b1_lag1 = lag(ind$dLP_BwoI_b1, k = 1, shift = "time")
+  ind$dLP_BwoI_b1_lag2 = lag(ind$dLP_BwoI_b1, k = 2, shift = "time")
+  ind$dLP_BwoI_b1_lag3 = lag(ind$dLP_BwoI_b1, k = 3, shift = "time")
   
-  ind$prod_logchanges_c5 = ifelse(ind$branche=="b5", 
-                                  diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, 
-                                  diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  ind$dLP_BwoI_b2_lag1 = lag(ind$dLP_BwoI_b2, k = 1, shift = "time")
+  ind$dLP_BwoI_b2_lag2 = lag(ind$dLP_BwoI_b2, k = 2, shift = "time")
+  ind$dLP_BwoI_b2_lag3 = lag(ind$dLP_BwoI_b2, k = 3, shift = "time")
+  
+  ind$dLP_BwoI_b3_lag1 = lag(ind$dLP_BwoI_b3, k = 1, shift = "time")
+  ind$dLP_BwoI_b3_lag2 = lag(ind$dLP_BwoI_b3, k = 2, shift = "time")
+  ind$dLP_BwoI_b3_lag3 = lag(ind$dLP_BwoI_b3, k = 3, shift = "time")
+  
+  ind$dLP_BwoI_b4_lag1 = lag(ind$dLP_BwoI_b4, k = 1, shift = "time")
+  ind$dLP_BwoI_b4_lag2 = lag(ind$dLP_BwoI_b4, k = 2, shift = "time")
+  ind$dLP_BwoI_b4_lag3 = lag(ind$dLP_BwoI_b4, k = 3, shift = "time")
+  
+  ind$dLP_BwoI_b5_lag1 = lag(ind$dLP_BwoI_b5, k = 1, shift = "time")
+  ind$dLP_BwoI_b5_lag2 = lag(ind$dLP_BwoI_b5, k = 2, shift = "time")
+  ind$dLP_BwoI_b5_lag3 = lag(ind$dLP_BwoI_b5, k = 3, shift = "time")
+  
+  #beta1 variable, sectoral spillover:
+  ind = na.omit(ind)
+  
+  ind$dLP_I_b1 = ifelse(ind$branche=="b1", ind$prod_logchanges, NA)
+  ind$dLP_I_b2 = ifelse(ind$branche=="b2", ind$prod_logchanges, NA)
+  ind$dLP_I_b3 = ifelse(ind$branche=="b3", ind$prod_logchanges, NA)
+  ind$dLP_I_b4 = ifelse(ind$branche=="b4", ind$prod_logchanges, NA)
+  ind$dLP_I_b5 = ifelse(ind$branche=="b5", ind$prod_logchanges, NA)
+  
+  
+  # nedenstående skal bruges hvis vi siger total minus sektor i vores beta2 variable
+  #ind$prod_logchanges_c1 = ifelse(ind$branche=="b1", diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  #ind$prod_logchanges_c2 = ifelse(ind$branche=="b2", diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  #ind$prod_logchanges_c3 = ifelse(ind$branche=="b3", diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  #ind$prod_logchanges_c4 = ifelse(ind$branche=="b4", diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
+  #ind$prod_logchanges_c5 = ifelse(ind$branche=="b5", diff(log((ind$GO_tot-ind$GO_b)/(ind$EMP_tot-ind$EMP_b)), lag = 1, shift = "time")*100, diff(log(ind$GO_tot/ind$EMP_tot), lag = 1, shift = "time")*100)
   
   ind
   
@@ -1188,17 +1233,6 @@ Arellano
 
 #hvad gør vi med lande hvor nogle industrier mangler?
 
-sum_prod_yc <- ci_panel %>% group_by(year, country) %>% count(sum(prod_logchanges_wgt))
-ci_panel = merge(ci_panel, sum_prod_yc, by=c( "year", "country"), all.x = TRUE)
-ci_panel$avgLP_oi = (ci_panel$`sum(prod_logchanges_wgt)` - ci_panel$prod_logchanges_wgt)/(ci_panel$n - 1) #bør det vægtes?
-
-ci_panel = pdata.frame(ci_panel, index = c("id", "year"))
-ci_panel$avgLP_oi_lag1 = lag(ci_panel$avgLP_oi, k = 1, shift = "time")
-ci_panel$avgLP_oi_lag2 = lag(ci_panel$avgLP_oi, k = 2, shift = "time")
-ci_panel$avgLP_oi_lag3 = lag(ci_panel$avgLP_oi, k = 3, shift = "time")
-ci_panel = na.omit(ci_panel)
-
-
 #model_linear2 = emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3
 
 fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(code) + factor(year), data=ci_panel)
@@ -1211,54 +1245,51 @@ summary(fixed.dum)
 
 # Sector spillover -------------------------------------------------
 
+# How to deal with NA in a panel data regression? Link: https://stackoverflow.com/questions/14427781/how-to-deal-with-na-in-a-panel-data-regression
+test.data <- data.frame(id=c(1,1,2,2,3), time=c(1,2,1,2,1), y=c(1,3,5,10,8), x=c(1, NA, 3,4,5))
+model <- plm(y ~ x, data=test.data, index=c("id", "time"), model="pooling")
+model <- lm(y ~ x, data=test.data, na.action=na.exclude)
+summary(model)
+
+
 #Skal det vægtes? Og hvad skal vægtes?
 
 ci_panel_ss = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
 
-ci_panel_ss = ci_panel_ss%>% select(year, country, code, desc, branche, branche_desc, emp_logchanges, prod_logchanges, 
-                                    prod_logchanges_b1, prod_logchanges_b2, prod_logchanges_b3, prod_logchanges_b4, prod_logchanges_b5, #, prod_logchanges_b6, prod_logchanges_b7, prod_logchanges_b8
-                                    prod_logchanges_c1, prod_logchanges_c2, prod_logchanges_c3, prod_logchanges_c4, prod_logchanges_c5)
+ci_panel_ss = ci_panel_ss%>% select(year, country, code, desc, branche, branche_desc, wgt_i, wgt_b, emp_logchanges, 
+                                    dLP_I_b1, dLP_I_b2, dLP_I_b3, dLP_I_b4, dLP_I_b5,
+                                    dLP_BwoI_b1, dLP_BwoI_b1_lag1, dLP_BwoI_b1_lag2, dLP_BwoI_b1_lag3,
+                                    dLP_BwoI_b2, dLP_BwoI_b2_lag1, dLP_BwoI_b2_lag2, dLP_BwoI_b2_lag3,
+                                    dLP_BwoI_b3, dLP_BwoI_b3_lag1, dLP_BwoI_b3_lag2, dLP_BwoI_b3_lag3,
+                                    dLP_BwoI_b4, dLP_BwoI_b4_lag1, dLP_BwoI_b4_lag2, dLP_BwoI_b4_lag3,
+                                    dLP_BwoI_b5, dLP_BwoI_b5_lag1, dLP_BwoI_b5_lag2, dLP_BwoI_b5_lag3)
 
-ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
+base_model = emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+  dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+  dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+  dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+  dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+  dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
 
+#ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
 #ci_panel_ss$prod_logchanges_wgt = ci_panel_ss$prod_logchanges*ci_panel$wgt
 #ci_panel_ss$emp_logchanges_wgt = ci_panel_ss$emp_logchanges*ci_panel$wgt
 
-ci_panel_ss = na.omit(ci_panel_ss) #obs vigtigt at køre efter unødvendige variable er fjernet
+all(is.na(DK_ind$dLP_I_b1))
+all(is.na(DK_ind$dLP_I_b2))
+all(is.na(DK_ind$dLP_I_b3))
+all(is.na(DK_ind$dLP_I_b4))
+all(is.na(DK_ind$dLP_I_b5))
 
-ci_panel_ss = as.data.frame(ci_panel_ss)
-ci_panel_ss = pdata.frame(ci_panel_ss, index=c("id","year"))
+all(is.na(FR_ind$dLP_I_b1))
+all(is.na(FR_ind$dLP_I_b2))
+all(is.na(FR_ind$dLP_I_b3))
+all(is.na(FR_ind$dLP_I_b4))
+all(is.na(FR_ind$dLP_I_b5))
 
-ci_panel_ss$prod_logchanges_c1_lag1 = lag(ci_panel_ss$prod_logchanges_c1, k = 1, shift = "time")
-ci_panel_ss$prod_logchanges_c1_lag2 = lag(ci_panel_ss$prod_logchanges_c1, k = 2, shift = "time")
-ci_panel_ss$prod_logchanges_c1_lag3 = lag(ci_panel_ss$prod_logchanges_c1, k = 3, shift = "time")
+lsdv.ss_pool = lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b5, data=ci_panel_ss)
+summary(lsdv.ss_pool)     
 
-ci_panel_ss$prod_logchanges_c2_lag1 = lag(ci_panel_ss$prod_logchanges_c2, k = 1, shift = "time")
-ci_panel_ss$prod_logchanges_c2_lag2 = lag(ci_panel_ss$prod_logchanges_c2, k = 2, shift = "time")
-ci_panel_ss$prod_logchanges_c2_lag3 = lag(ci_panel_ss$prod_logchanges_c2, k = 3, shift = "time")
-
-ci_panel_ss$prod_logchanges_c3_lag1 = lag(ci_panel_ss$prod_logchanges_c3, k = 1, shift = "time")
-ci_panel_ss$prod_logchanges_c3_lag2 = lag(ci_panel_ss$prod_logchanges_c3, k = 2, shift = "time")
-ci_panel_ss$prod_logchanges_c3_lag3 = lag(ci_panel_ss$prod_logchanges_c3, k = 3, shift = "time")
-
-ci_panel_ss$prod_logchanges_c4_lag1 = lag(ci_panel_ss$prod_logchanges_c4, k = 1, shift = "time")
-ci_panel_ss$prod_logchanges_c4_lag2 = lag(ci_panel_ss$prod_logchanges_c4, k = 2, shift = "time")
-ci_panel_ss$prod_logchanges_c4_lag3 = lag(ci_panel_ss$prod_logchanges_c4, k = 3, shift = "time")
-
-ci_panel_ss$prod_logchanges_c5_lag1 = lag(ci_panel_ss$prod_logchanges_c5, k = 1, shift = "time")
-ci_panel_ss$prod_logchanges_c5_lag2 = lag(ci_panel_ss$prod_logchanges_c5, k = 2, shift = "time")
-ci_panel_ss$prod_logchanges_c5_lag3 = lag(ci_panel_ss$prod_logchanges_c5, k = 3, shift = "time")
-
-ci_panel_ss =na.omit(ci_panel_ss)
-
-lsdv.ss_pool = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 + prod_logchanges_b5 +
-                 prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 +
-                 prod_logchanges_c2 + prod_logchanges_c2_lag1 + prod_logchanges_c2_lag2 + prod_logchanges_c2_lag3 + 
-                 prod_logchanges_c3 + prod_logchanges_c3_lag1 + prod_logchanges_c3_lag2 + prod_logchanges_c3_lag3 +  
-                 prod_logchanges_c4 + prod_logchanges_c4_lag1 + prod_logchanges_c4_lag2 + prod_logchanges_c4_lag3 +
-                 prod_logchanges_c5 + prod_logchanges_c5_lag1 + prod_logchanges_c5_lag2 + prod_logchanges_c5_lag3, data=ci_panel_ss)
-               
-summary(lsdv.ss_pool)               
 lsdv.ss_fecy = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 + prod_logchanges_b5 + 
                     prod_logchanges_c1 + prod_logchanges_c1_lag1 + prod_logchanges_c1_lag2 + prod_logchanges_c1_lag3 +
                     prod_logchanges_c2 + prod_logchanges_c2_lag1 + prod_logchanges_c2_lag2 + prod_logchanges_c2_lag3 + 
