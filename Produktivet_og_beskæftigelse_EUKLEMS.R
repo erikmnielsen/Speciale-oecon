@@ -304,7 +304,7 @@ if (Emma==T) {
 }
 
 
-#dataset_1 = DK_ep
+dataset_1 = DK_ep
 
 func_regpanel <- function(dataset_1, type) {
     
@@ -374,7 +374,7 @@ if (type==1) {
   ind = pdata.frame(ind, index = c("code", "year"))
   
   #Beta2 variable og lags, mikro + makro
-  ind$dLP_CwoI =diff(log((ind$GO_tot-ind$GO)/(ind$EMP_tot-ind$EMP)), lag = 1, shift = "time")*100
+  ind$dLP_CwoI = diff(log((ind$GO_tot-ind$GO)/(ind$EMP_tot-ind$EMP)), lag = 1, shift = "time")*100
   ind$dLP_CwoI_lag1 = lag(ind$dLP_CwoI, k = 1, shift = "time")
   ind$dLP_CwoI_lag2 = lag(ind$dLP_CwoI, k = 2, shift = "time")
   ind$dLP_CwoI_lag3 = lag(ind$dLP_CwoI, k = 3, shift = "time")
@@ -410,11 +410,11 @@ if (type==1) {
   #beta1 variable, sectoral spillover:
   ind = na.omit(ind)
   
-  ind$dLP_I_b1 = ifelse(ind$branche=="b1", ind$prod_logchanges, NA)
-  ind$dLP_I_b2 = ifelse(ind$branche=="b2", ind$prod_logchanges, NA)
-  ind$dLP_I_b3 = ifelse(ind$branche=="b3", ind$prod_logchanges, NA)
-  ind$dLP_I_b4 = ifelse(ind$branche=="b4", ind$prod_logchanges, NA)
-  ind$dLP_I_b5 = ifelse(ind$branche=="b5", ind$prod_logchanges, NA)
+  ind$dLP_I_b1 = ifelse(ind$branche=="b1", ind$prod_logchanges, 0)
+  ind$dLP_I_b2 = ifelse(ind$branche=="b2", ind$prod_logchanges, 0)
+  ind$dLP_I_b3 = ifelse(ind$branche=="b3", ind$prod_logchanges, 0)
+  ind$dLP_I_b4 = ifelse(ind$branche=="b4", ind$prod_logchanges, 0)
+  ind$dLP_I_b5 = ifelse(ind$branche=="b5", ind$prod_logchanges, 0)
   
   
   # nedenstående skal bruges hvis vi siger total minus sektor i vores beta2 variable
@@ -1252,6 +1252,15 @@ model <- lm(y ~ x, data=test.data, na.action=na.exclude)
 summary(model)
 
 
+X = c(0.1, 0.3, 0.2, 0.5)
+Y = c( 0.3, 0.2, 0.5, NA)
+Other = c(5500, 222, 523, 3677)
+
+summary(lm(Y ~ X + Other))
+
+summary(lm(Y ~ X + Other, na.action=na.omit))
+summary(lm(Y ~ X + Other, na.action=na.exclude))
+
 #Skal det vægtes? Og hvad skal vægtes?
 
 ci_panel_ss = rbind(DK_ind, SE_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind , LU_ind, SI_ind, SK_ind) #, LV_ind)
@@ -1264,7 +1273,29 @@ ci_panel_ss = ci_panel_ss%>% select(year, country, code, desc, branche, branche_
                                     dLP_BwoI_b4, dLP_BwoI_b4_lag1, dLP_BwoI_b4_lag2, dLP_BwoI_b4_lag3,
                                     dLP_BwoI_b5, dLP_BwoI_b5_lag1, dLP_BwoI_b5_lag2, dLP_BwoI_b5_lag3)
 
+table(rowSums(is.na(ci_panel_ss[c("dLP_I_b1","dLP_I_b2","dLP_I_b3","dLP_I_b4","dLP_I_b5")])))
+table(rowSums(is.na(ci_panel_ss[c("dLP_I_b1","dLP_I_b2","dLP_I_b3")])))
+ci_panel_ss$dLP_I_b1
+
+a <- 1:4
+b <- c(1, 2, NA, NA)
+c <- c(NA, NA, 1, 2)
+data =cbind(a,b,c)
+
+lm(a ~ b + c, na.action = na.exclude)
+
+table(rowSums(is.na(data["a", "b"])))
+
+
+
 base_model = emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+  dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+  dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+  dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+  dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+  dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
+
+base_model = emp_logchanges ~ dLP_I_b1 +
   dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
   dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
   dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
@@ -1287,7 +1318,33 @@ all(is.na(FR_ind$dLP_I_b3))
 all(is.na(FR_ind$dLP_I_b4))
 all(is.na(FR_ind$dLP_I_b5))
 
-lsdv.ss_pool = lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b5, data=ci_panel_ss)
+lsdv.ss_pool = lm(base_model, data=ci_panel_ss)
+
+
+lsdv.ss_pool = lm(emp_logchanges ~ dLP_I_b1 , data=ci_panel_ss, na.action = na.pass)
+summary(lsdv.ss_pool)
+
+test = ci_panel_ss %>% filter(is.nan(dLP_BwoI_b5))
+
+test = ci_panel_ss %>% filter(is.nan(dLP_I_b2))
+test = ci_panel_ss %>% filter(is.nan(dLP_I_b3))
+test = ci_panel_ss %>% filter(is.nan(dLP_I_b4))
+test = ci_panel_ss %>% filter(is.nan(dLP_I_b5))
+test = ci_panel_ss %>% filter(is.nan(emp_logchanges))
+
+test = ci_panel_ss %>% filter(dLP_I_b1==Inf)
+test = ci_panel_ss %>% filter(dLP_I_b2==Inf)
+test = ci_panel_ss %>% filter(dLP_I_b3==Inf)
+test = ci_panel_ss %>% filter(dLP_I_b4==Inf)
+test = ci_panel_ss %>% filter(dLP_I_b5==Inf)
+
+is.nan(ci_panel_ss)
+
+
+col2[which(is.nan(col2))] = NA
+col2[which(col2==Inf)] = NA
+
+na.pass
 summary(lsdv.ss_pool)     
 
 lsdv.ss_fecy = lm(emp_logchanges ~ prod_logchanges_b1 + prod_logchanges_b2 + prod_logchanges_b3 + prod_logchanges_b4 + prod_logchanges_b5 + 
