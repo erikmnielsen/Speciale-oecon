@@ -334,9 +334,15 @@ BE_emp = read_excel("Data/BE_output_17ii.xlsx", sheet = "EMP")
 BE_gop = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO_QI") 
 BE_go = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
+CY_emp = read_excel("Data/CY_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+CY_go= read_excel("Data/CY_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
+
 CZ_emp = read_excel("Data/CZ_output_17ii.xlsx", sheet = "EMP") 
 CZ_gop = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO_QI") 
 CZ_go = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
+
+ES_emp = read_excel("Data/ES_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+ES_go= read_excel("Data/ES_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 FI_emp = read_excel("Data/FI_output_17ii.xlsx", sheet = "EMP") 
 FI_gop = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO_QI") 
@@ -346,9 +352,18 @@ FR_emp = read_excel("Data/FR_output_17ii.xlsx", sheet = "EMP")
 FR_gop = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_QI") 
 FR_go = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO") #fra 1975-1994 mangler 45,46,47, 49-52,53  - komplet 1995-2015
 
+EE_emp = read_excel("Data/EE_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+EE_go= read_excel("Data/EE_output_17ii.xlsx", sheet = "GO") #ikke komplet 1995-2015 og T ikke observeret
+
 EL_emp = read_excel("Data/EL_output_17ii.xlsx", sheet = "EMP") 
 EL_gop = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO_QI") 
 EL_go = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
+
+HU_emp = read_excel("Data/HU_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+HU_go= read_excel("Data/HU_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
+
+IE_emp = read_excel("Data/IE_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+IE_go= read_excel("Data/IE_output_17ii.xlsx", sheet = "GO") #komplet 1998-2015
 
 IT_emp = read_excel("Data/IT_output_17ii.xlsx", sheet = "EMP") 
 IT_gop = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO_QI") 
@@ -357,10 +372,22 @@ IT_go = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 #LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") 
 #LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") 
 
+LT_emp = read_excel("Data/LT_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+LT_go= read_excel("Data/LT_output_17ii.xlsx", sheet = "GO") #komplet 1998-2015
+
 LU_emp = read_excel("Data/LU_output_17ii.xlsx", sheet = "EMP") 
 LU_gop = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO_QI") 
-LU_go = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO") #ikke komplet
+LU_go = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO") #ikke komplet, mangler 19+20-21+26-27+28+49-52+53
 
+LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") 
+LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") 
+LV_go = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO") #komplet 2000-2015
+
+PL_emp = read_excel("Data/PL_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+PL_go= read_excel("Data/PL_output_17ii.xlsx", sheet = "GO") #komplet 2000-2015
+
+PT_emp = read_excel("Data/PT_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+PT_go= read_excel("Data/PT_output_17ii.xlsx", sheet = "GO") #komplet 2000-2015
 
 SK_emp = read_excel("Data/SK_output_17ii.xlsx", sheet = "EMP") 
 SK_gop = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO_QI") 
@@ -392,11 +419,15 @@ SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_QI", "AS")
 AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_QI", "AS")
 BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_QI", "AS")
 CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_QI", "AS")
+CY_ep = func_empprod(CY_emp, CY_gop,"CY", "EMP", "GO_QI", "AS")
+EE_ep = func_empprod(EE_emp, EE_gop,"ES", "EMP", "GO_QI", "AS")
+ES_ep = func_empprod(ES_emp, ES_gop,"ES", "EMP", "GO_QI", "AS")
+EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", "AS")
 FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_QI", "AS")
 FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_QI", "AS")
 EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", "AS")
 IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_QI", "AS")
-#LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", "AS")
+LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", "AS")
 LU_ep = func_empprod(LU_emp, LU_gop,"LU", "EMP", "GO_QI", "AS")
 SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_QI", "AS")
 SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_QI", "AS")
@@ -410,11 +441,15 @@ SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_QI", "AS")
   AT_ep = func_empprod(AT_emp, AT_go,"AT", "EMP", "GO", "AS")
   BE_ep = func_empprod(BE_emp, BE_go,"BE", "EMP", "GO", "AS")
   CZ_ep = func_empprod(CZ_emp, CZ_go,"CZ", "EMP", "GO", "AS")
+  CY_ep = func_empprod(CY_emp, CY_gop,"CY", "EMP", "GO", "AS")
+  EE_ep = func_empprod(EE_emp, EE_gop,"ES", "EMP", "GO", "AS")
+  ES_ep = func_empprod(ES_emp, ES_gop,"ES", "EMP", "GO", "AS")
+  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO", "AS")
   FI_ep = func_empprod(FI_emp, FI_go,"FI", "EMP", "GO", "AS")
   FR_ep = func_empprod(FR_emp, FR_go,"FR", "EMP", "GO", "AS")
   EL_ep = func_empprod(EL_emp, EL_go,"EL", "EMP", "GO", "AS")
   IT_ep = func_empprod(IT_emp, IT_go,"IT", "EMP", "GO", "AS")
-  #LV_ep = func_empprod(LV_emp, LV_go,"LV", "EMP", "GO", "AS")
+  LV_ep = func_empprod(LV_emp, LV_go,"LV", "EMP", "GO", "AS")
   LU_ep = func_empprod(LU_emp, LU_go,"LU", "EMP", "GO", "AS")
   SK_ep = func_empprod(SK_emp, SK_go,"SK", "EMP", "GO", "AS")
   SI_ep = func_empprod(SI_emp, SI_go,"SI", "EMP", "GO", "AS")
