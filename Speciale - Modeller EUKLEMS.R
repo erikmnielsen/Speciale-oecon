@@ -231,7 +231,13 @@ func_regpanel <- function(dataset_1, type) {
     ind$wgt_i = ind$EMP/ind$EMP_tot
     ind$wgt_b = ind$EMP_b/ind$EMP_tot
     
-    test <- ind  %>% group_by(code, year) %>% summarize(EMP=sum(EMP),GO=sum(GO))
+    test = ind %>% group_by(code) %>% summarize(EMP_test=sum(EMP))
+    ind = merge(ind, test, by=c("code"), all.x = TRUE)
+    test_2 = ind %>% group_by(country) %>% summarize(EMP_test_2=sum(EMP))
+    ind = merge(ind, test_2, by=c("country"), all.x = TRUE)
+    
+    ind$wgt_i_avg = ind$EMP_test/ind$EMP_test_2.x
+    
     
     #ind$prod_logchanges_wgt = ind$prod_logchanges*ind$wgt_i
     #ind$emp_logchanges_wgt = ind$emp_logchanges*ind$wgt_i
