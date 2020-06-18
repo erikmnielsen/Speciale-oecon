@@ -226,17 +226,15 @@ func_regpanel <- function(dataset_1, type) {
     ind = merge(ind, b, by=c("year"), all.x = TRUE)
     ind = merge(ind, tot, by=c("year"), all.x = TRUE)
     
-    ind = pdata.frame(ind, index = c("code", "year"))
+    ind$wgt_i = ind$EMP/ind$EMP_tot
+    ind$wgt_b = ind$EMP_b/ind$EMP_tot
     
-    #ind$wgt_i = ind$EMP/ind$EMP_tot
-    #ind$wgt_b = ind$EMP_b/ind$EMP_tot
-    
-    #test = ind %>% group_by(country, code) %>% summarize(EMP_test=sum(EMP))
-    #test_2 = ind %>% group_by(country) %>% summarize(EMP_test_2=sum(EMP))
-    #test = merge(test, test_2, by=c("country"), all.x = TRUE)
-    #test$wgt_i_avg = test$EMP_test/test$EMP_test_2
-    #test = test %>% select(code, wgt_i_avg)
-    #ind = merge(ind, test, by=c("code"), all.x = TRUE)
+    test = ind %>% group_by(country, code) %>% summarize(EMP_test=sum(EMP))
+    test_2 = ind %>% group_by(country) %>% summarize(EMP_test_2=sum(EMP))
+    test = merge(test, test_2, by=c("country"), all.x = TRUE)
+    test$wgt_i_avg = test$EMP_test/test$EMP_test_2
+    test = test %>% select(code, wgt_i_avg)
+    ind = merge(ind, test, by=c("code"), all.x = TRUE)
     
     
     #ind$prod_logchanges_wgt = ind$prod_logchanges*ind$wgt_i
@@ -245,6 +243,9 @@ func_regpanel <- function(dataset_1, type) {
     #ind$prod_logchanges_wgt_lag1 = lag(ind$prod_logchanges_wgt, k = 1, shift = "time")
     #ind$prod_logchanges_wgt_lag2 = lag(ind$prod_logchanges_wgt_lag1, k = 1, shift = "time")
     #ind$prod_logchanges_wgt_lag3 = lag(ind$prod_logchanges_wgt_lag2, k = 1, shift = "time")
+    
+    ind = pdata.frame(ind, index = c("code", "year"))
+    
     
     #Beta2 variable og lags, mikro + makro
     ind$dLP_CwoI = diff(log((ind$GO_tot-ind$GO)/(ind$EMP_tot-ind$EMP)), lag = 1, shift = "time")*100
@@ -534,18 +535,9 @@ c_panel = rbind(DK_tot, US_tot, NL_tot, DE_tot, AT_tot, BE_tot, CY_tot, CZ_tot, 
 #table(index(c_panel), useNA = "ifany")
 
 ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, CY_ind, CZ_ind, EE_ind, ES_ind, EL_ind, FI_ind, FR_ind, HU_ind, IE_ind, IT_ind, LV_ind, LT_ind, PL_ind, PT_ind, SI_ind, SK_ind)
-ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, EE_ind, ES_ind, EL_ind, FI_ind, FR_ind, HU_ind, IE_ind, IT_ind, LV_ind, LT_ind, PL_ind, PT_ind, SI_ind, SK_ind)
-
-ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, LV_ind) #, EE_ind, ES_ind, EL_ind, FI_ind, FR_ind, HU_ind, IE_ind, IT_ind, LV_ind, LT_ind, PL_ind, PT_ind, SI_ind, SK_ind)
-ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, AT_ind, BE_ind, EL_ind, FI_ind, FR_ind, IT_ind) #, HU_ind, IE_ind, IT_ind, LV_ind, LT_ind, PL_ind, PT_ind, SI_ind, SK_ind)
-
-
-
-#, ,  #CY_ind, CZ_ind,
+ci_panel = ci_panel %>% filter(is.finite(emp_logchanges))
 
 #rm(list=setdiff(ls(), c("c_panel", "ci_panel")))
-
-
 
 # Country panel  -----------------------------------------------------
 
@@ -617,6 +609,7 @@ ci_panel_1 = pdata.frame(ci_panel_1, index = c("id", "year"))
 #OBS AS bruger ikke lags i denne pga insignifikans
 
 lsdv.ci_pool1 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1)
+
 lsdv.ci_pool1 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1, weights = wgt_i_avg)
 lsdv.ci_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country) -1, data=ci_panel_1) 
 lsdv.ci_feci1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) -1, data=ci_panel_1)
