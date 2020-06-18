@@ -541,7 +541,9 @@ ci_panel = ci_panel %>% filter(is.finite(emp_logchanges))
 
 # Country panel  -----------------------------------------------------
 
+c_panel = as.data.frame(c_panel)
 c_panel = pdata.frame(c_panel, index = c("country", "year"))
+
 c_panel$prod_logchanges_lag1 = lag(c_panel$prod_logchanges, k = 1, shift = "time")
 c_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges_lag1, k = 1, shift = "time")
 c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges_lag2, k = 1, shift = "time")
