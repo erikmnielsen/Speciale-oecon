@@ -236,10 +236,7 @@ func_regpanel <- function(dataset_1, type) {
     test = test %>% select(code, wgt_i_avg)
     ind = merge(ind, test, by=c("code"), all.x = TRUE)
     
-    
-    #ind$prod_logchanges_wgt = ind$prod_logchanges*ind$wgt_i
-    #ind$emp_logchanges_wgt = ind$emp_logchanges*ind$wgt_i
-    
+
     #ind$prod_logchanges_wgt_lag1 = lag(ind$prod_logchanges_wgt, k = 1, shift = "time")
     #ind$prod_logchanges_wgt_lag2 = lag(ind$prod_logchanges_wgt_lag1, k = 1, shift = "time")
     #ind$prod_logchanges_wgt_lag3 = lag(ind$prod_logchanges_wgt_lag2, k = 1, shift = "time")
@@ -597,22 +594,17 @@ write.csv(cbind(lsdv.c_pool_coef, lsdv.c_feci_coef, lsdv.c_fecy_coef, lsdv.c_fey
 
 #AS: Industry-by-country fixed effects are already implicitly taken out by first-differencing in the stacked firstdifference model.
 
-ci_panel_1 = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges)
-
-ci_panel_1 = as.data.frame(ci_panel_1)
-ci_panel_1[complete.cases(ci_panel_1), ]
-
+ci_panel_1 = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, wgt_i_avg, wgt_i)
 #ci_panel_1 = ci_panel %>% select(year, country, code, desc, emp_logchanges, emp_logchanges_wgt, prod_logchanges, prod_logchanges_wgt, prod_logchanges_wgt_lag1, prod_logchanges_wgt_lag2,prod_logchanges_wgt_lag3)
 
-ci_panel_1$id = ci_panel_1 %>% group_indices(code, country)
-ci_panel_1 = pdata.frame(ci_panel_1, index = c("id", "year"))
+#ci_panel_1 = as.data.frame(ci_panel_1)
+#ci_panel_1$id = ci_panel_1 %>% group_indices(code, country)
+#ci_panel_1 = pdata.frame(ci_panel_1, index = c("id", "year"))
 
 
 #OBS AS bruger ikke lags i denne pga insignifikans
 
 lsdv.ci_pool1 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1)
-
-lsdv.ci_pool1 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1, weights = wgt_i_avg)
 lsdv.ci_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country) -1, data=ci_panel_1) 
 lsdv.ci_feci1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) -1, data=ci_panel_1)
 lsdv.ci_feciy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1)
@@ -623,17 +615,15 @@ summary(lsdv.ci_feci1)
 summary(lsdv.ci_feciy1)
 
 #med vægte
-lsdv.ci_pool2 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt, data=ci_panel_1)
-lsdv.ci_fec2 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) -1, data=ci_panel_1) 
-lsdv.ci_feci2 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(code) -1, data=ci_panel_1)
-lsdv.ci_feciy2 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1)
+lsdv.ci_pool2 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1, weights = wgt_i_avg)
+lsdv.ci_fec2 = lm(emp_logchanges ~ prod_logchanges + factor(country) -1, data=ci_panel_1, weights = wgt_i_avg) 
+lsdv.ci_feci2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) -1, data=ci_panel_1, weights = wgt_i_avg)
+lsdv.ci_feciy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1, weights = wgt_i_avg)
 
 summary(lsdv.ci_pool2)
 summary(lsdv.ci_fec2)
 summary(lsdv.ci_feci2)
 summary(lsdv.ci_feciy2)
-
-
 
 #export resultater til excel
 #options(digits = 3)
@@ -648,10 +638,10 @@ write.csv(cbind(lsdv.ss_pool_coef, lsdv.ss_feci_coef, lsdv.ss_fecy_coef, lsdv.ss
 
 
 #test af lags
-lsdv.ci_pool3 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + prod_logchanges_wgt_lag1 + prod_logchanges_wgt_lag2 + prod_logchanges_wgt_lag3, data=ci_panel_1)
-lsdv.ci_fec3 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + prod_logchanges_wgt_lag1 + prod_logchanges_wgt_lag2 + prod_logchanges_wgt_lag3 + factor(country) -1, data=ci_panel_1) 
-lsdv.ci_feci3 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + prod_logchanges_wgt_lag1 + prod_logchanges_wgt_lag2 + prod_logchanges_wgt_lag3 + factor(country) + factor(code) -1, data=ci_panel_1)
-lsdv.ci_feciy3 = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + prod_logchanges_wgt_lag1 + prod_logchanges_wgt_lag2 + prod_logchanges_wgt_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1)
+lsdv.ci_pool3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3, data=ci_panel_1)
+lsdv.ci_fec3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) -1, data=ci_panel_1) 
+lsdv.ci_feci3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) -1, data=ci_panel_1)
+lsdv.ci_feciy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1)
 
 
 #test af plm
@@ -666,20 +656,28 @@ summary(FixedEffects_twoway)
 
 # Sammensætning af mikro og makroelasticiteter --------------------------------------------------
 
-ci_panel_2 = ci_panel %>% select()
+ci_panel_2 = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, dLP_CwoI, dLP_CwoI_lag1, dLP_CwoI_lag2, dLP_CwoI_lag3 ,wgt_i_avg)
 
-#hvad gør vi med lande hvor nogle industrier mangler?
+lsdv.mm_pool1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3, data=ci_panel_2)
+lsdv.mm_fec1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) -1, data=ci_panel_2) 
+lsdv.mm_feci1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) -1, data=ci_panel_2)
+lsdv.mm_feciy1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_2)
 
-#model_linear2 = emp_logchanges ~ prod_logchanges + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3
+summary(lsdv.mm_pool1)
+summary(lsdv.mm_fec1)
+summary(lsdv.mm_feci1)
+summary(lsdv.mm_feciy1)
 
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(code) + factor(year), data=ci_panel_2)
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) + factor(year), data=ci_panel_2)
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3  + factor(country) , data=ci_panel_2)
-fixed.dum = lm(emp_logchanges_wgt ~ prod_logchanges_wgt + avgLP_oi + avgLP_oi_lag1 + avgLP_oi_lag2 + avgLP_oi_lag3 , data=ci_panel_2)
+#med vægte
+lsdv.mm_pool2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3, data=ci_panel_2, weights = wgt_i_avg)
+lsdv.mm_fec2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) -1, data=ci_panel_2, weights = wgt_i_avg) 
+lsdv.mm_feci2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) -1, data=ci_panel_2, weights = wgt_i_avg)
+lsdv.mm_feciy2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_2, weights = wgt_i_avg)
 
-summary(fixed.dum)
-
-
+summary(lsdv.mm_pool2)
+summary(lsdv.mm_fec2)
+summary(lsdv.mm_feci2)
+summary(lsdv.mm_feciy2)
 
 # Sector spillover -------------------------------------------------
 
@@ -688,9 +686,9 @@ summary(fixed.dum)
 #Skal det vægtes? Og hvad skal vægtes?
 
 
-ci_panel_ss = ci_panel %>% select(year, country, code, desc, branche, branche_desc, wgt_i, wgt_b, emp_logchanges, 
+ci_panel_ss = ci_panel %>% select(year, country, code, desc, branche, branche_desc, wgt_i, wgt_i_avg, emp_logchanges, 
                                     dLP_I_b1, dLP_I_b2, dLP_I_b3, dLP_I_b4, dLP_I_b5,
-                                    dLP_I_b1_dum, dLP_I_b2_dum, dLP_I_b3_dum, dLP_I_b4_dum, dLP_I_b5_dum,
+                                    #dLP_I_b1_dum, dLP_I_b2_dum, dLP_I_b3_dum, dLP_I_b4_dum, dLP_I_b5_dum,
                                     dLP_BwoI_b1, dLP_BwoI_b1_lag1, dLP_BwoI_b1_lag2, dLP_BwoI_b1_lag3,
                                     dLP_BwoI_b2, dLP_BwoI_b2_lag1, dLP_BwoI_b2_lag2, dLP_BwoI_b2_lag3,
                                     dLP_BwoI_b3, dLP_BwoI_b3_lag1, dLP_BwoI_b3_lag2, dLP_BwoI_b3_lag3,
@@ -703,35 +701,17 @@ ci_panel_ss = as.data.frame(ci_panel_ss)
 
 ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
 
-base_model = {emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
-    dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-    dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-    dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-    dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-    dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3}
-
-
-is.pconsecutive(ci_panel_ss)
-
-pTestData <- pdata.frame(TestData, index=c("ID", "Time"))
-
-pTestData$Y_diff <- plm::lag(pTestData$Y) - pTestData$Y
-pTestData$X_diff <- plm::lag(pTestData$X) - pTestData$X
-fdmod <- plm(Y_diff ~ X_diff, data = pTestData, model = "pooling")
-length(residuals(fdmod)) # 10
-nrow(fdmod$model)        # 10
-
-
 #ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
-#ci_panel_ss$prod_logchanges_wgt = ci_panel_ss$prod_logchanges*ci_panel$wgt
-#ci_panel_ss$emp_logchanges_wgt = ci_panel_ss$emp_logchanges*ci_panel$wgt
+#ci_panel_ss$prod_logchanges = ci_panel_ss$prod_logchanges*ci_panel$wgt
+#ci_panel_ss$emp_logchanges = ci_panel_ss$emp_logchanges*ci_panel$wgt
 
 lsdv.ss_pool = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3, data=ci_panel_ss)}
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + 
+                     dLP_BwoI_b5_lag3, data=ci_panel_ss)}
 
 lsdv.ss_fecy = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
@@ -741,7 +721,7 @@ lsdv.ss_fecy = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
                      factor(country) + factor(year) -1, data=ci_panel_ss)}
 
-summary(lsdv.ss_fecy)
+summary(lsdv.ss_pool)
 
 lsdv.ss_feci = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
@@ -749,7 +729,7 @@ lsdv.ss_feci = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                     factor(country) + factor(code), data=ci_panel_ss)}
+                     factor(country) + factor(code) -1, data=ci_panel_ss)}
 
 lsdv.ss_feyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
@@ -757,7 +737,7 @@ lsdv.ss_feyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                     factor(year) + factor(code), data=ci_panel_ss)}
+                     factor(year) + factor(code) -1, data=ci_panel_ss)}
 
 lsdv.ss_fecyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                       dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
@@ -765,7 +745,52 @@ lsdv.ss_fecyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 +
                       dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                       dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                       dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                      factor(country) + factor(year) + factor(code), data=ci_panel_ss)}
+                      factor(country) + factor(year) + factor(code) -1, data=ci_panel_ss)}
+
+
+#med vægte
+
+lsdv.ss_pool = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3, data=ci_panel_ss, weights = wgt_i_avg)}
+
+lsdv.ss_fecy = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+                     factor(country) + factor(year) -1, data=ci_panel_ss, weights = wgt_i_avg)}
+
+summary(lsdv.ss_pool)
+
+lsdv.ss_feci = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                     factor(country) + factor(code) -1, data=ci_panel_ss, weights = wgt_i_avg)}
+
+lsdv.ss_feyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                     factor(year) + factor(code) -1, data=ci_panel_ss, weights = wgt_i_avg)}
+
+lsdv.ss_fecyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                      factor(country) + factor(year) + factor(code) -1, data=ci_panel_ss, weights = wgt_i_avg)}
+
 
 options(digits = 3)
 options("scipen"=100, "digits"=4)
