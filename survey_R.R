@@ -5,12 +5,13 @@ library(ggplot2)
 library(ggthemes)
 library(GGally)
 
-data <- read_csv("surveydata.csv", skip = 1) %>% select(-X1)
+data <- read_csv("surveydata.csv") %>% select(-X1)
 
 # Kodning af variable --------------------------------------------------------
 
-#test = data %>% mutate(Alder1839 = ifelse(aldergrp == 1, 1, 0), Alder4059 = ifelse(data$aldergrp == 2, 1, 0), Alder60 = ifelse(data$aldergrp == 3, 1, 0)) 
+yes = TRUE
 
+if (yes=FALSE){
 ## Alder
 data$Alder1839 = ifelse(data$aldergrp == 1, 1, 0)
 data$Alder4059 = ifelse(data$aldergrp == 2, 1, 0)
@@ -50,8 +51,9 @@ data$Erhvervsservice = ifelse(data$bra10grp == "Erhvervsservice", 1, 0)
 #data$Offentligadministrationundervisningsundhed = ifelse(data$bra10grp == "Offentlig administration, undervisning og sundhed", 1, 0)
 #data$Kulturfritid = ifelse(data$bra10grp == "Kultur, fritid og anden service", 1, 0)
 
-## Robotter
+}
 
+## Robotter
 ### Robot, samlet
 data$Robotter = ifelse(data$F1 %in% c(1,2), 1, 
                              ifelse(data$F2 %in% c(1,2), 1,
@@ -129,251 +131,167 @@ data$G1a = ifelse(data$G1a==1, 1, 0)
 data$G2a = ifelse(data$G2a==1, 1, 0)
 data$G3a = ifelse(data$G3a==1, 1, 0)
 
-# REGRESSIONER: Indhold af arbejde  --------------------------------------------------------
+
+
+
+# Dataforberedelse -----------------------------------------------------------------------
+
 
 # Filtreret for A1=1 (Har du for tiden en lønnet hovedbeskæftigelse), samt branche 9 og 10
-data_A1 = data %>% filter(A1 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service
-") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+
+#data_A1 = data %>% filter(A1 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+data_A1 = data %>% filter(A1 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
 
 # Filtreret for A1=1, og A5=1 (Havde du i 2016 en lønnet hovedbeskæftigelse? ), samt branche 9 og 10
-data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service
-") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+#data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10) 
+
+#Hvorfor er der forskel på de to metoder?
+
 
 # Survey vægtning
 svydesign_A1 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1, nest=TRUE)
 svydesign_A1A5 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1A5, nest=TRUE)
 
-# Regressioner
+
+#DESKRIPTIVT: Indhold af arbejde  --------------------------------------------------------
+
+#Arbejdsfunktioner
+ggplot(data, aes(Functions)) + 
+  geom_histogram(binwidth = 0.5, color="black") + 
+  scale_x_discrete(limits=c("Ledelsesarbejde","Højeste niveau","Mellemniveau","Kontor- og kundeservicearbejde","Service- og salgsarbejde","Landbrug, skovbrug og fiskeri","Håndværkspræget arbejde","Operatør-, monterings- og transportarbejde","Andet manuelt arbejde","9999")) + 
+  theme_economist() + scale_color_economist() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  ylab("") +  
+  xlab("") + 
+  ggtitle("Arbejdsfunktioner")
+
+
+
+
+# REGRESSIONER: Indhold af arbejde  --------------------------------------------------------
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du løser uforudsete problemer på egen hånd?
-regb3 = {summary(svyglm(B3 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4,
+regb3 = svyglm(B3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
               family=gaussian(), 
               design=svydesign_A1, 
-              data=data_A1))}
+              data=data_A1)
 summary(regb3)
 
 #Hvor ofte indebærer din hovedbeskæftigelse: Komplekse opgaver?
-regb5 = svyglm(B5 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4,
+regb5 = {svyglm(B5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
-               data=data_A1)
+               data=data_A1)}
 summary(regb5)
 
 #Hvor ofte indebærer din hovedbeskæftigelse: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
-regb7 = svyglm(B7 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4,
+regb7 = svyglm(B7 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)
 summary(regb7)
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
-regb9 = svyglm(B9 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4,
+regb9 = svyglm(B9 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)
 summary(regb9)
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du arbejder i en gruppe eller et team, som har fælles opgaver og selv kan planlægge arbejdet?
-regb11 = svyglm(B11 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4,
+regb11 = svyglm(B11 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)
 summary(regb11)
 
+
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du løser uforudsete problemer på egen hånd?
-regc1 = svyglm(C1 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
-              family=gaussian(), 
-              design=svydesign_A1A5, 
-              data=data_A1A5)
+regc1 = svyglm(C1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1A5, 
+               data=data_A1A5)
+
 summary(regc1)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Komplekse problemer?
-regc2 = svyglm(C2 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+regc2 = svyglm(C2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(regc2)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
-regc3 = svyglm(C3 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+regc3 = svyglm(C3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(regc3)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
-regc4 = svyglm(C4 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+regc4 = svyglm(C4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(regc4)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du selv har mulighed for at ændre dit arbejdstempo?
-regc5 = svyglm(C5 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+regc5 = svyglm(C5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(regc5)
 
 #Hvor ofte plejer du i din hovedbeskæftigelse at rådgive, oplære, instruere eller undervise andre –individuelt eller i grupper?
-rege3 = svyglm(E3 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
-               family=gaussian(), 
-               design=svydesign_A1, 
+rege3 = svyglm(E3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                data=data_A1)
 summary(rege3)
 
 #Hvor ofte plejer du i din hovedbeskæftigelse at sælge et produkt eller en tjenesteydelse?
-rege4 = svyglm(E4 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+rege4 = svyglm(E4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)
 summary(rege4)
 
 #Hvor ofte plejer du i din hovedbeskæftigelse at varetage egentlig forhandlinger om kontrakter eller vilkår mere generelt med personer i eller uden for virksomheden eller organisationen?
-rege1 = svyglm(E1 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+rege1 = svyglm(E1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)
 summary(rege1)
 
 #Hvor ofte plejer du i din hovedbeskæftigelse at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
-rege2 = svyglm(E2 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+rege2 = svyglm(E2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)
 summary(rege2)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at rådgive, oplære, instruere eller undervise andre – individuelt eller i grupper?
-rege3a = svyglm(E3a ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+rege3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(rege3a)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at sælge et produkt eller en tjenesteydelse?
-rege4a = svyglm(E4a ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+rege4a = svyglm(E4a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(regc5)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at forhandle med personer i eller uden for virksomheden eller organisationen?
-rege1a = svyglm(E1a ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+rege1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(regc5)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
-rege2a = svyglm(E2a ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
-                 Ejendomshandeludlejning +
-                 Erhvervsservice +
-                 udgrp2 + udgrp3 +
-                 Alder60 + Alder4059 +
-                 Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3 +
-                 loen2 + loen3 + loen4, 
+rege2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)

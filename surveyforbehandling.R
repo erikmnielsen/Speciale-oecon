@@ -4,16 +4,15 @@ library(dplyr)
 library(haven)
 library(ggplot2)
 library(ggthemes)
-
-
 library(haven)
+
 dok1 = "aau_job_2019_svar.sas7bdat"
 aau_job_2019_svar = read_sas(dok1, NULL)
-View(aau_job_2019_svar)
+#View(aau_job_2019_svar)
 
 dok2 = "disco.sas7bdat"
 disco = read_sas(dok2, NULL)
-View(disco)
+#View(disco)
 
 
 
@@ -730,6 +729,21 @@ aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "7 Ejendomshandel og ud
 aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "8 Erhvervsservice"] = "Erhvervsservice"
 aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "9 Offentlig administration, undervisning og sundhed"] = "Offentlig administration, undervisning og sundhed"
 aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "10 Kultur, fritid og anden service"] = "Kultur, fritid og anden service"
+
+aau_job_2019_svar = aau_job_2019_svar %>% mutate(bra10grp_code = ifelse(bra10grp=="Landbrug, skovbrug og fiskeri",1,
+                                                                        ifelse(bra10grp=="Industri, råstofindvinding og forsyningsvirksomhed",2,
+                                                                               ifelse(bra10grp=="Bygge og anlæg",3,
+                                                                                      ifelse(bra10grp=="Handel og transport",4,
+                                                                                             ifelse(bra10grp=="Information og kommunikation",5,
+                                                                                                    ifelse(bra10grp=="Finansiering og forsikring",6,
+                                                                                                           ifelse(bra10grp=="Ejendomshandel og udlejning",7,
+                                                                                                                  ifelse(bra10grp=="Erhvervsservice",8,
+                                                                                                                         ifelse(bra10grp=="Offentlig administration, undervisning og sundhed",9,
+                                                                                                                                ifelse(bra10grp=="Kultur, fritid og anden service",10,
+                                                                                                                                       NA)))))))))))
+
+
+aau_job_2019_svar = aau_job_2019_svar[,c(1,2,3,85,4:(ncol(aau_job_2019_svar)-1))] 
 
 aau_job_2019_svar = aau_job_2019_svar %>% filter(bra10grp != "11 Uoplyst")
 
