@@ -5,9 +5,11 @@ library(ggplot2)
 library(ggthemes)
 library(GGally)
 
-dok1 = "surveydata1.csv"
-data = read.csv(dok1)
-data = data %>% select(c(-X))
+data <- read_csv("surveydata.csv", skip = 1) %>% select(-X1)
+
+# Kodning af variable --------------------------------------------------------
+
+#test = data %>% mutate(Alder1839 = ifelse(aldergrp == 1, 1, 0), Alder4059 = ifelse(data$aldergrp == 2, 1, 0), Alder60 = ifelse(data$aldergrp == 3, 1, 0)) 
 
 ## Alder
 data$Alder1839 = ifelse(data$aldergrp == 1, 1, 0)
@@ -127,21 +129,24 @@ data$G1a = ifelse(data$G1a==1, 1, 0)
 data$G2a = ifelse(data$G2a==1, 1, 0)
 data$G3a = ifelse(data$G3a==1, 1, 0)
 
+# REGRESSIONER: Indhold af arbejde  --------------------------------------------------------
 
-
-# Filtreret for A1=1
+# Filtreret for A1=1 (Har du for tiden en lønnet hovedbeskæftigelse), samt branche 9 og 10
 data_A1 = data %>% filter(A1 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service
 ") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+
+# Filtreret for A1=1, og A5=1 (Havde du i 2016 en lønnet hovedbeskæftigelse? ), samt branche 9 og 10
 data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service
 ") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
 
 # Survey vægtning
-svydesign_A1A5 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1, nest=TRUE)
+svydesign_A1 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1, nest=TRUE)
 svydesign_A1A5 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1A5, nest=TRUE)
+
 # Regressioner
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du løser uforudsete problemer på egen hånd?
-regb3 = svyglm(B3 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
+regb3 = {summary(svyglm(B3 ~ Handeltransport + Byggeanlæg + Informationkommunikation + Finansieringforsikring +
                  Ejendomshandeludlejning +
                  Erhvervsservice +
                  udgrp2 + udgrp3 +
@@ -150,7 +155,7 @@ regb3 = svyglm(B3 ~ Handeltransport + Byggeanlæg + Informationkommunikation + F
                  loen2 + loen3 + loen4,
               family=gaussian(), 
               design=svydesign_A1, 
-              data=data_A1)
+              data=data_A1))}
 summary(regb3)
 
 #Hvor ofte indebærer din hovedbeskæftigelse: Komplekse opgaver?
