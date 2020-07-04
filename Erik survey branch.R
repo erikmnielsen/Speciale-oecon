@@ -1,0 +1,478 @@
+library(survey)
+library(dplyr)
+library(haven)
+library(ggplot2)
+library(ggthemes)
+library(GGally)
+
+data <- read_csv("surveydata.csv") %>% select(-X1)
+
+# Kodning af variable --------------------------------------------------------
+
+yes = TRUE
+
+if (yes=FALSE){
+  ## Alder
+  data$Alder1839 = ifelse(data$aldergrp == 1, 1, 0)
+  data$Alder4059 = ifelse(data$aldergrp == 2, 1, 0)
+  data$Alder60 = ifelse(data$aldergrp == 3, 1, 0)
+  
+  ## Uddannelse
+  data$udgrp1 = ifelse(data$udgrp == 1, 1, 0)
+  data$udgrp2 = ifelse(data$udgrp == 2, 1, 0)
+  data$udgrp3 = ifelse(data$udgrp == 3, 1, 0)
+  
+  ## Løn
+  data$loen1 = ifelse(data$loengrp == 1, 1, 0) 
+  data$loen2 = ifelse(data$loengrp == 2, 1, 0) 
+  data$loen3 = ifelse(data$loengrp == 3, 1, 0) 
+  data$loen4 = ifelse(data$loengrp == 4, 1, 0) 
+  
+  ## Funktioner
+  data$Ledelsesarbejde = ifelse(data$Functions == 1, 1, 0)
+  data$Højesteniveau = ifelse(data$Functions == 2, 1, 0)
+  data$Mellemniveau = ifelse(data$Functions == 3, 1, 0)
+  data$Kontorkundeservicearbejde = ifelse(data$Functions == 4, 1, 0)
+  data$Servicesalgsarbejde = ifelse(data$Functions == 5, 1, 0)
+  data$Landbrugskovbrugfiskeri_fun = ifelse(data$Functions == 6, 1, 0)
+  data$Håndværksprægetarbejde = ifelse(data$Functions == 7, 1, 0)
+  data$Operatørmonteringstransportarbejde = ifelse(data$Functions == 8, 1, 0)
+  data$Andetmanueltarbejde = ifelse(data$Functions == 9, 1, 0)
+  
+  ## Brancher
+  #data$Landbrugskovbrugfiskeri_bra = ifelse(data$bra10grp == "Landbrug, skovbrug og fiskeri", 1, 0)
+  data$Industriråstofindvindingforsyningsvirksomhed = ifelse(data$bra10grp == "Industri, råstofindvinding og forsyningsvirksomhed", 1, 0)
+  data$Byggeanlæg = ifelse(data$bra10grp == "Bygge og anlæg", 1, 0)
+  data$Handeltransport = ifelse(data$bra10grp == "Handel og transport", 1, 0)
+  data$Informationkommunikation = ifelse(data$bra10grp == "Information og kommunikation", 1, 0)
+  data$Finansieringforsikring = ifelse(data$bra10grp == "Finansiering og forsikring", 1, 0)
+  data$Ejendomshandeludlejning = ifelse(data$bra10grp == "Ejendomshandel og udlejning", 1, 0)
+  data$Erhvervsservice = ifelse(data$bra10grp == "Erhvervsservice", 1, 0)
+  #data$Offentligadministrationundervisningsundhed = ifelse(data$bra10grp == "Offentlig administration, undervisning og sundhed", 1, 0)
+  #data$Kulturfritid = ifelse(data$bra10grp == "Kultur, fritid og anden service", 1, 0)
+  
+}
+
+## Robotter
+### Robot, samlet
+data$Robotter = ifelse(data$F1 %in% c(1,2), 1, 
+                       ifelse(data$F2 %in% c(1,2), 1,
+                              0))
+
+### Levere og modtage output
+data$Leveremodtageoutput = ifelse(data$F1 %in% c(1,2), 1,
+                                  0)
+
+### Start, overvåge og stoppe robotter
+data$Startovervågestopperobottter = ifelse(data$F2 %in% c(1,2), 1,
+                                           0)
+
+
+## Advancerede teknologier
+
+### Advancerede teknologier, samlet
+
+data$Advancerettek = ifelse(data$G1 %in% c(1,2), 1, 
+                            ifelse(data$G2 %in% c(1,2), 1,
+                                   ifelse(data$G3 %in% c(1,2), 1, 0)))
+
+data$Advancerettek1 = ifelse(data$G1 %in% c(1,2), 1, 0)
+data$Advancerettek2 = ifelse(data$G2 %in% c(1,2), 1, 0)
+data$Advancerettek3 = ifelse(data$G3 %in% c(1,2), 1, 0)
+
+## Sociale interaktioner
+data$Socialinterationer = ifelse(data$E1 %in% c(1,2), 1, 
+                                 ifelse(data$E2 %in% c(1,2), 1,
+                                        ifelse(data$E3 %in% c(1,2), 1,
+                                               ifelse(data$E4 %in% c(1,2), 1,
+                                                      0))))
+
+
+
+# Dataforberedelse -----------------------------------------------------------------------
+
+# Filtreret for A1=1 (Har du for tiden en lønnet hovedbeskæftigelse), samt branche 9 og 10
+
+#data_A1 = data %>% filter(A1 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+data_A1 = data %>% filter(A1 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
+
+# Filtreret for A1=1, og A5=1 (Havde du i 2016 en lønnet hovedbeskæftigelse? ), samt branche 9 og 10
+#data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10) 
+
+#Hvorfor er der forskel på de to metoder?
+
+
+# Survey vægtning
+svydesign_A1 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1, nest=TRUE)
+svydesign_A1A5 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1A5, nest=TRUE)
+
+
+#DESKRIPTIVT: Indhold af arbejde  --------------------------------------------------------
+
+
+#Svar på spørgsmål C1-5
+
+df.long1 = data_A1A5 %>% select(Resp_id1, C1, C2, C3, C4, C5) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long1_pct <- df.long1 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long1_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+df.long1b = data_A1A5 %>% select(Resp_id1, B3, B5, B7, B9, B11) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long1b_pct <- df.long1b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long1b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Altid, 2=Ofte, 3=Af og til, 4=Sjældent, 5=Aldrig") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+
+#Svar på spørgsmål E1a-4a
+
+df.long2 = data_A1A5 %>% select(Resp_id1, E1a, E2a, E3a, E4a) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9)
+# ggplot(df.long2, aes(x=variable, fill=as.factor(value))) + geom_bar()
+df.long2_pct <- df.long2 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long2_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+df.long2b = data_A1A5 %>% select(Resp_id1, E1, E2, E3, E4) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long2b_pct <- df.long2b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long2b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Hver dag, 2=Mindst én gang om ugen, 3=1-3 gange om måneden, 4=Sjældnere end én gang om måneden, 5=Aldrig") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+
+
+#Svar på spørgsmål F1A, F2A, G1A, G3A
+
+df.long3 = data_A1A5 %>% select(Resp_id1, F1a, F2a, G1a, G3a) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9)
+df.long3_pct <- df.long3 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long3_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+df.long3b = data_A1A5 %>% select(Resp_id1, F1, F2, G1, G3) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long3b_pct <- df.long3b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Hver dag, 2=Mindst én gang om ugen, 3=1-3 gange om måneden, 4=Sjældnere end én gang om måneden, 5=Aldrig") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+
+
+
+# Ændring til dummy variable ---------------
+
+  data$D2 = ifelse(data$D2 %in% c(1,2), 1, 0)
+  data$D1 = ifelse(data$D1 %in% c(1,2), 1, 0)
+  data$D3 = ifelse(data$D3 %in% c(1,2), 1, 0)
+  data$D4 = ifelse(data$D4 %in% c(1,2), 1, 0)
+  
+  data$C1 = ifelse(data$C1==1, 1, 0)
+  data$C2 = ifelse(data$C2==1, 1, 0)
+  data$C3 = ifelse(data$C3==1, 1, 0)
+  data$C4 = ifelse(data$C4==1, 1, 0)
+  data$C5 = ifelse(data$C5==1, 1, 0)
+  
+  data$B3 = ifelse(data$B3 %in% c(1,2),1,0)
+  data$B5 = ifelse(data$B5 %in% c(1,2),1,0)
+  data$B7 = ifelse(data$B7 %in% c(1,2),1,0)
+  data$B9 = ifelse(data$B9 %in% c(1,2),1,0)
+  data$B11 = ifelse(data$B11 %in% c(1,2),1,0)
+  
+  data$E1 = ifelse(data$E1 %in% c(1,2), 1, 0)
+  data$E2 = ifelse(data$E2 %in% c(1,2), 1, 0)
+  data$E3 = ifelse(data$E3 %in% c(1,2), 1, 0)
+  data$E4 = ifelse(data$E4 %in% c(1,2), 1, 0)
+  
+  data$E1a = ifelse(data$E1a==1, 1, 0)
+  data$E2a = ifelse(data$E2a==1, 1, 0)
+  data$E3a = ifelse(data$E3a==1, 1, 0)
+  data$E4a = ifelse(data$E4a==1, 1, 0)
+  
+  data$F1 = ifelse(data$F1 %in% c(1,2), 1, 0)
+  data$F2 = ifelse(data$F2 %in% c(1,2), 1, 0)
+  
+  data$F1a = ifelse(data$F1a==1, 1, 0)
+  data$F2a = ifelse(data$F2a==1, 1, 0)
+  
+  data$G1 = ifelse(data$G1 %in% c(1,2), 1, 0)
+  data$G2 = ifelse(data$G2 %in% c(1,2), 1, 0)
+  data$G3 = ifelse(data$G3 %in% c(1,2), 1, 0)
+  
+  data$G1a = ifelse(data$G1a==1, 1, 0)
+  data$G2a = ifelse(data$G2a==1, 1, 0)
+  data$G3a = ifelse(data$G3a==1, 1, 0)
+
+
+# REGRESSIONER: Indhold af arbejde  --------------------------------------------------------
+
+# ORGANISERING  --------------
+
+#Nuværende:
+  
+#Hvor ofte indebærer din hovedbeskæftigelse: At du løser uforudsete problemer på egen hånd?
+regb3 = {svyglm(B3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)}
+summary(regb3)
+
+#Hvor ofte indebærer din hovedbeskæftigelse: Komplekse opgaver?
+regb5 = {svyglm(B5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1, 
+                data=data_A1)}
+summary(regb5)
+
+#Hvor ofte indebærer din hovedbeskæftigelse: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
+regb7 = {svyglm(B7 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)}
+summary(regb7)
+
+#Hvor ofte indebærer din hovedbeskæftigelse: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
+regb9 = {svyglm(B9 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)}
+summary(regb9)
+
+#Hvor ofte indebærer din hovedbeskæftigelse: At du arbejder i en gruppe eller et team, som har fælles opgaver og selv kan planlægge arbejdet?
+regb11 = {svyglm(B11 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1, 
+                data=data_A1)}
+summary(regb11)
+
+
+
+
+#Nuværende vs 2016:
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: At du løser uforudsete problemer på egen hånd?
+regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1A5, 
+               data=data_A1A5)}
+
+summary(regc1)
+
+siglvl = stars.pval(summary(regc1)$coefficients[,4])
+regc1_coef = cbind(summary(regc1)$coefficients[,c(1,4)],siglvl)
+#regc1_coef = summary(regc1)$coefficients[,c(1,4)]
+colnames(regc1_coef) <- paste("C1", colnames(regc1_coef), sep = "_")
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: Komplekse problemer?
+regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
+               family=gaussian(), 
+               design=svydesign_A1A5, 
+               data=data_A1A5)}
+summary(regc2)
+
+siglvl = stars.pval(summary(regc2)$coefficients[,4])
+regc2_coef = cbind(summary(regc2)$coefficients[,c(1,4)],siglvl)
+#regc2_coef = summary(regc2)$coefficients[,c(1,4)]
+colnames(regc2_coef) <- paste("C2", colnames(regc2_coef), sep = "_")
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
+regc3 = {svyglm(C3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1A5, 
+               data=data_A1A5)}
+summary(regc3)
+
+siglvl = stars.pval(summary(regc3)$coefficients[,4])
+regc3_coef = cbind(summary(regc3)$coefficients[,c(1,4)],siglvl)
+#regc3_coef = summary(regc3)$coefficients[,c(1,4)]
+colnames(regc3_coef) <- paste("C3", colnames(regc3_coef), sep = "_")
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
+regc4 = {svyglm(C4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1A5, 
+               data=data_A1A5)}
+summary(regc4)
+
+siglvl = stars.pval(summary(regc4)$coefficients[,4])
+regc4_coef = cbind(summary(regc4)$coefficients[,c(1,4)],siglvl)
+#regc4_coef = summary(regc4)$coefficients[,c(1,4)]
+colnames(regc4_coef) <- paste("C4", colnames(regc4_coef), sep = "_")
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: At du selv har mulighed for at ændre dit arbejdstempo?
+regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1A5, 
+               data=data_A1A5)}
+summary(regc5)
+
+siglvl = stars.pval(summary(regc5)$coefficients[,4])
+regc5_coef = cbind(summary(regc5)$coefficients[,c(1,4)],siglvl)
+#regc5_coef = summary(regc5)$coefficients[,c(1,4)]
+colnames(regc5_coef) <- paste("C5", colnames(regc5_coef), sep = "_")
+
+options(scipen=999, digits=4) #fjerner e^ notation
+#options(scipen=0, digits=7) #default
+
+library(gtools)
+library(formattable)
+library(openxlsx)
+
+#regoutput_org <- formattable(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef), digits = 4, format = "f") #indstillingerne bliver ikke overført til excel
+regoutput_org = as.data.frame(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef))
+write.xlsx(regoutput_org, "regoutput_org.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+
+regoutput_org
+
+
+# SOCIALE INTERAKTIONER  --------------
+
+#Nuværende:
+{
+#Hvor ofte plejer du i din hovedbeskæftigelse at rådgive, oplære, instruere eller undervise andre –individuelt eller i grupper?
+rege3 = svyglm(E3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               data=data_A1)
+summary(rege3)
+
+#Hvor ofte plejer du i din hovedbeskæftigelse at sælge et produkt eller en tjenesteydelse?
+rege4 = svyglm(E4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)
+summary(rege4)
+
+#Hvor ofte plejer du i din hovedbeskæftigelse at varetage egentlig forhandlinger om kontrakter eller vilkår mere generelt med personer i eller uden for virksomheden eller organisationen?
+rege1 = svyglm(E1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)
+summary(rege1)
+
+#Hvor ofte plejer du i din hovedbeskæftigelse at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
+rege2 = svyglm(E2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)
+summary(rege2)
+}
+
+#Nuværende vs 2016:
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at rådgive, oplære, instruere eller undervise andre – individuelt eller i grupper?
+rege3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(rege3a)
+
+siglvl = stars.pval(summary(rege3a)$coefficients[,4])
+reg_e3a_coef = cbind(summary(rege3a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_e3a_coef) <- paste("E3a", colnames(reg_e3a_coef), sep = "_")
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at sælge et produkt eller en tjenesteydelse?
+rege4a = svyglm(E4a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(regc5)
+
+siglvl = stars.pval(summary(rege4a)$coefficients[,4])
+reg_e4a_coef = cbind(summary(rege4a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_e4a_coef) <- paste("E4a", colnames(reg_e4a_coef), sep = "_")
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at forhandle med personer i eller uden for virksomheden eller organisationen?
+rege1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(regc5)
+
+siglvl = stars.pval(summary(rege1a)$coefficients[,4])
+reg_e1a_coef = cbind(summary(rege1a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_e1a_coef) <- paste("E1a", colnames(reg_e1a_coef), sep = "_")
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
+rege2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(rege2a)
+
+siglvl = stars.pval(summary(rege2a)$coefficients[,4])
+reg_e2a_coef = cbind(summary(rege2a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_e2a_coef) <- paste("E2a", colnames(reg_e2a_coef), sep = "_")
+
+
+#options(scipen=100) #fjerner e^ notation
+regoutput_soc = as.data.frame(cbind(reg_e3a_coef, reg_e4a_coef, reg_e1a_coef, reg_e2a_coef))
+regoutput_soc
+
+write.xlsx(regoutput_soc, "regoutput_soc.xlsx", sheetName = "regoutput_soc", col.names = TRUE, row.names = TRUE)
+
+
+# BRUG AF TEKNOLOGI  --------------
+
+#Nuværende:
+
+
+#Nuværende vs 2016:
+
+reg_f1a = svyglm(F1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+
+siglvl = stars.pval(summary(reg_f1a)$coefficients[,4])
+reg_f1a_coef = cbind(summary(reg_f1a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_f1a_coef) <- paste("F1a", colnames(reg_f1a_coef), sep = "_")
+
+reg_f2a = svyglm(F2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+
+siglvl = stars.pval(summary(reg_f2a)$coefficients[,4])
+reg_f2a_coef = cbind(summary(reg_f2a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_f2a_coef) <- paste("F2a", colnames(reg_f2a_coef), sep = "_")
+
+reg_g1a = svyglm(G1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+
+siglvl = stars.pval(summary(rege_g1a)$coefficients[,4])
+reg_g1a_coef = cbind(summary(reg_g1a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_g1a_coef) <- paste("G1a", colnames(reg_g1a_coef), sep = "_")
+
+reg_g2a = svyglm(G2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+
+siglvl = stars.pval(summary(reg_g2a)$coefficients[,4])
+reg_g2a_coef = cbind(summary(reg_g2a)$coefficients[,c(1,4)],siglvl)
+colnames(reg_g2a_coef) <- paste("G2a", colnames(reg_g2a_coef), sep = "_")
+
+regoutput_tech = as.data.frame(cbind(reg_f1a_coef, reg_f2a_coef, reg_g1a_coef, reg_g2a_coef))
+regoutput_tech
+
+write.xlsx(regoutput_tech, "regoutput_tech.xlsx", sheetName = "regoutput_tech", col.names = TRUE, row.names = TRUE)
+
+
