@@ -4,6 +4,11 @@ library(haven)
 library(ggplot2)
 library(ggthemes)
 library(GGally)
+library(lmtest)
+#library(gtools)
+#library(formattable)
+library(openxlsx)
+
 
 data <- read_csv("surveydata.csv") %>% select(-X1)
 
@@ -223,10 +228,43 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
 
 # REGRESSIONER: Indhold af arbejde  --------------------------------------------------------
 
+  func_coefs <- function(regression, name, method="") {
+    
+    options(scipen=999, digits=4) 
+    #options(scipen=0, digits=7) #default
+    
+    if (method=="HC1") {
+      
+      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC1")[,4])
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC1")[,c(1,4)], siglvl)
+      #regc5_coef = summary(regression)$coefficients[,c(1,4)]
+      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+      
+      
+    } else if (method=="HC0") {
+      
+      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      #reg_coef = summary(regression)$coefficients[,c(1,4)]
+      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+      
+      
+    } else {
+      
+      siglvl = stars.pval(summary(regression)$coefficients[,4])
+      reg_coef = cbind(summary(regression)$coefficients[,c(1,4)],siglvl)
+      #regc5_coef = summary(regc5)$coefficients[,c(1,4)]
+      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    }
+    
+    reg_coef
+    
+  }
+  
 # ORGANISERING  --------------
 
 #Nuværende:
-  
+{
 #Hvor ofte indebærer din hovedbeskæftigelse: At du løser uforudsete problemer på egen hånd?
 regb3 = {svyglm(B3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
@@ -262,8 +300,7 @@ regb11 = {svyglm(B11 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 data=data_A1)}
 summary(regb11)
 
-
-
+}
 
 #Nuværende vs 2016:
 
@@ -272,74 +309,56 @@ regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
-
-summary(regc1)
-
-siglvl = stars.pval(summary(regc1)$coefficients[,4])
-regc1_coef = cbind(summary(regc1)$coefficients[,c(1,4)],siglvl)
-#regc1_coef = summary(regc1)$coefficients[,c(1,4)]
-colnames(regc1_coef) <- paste("C1", colnames(regc1_coef), sep = "_")
+regc1_coef = func_coefs(regc1, "C1")
+regc1_coef_HC0 = func_coefs(regc1, "C1", "HC0")
+regc1_coef_HC1 = func_coefs(regc1, "C1", "HC1")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Komplekse problemer?
 regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
-summary(regc2)
-
-siglvl = stars.pval(summary(regc2)$coefficients[,4])
-regc2_coef = cbind(summary(regc2)$coefficients[,c(1,4)],siglvl)
-#regc2_coef = summary(regc2)$coefficients[,c(1,4)]
-colnames(regc2_coef) <- paste("C2", colnames(regc2_coef), sep = "_")
+regc2_coef = func_coefs(regc2, "C2")
+regc2_coef_HC0 = func_coefs(regc2, "C2", "HC0")
+regc2_coef_HC1 = func_coefs(regc2, "C2", "HC1")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
 regc3 = {svyglm(C3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
-summary(regc3)
-
-siglvl = stars.pval(summary(regc3)$coefficients[,4])
-regc3_coef = cbind(summary(regc3)$coefficients[,c(1,4)],siglvl)
-#regc3_coef = summary(regc3)$coefficients[,c(1,4)]
-colnames(regc3_coef) <- paste("C3", colnames(regc3_coef), sep = "_")
+regc3_coef = func_coefs(regc3, "C3")
+regc3_coef_HC0 = func_coefs(regc3, "C3", "HC0")
+regc3_coef_HC1 = func_coefs(regc3, "C3", "HC1")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
 regc4 = {svyglm(C4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
-summary(regc4)
-
-siglvl = stars.pval(summary(regc4)$coefficients[,4])
-regc4_coef = cbind(summary(regc4)$coefficients[,c(1,4)],siglvl)
-#regc4_coef = summary(regc4)$coefficients[,c(1,4)]
-colnames(regc4_coef) <- paste("C4", colnames(regc4_coef), sep = "_")
+regc4_coef = func_coefs(regc4, "C4")
+regc4_coef_HC0 = func_coefs(regc4, "C4", "HC0")
+regc4_coef_HC1 = func_coefs(regc4, "C4", "HC1")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du selv har mulighed for at ændre dit arbejdstempo?
 regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
-summary(regc5)
-
-siglvl = stars.pval(summary(regc5)$coefficients[,4])
-regc5_coef = cbind(summary(regc5)$coefficients[,c(1,4)],siglvl)
-#regc5_coef = summary(regc5)$coefficients[,c(1,4)]
-colnames(regc5_coef) <- paste("C5", colnames(regc5_coef), sep = "_")
-
-options(scipen=999, digits=4) #fjerner e^ notation
-#options(scipen=0, digits=7) #default
-
-library(gtools)
-library(formattable)
-library(openxlsx)
+regc5_coef = func_coefs(regc5, "C5")
+regc5_coef_HC0 = func_coefs(regc5, "C5", "HC0")
+regc5_coef_HC1 = func_coefs(regc5, "C5", "HC1")
 
 #regoutput_org <- formattable(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef), digits = 4, format = "f") #indstillingerne bliver ikke overført til excel
 regoutput_org = as.data.frame(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef))
 write.xlsx(regoutput_org, "regoutput_org.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
-regoutput_org
+regoutput_org_HC0 = as.data.frame(cbind(regc1_coef_HC0, regc2_coef_HC0, regc3_coef_HC0, regc4_coef_HC0, regc5_coef_HC0))
+write.xlsx(regoutput_org_HC0, "regoutput_org_HC0.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+
+regoutput_org_HC1 = as.data.frame(cbind(regc1_coef_HC1, regc2_coef_HC1, regc3_coef_HC1, regc4_coef_HC1, regc5_coef_HC1))
+write.xlsx(regoutput_org_HC1, "regoutput_org_HC1.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+
 
 
 # SOCIALE INTERAKTIONER  --------------
@@ -376,55 +395,55 @@ summary(rege2)
 #Nuværende vs 2016:
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at rådgive, oplære, instruere eller undervise andre – individuelt eller i grupper?
-rege3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_e3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
-summary(rege3a)
 
-siglvl = stars.pval(summary(rege3a)$coefficients[,4])
-reg_e3a_coef = cbind(summary(rege3a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_e3a_coef) <- paste("E3a", colnames(reg_e3a_coef), sep = "_")
+reg_e3a_coef = func_coefs(reg_e3a, "E3a")
+reg_e3a_coef_HC0 = func_coefs(reg_e3a, "E3a", "HC0")
+reg_e3a_coef_HC1 = func_coefs(reg_e3a, "E3a", "HC1")
+
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at sælge et produkt eller en tjenesteydelse?
-rege4a = svyglm(E4a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_e4a = svyglm(E4a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
-summary(regc5)
-
-siglvl = stars.pval(summary(rege4a)$coefficients[,4])
-reg_e4a_coef = cbind(summary(rege4a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_e4a_coef) <- paste("E4a", colnames(reg_e4a_coef), sep = "_")
+reg_e4a_coef = func_coefs(reg_e4a, "E4a")
+reg_e4a_coef_HC0 = func_coefs(reg_e4a, "E4a", "HC0")
+reg_e4a_coef_HC1 = func_coefs(reg_e4a, "E4a", "HC1")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at forhandle med personer i eller uden for virksomheden eller organisationen?
-rege1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_e1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
-summary(regc5)
-
-siglvl = stars.pval(summary(rege1a)$coefficients[,4])
-reg_e1a_coef = cbind(summary(rege1a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_e1a_coef) <- paste("E1a", colnames(reg_e1a_coef), sep = "_")
+reg_e1a_coef = func_coefs(reg_e1a, "E1a")
+reg_e1a_coef_HC0 = func_coefs(reg_e1a, "E1a", "HC0")
+reg_e1a_coef_HC1 = func_coefs(reg_e1a, "E1a", "HC1")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
-rege2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_e2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
-summary(rege2a)
-
-siglvl = stars.pval(summary(rege2a)$coefficients[,4])
-reg_e2a_coef = cbind(summary(rege2a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_e2a_coef) <- paste("E2a", colnames(reg_e2a_coef), sep = "_")
+reg_e2a_coef = func_coefs(reg_e2a, "E2a")
+reg_e2a_coef_HC0 = func_coefs(reg_e2a, "E2a", "HC0")
+reg_e2a_coef_HC1 = func_coefs(reg_e2a, "E2a", "HC1")
 
 
-#options(scipen=100) #fjerner e^ notation
+# Excel output
 regoutput_soc = as.data.frame(cbind(reg_e3a_coef, reg_e4a_coef, reg_e1a_coef, reg_e2a_coef))
-regoutput_soc
-
 write.xlsx(regoutput_soc, "regoutput_soc.xlsx", sheetName = "regoutput_soc", col.names = TRUE, row.names = TRUE)
+
+regoutput_soc_HC0 = as.data.frame(cbind(reg_e3a_coef_HC0, reg_e4a_coef_HC0, reg_e1a_coef_HC0, reg_e2a_coef_HC0))
+write.xlsx(regoutput_soc_HC0, "regoutput_soc_HC0.xlsx", sheetName = "regoutput_soc_HC0", col.names = TRUE, row.names = TRUE)
+
+regoutput_soc_HC1 = as.data.frame(cbind(reg_e3a_coef_HC1, reg_e4a_coef_HC1, reg_e1a_coef_HC1, reg_e2a_coef_HC1))
+write.xlsx(regoutput_soc_HC1, "regoutput_soc_HC1.xlsx", sheetName = "regoutput_soc_HC1", col.names = TRUE, row.names = TRUE)
+
+
 
 
 # BRUG AF TEKNOLOGI  --------------
@@ -438,41 +457,47 @@ reg_f1a = svyglm(F1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
-
-siglvl = stars.pval(summary(reg_f1a)$coefficients[,4])
-reg_f1a_coef = cbind(summary(reg_f1a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_f1a_coef) <- paste("F1a", colnames(reg_f1a_coef), sep = "_")
+reg_f1a_coef = func_coefs(reg_f1a, "F1a")
+reg_f1a_coef_HC0 = func_coefs(reg_f1a, "F1a", "HC0")
+reg_f1a_coef_HC1 = func_coefs(reg_f1a, "F1a", "HC1")
 
 reg_f2a = svyglm(F2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
-
-siglvl = stars.pval(summary(reg_f2a)$coefficients[,4])
-reg_f2a_coef = cbind(summary(reg_f2a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_f2a_coef) <- paste("F2a", colnames(reg_f2a_coef), sep = "_")
+reg_f2a_coef = func_coefs(reg_f2a, "F2a")
+reg_f2a_coef_HC0 = func_coefs(reg_f2a, "F2a", "HC0")
+reg_f2a_coef_HC1 = func_coefs(reg_f2a, "F2a", "HC1")
 
 reg_g1a = svyglm(G1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
-
-siglvl = stars.pval(summary(rege_g1a)$coefficients[,4])
-reg_g1a_coef = cbind(summary(reg_g1a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_g1a_coef) <- paste("G1a", colnames(reg_g1a_coef), sep = "_")
+reg_g1a_coef = func_coefs(reg_g1a, "G1a")
+reg_g1a_coef_HC0 = func_coefs(reg_g1a, "G1a", "HC0")
+reg_g1a_coef_HC1 = func_coefs(reg_g1a, "G1a", "HC1")
 
 reg_g2a = svyglm(G2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
+reg_g2a_coef = func_coefs(reg_g2a, "G2a")
+reg_g2a_coef_HC0 = func_coefs(reg_g2a, "G2a", "HC0")
+reg_g2a_coef_HC1 = func_coefs(reg_g2a, "G2a", "HC1")
 
-siglvl = stars.pval(summary(reg_g2a)$coefficients[,4])
-reg_g2a_coef = cbind(summary(reg_g2a)$coefficients[,c(1,4)],siglvl)
-colnames(reg_g2a_coef) <- paste("G2a", colnames(reg_g2a_coef), sep = "_")
 
+
+
+# Excel output
 regoutput_tech = as.data.frame(cbind(reg_f1a_coef, reg_f2a_coef, reg_g1a_coef, reg_g2a_coef))
-regoutput_tech
-
 write.xlsx(regoutput_tech, "regoutput_tech.xlsx", sheetName = "regoutput_tech", col.names = TRUE, row.names = TRUE)
+
+regoutput_tech_HC0 = as.data.frame(cbind(reg_f1a_coef_HC0, reg_f2a_coef_HC0, reg_g1a_coef_HC0, reg_g2a_coef_HC0))
+write.xlsx(regoutput_tech_HC0, "regoutput_tech_HC0.xlsx", sheetName = "regoutput_tech_HC0", col.names = TRUE, row.names = TRUE)
+
+regoutput_tech_HC1 = as.data.frame(cbind(reg_f1a_coef_HC1, reg_f2a_coef_HC1, reg_g1a_coef_HC1, reg_g2a_coef_HC1))
+write.xlsx(regoutput_tech_HC1, "regoutput_tech_HC1.xlsx", sheetName = "regoutput_tech_HC1", col.names = TRUE, row.names = TRUE)
+
+
 
 
