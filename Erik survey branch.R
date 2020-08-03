@@ -5,10 +5,10 @@ library(ggplot2)
 library(ggthemes)
 library(GGally)
 library(lmtest)
-#library(gtools)
+library(gtools)
 #library(formattable)
 library(openxlsx)
-
+library(plm)
 
 data <- read_csv("surveydata.csv") %>% select(-X1)
 
@@ -243,7 +243,31 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
       
     } else if (method=="HC0") {
       
-      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
+      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC0")[,4])
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      #reg_coef = summary(regression)$coefficients[,c(1,4)]
+      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+      
+      
+    } else if (method=="HC2") {
+      
+      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC2")[,4])
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      #reg_coef = summary(regression)$coefficients[,c(1,4)]
+      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+      
+      
+    } else if (method=="HC3") {
+      
+      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC3")[,4])
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      #reg_coef = summary(regression)$coefficients[,c(1,4)]
+      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+      
+      
+    } else if (method=="HC4") {
+      
+      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC4")[,4])
       reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
       #reg_coef = summary(regression)$coefficients[,c(1,4)]
       colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
@@ -251,9 +275,9 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
       
     } else {
       
-      siglvl = stars.pval(summary(regression)$coefficients[,4])
-      reg_coef = cbind(summary(regression)$coefficients[,c(1,4)],siglvl)
-      #regc5_coef = summary(regc5)$coefficients[,c(1,4)]
+      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      #reg_coef = summary(regression)$coefficients[,c(1,4)]
       colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
     }
     
@@ -272,6 +296,8 @@ regb3 = {svyglm(B3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
                data=data_A1)}
 summary(regb3)
 
+regb3_coef_HC4 = func_coefs(regb3, "B3", "HC4")
+
 #Hvor ofte indebærer din hovedbeskæftigelse: Komplekse opgaver?
 regb5 = {svyglm(B5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
@@ -285,6 +311,7 @@ regb7 = {svyglm(B7 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
                design=svydesign_A1, 
                data=data_A1)}
 summary(regb7)
+regb7_coef_HC4 = func_coefs(regb7, "B7", "HC4")
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
 regb9 = {svyglm(B9 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -309,9 +336,15 @@ regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
+
+
 regc1_coef = func_coefs(regc1, "C1")
 regc1_coef_HC0 = func_coefs(regc1, "C1", "HC0")
 regc1_coef_HC1 = func_coefs(regc1, "C1", "HC1")
+regc1_coef_HC2 = func_coefs(regc1, "C1", "HC2")
+regc1_coef_HC3 = func_coefs(regc1, "C1", "HC3")
+regc1_coef_HC4 = func_coefs(regc1, "C1", "HC4")
+
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Komplekse problemer?
 regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
@@ -321,6 +354,8 @@ regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
 regc2_coef = func_coefs(regc2, "C2")
 regc2_coef_HC0 = func_coefs(regc2, "C2", "HC0")
 regc2_coef_HC1 = func_coefs(regc2, "C2", "HC1")
+regc2_coef_HC3 = func_coefs(regc2, "C2", "HC3")
+regc2_coef_HC4 = func_coefs(regc2, "C2", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
 regc3 = {svyglm(C3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -330,6 +365,8 @@ regc3 = {svyglm(C3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
 regc3_coef = func_coefs(regc3, "C3")
 regc3_coef_HC0 = func_coefs(regc3, "C3", "HC0")
 regc3_coef_HC1 = func_coefs(regc3, "C3", "HC1")
+regc3_coef_HC3 = func_coefs(regc3, "C3", "HC3")
+regc3_coef_HC4 = func_coefs(regc3, "C3", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
 regc4 = {svyglm(C4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -339,6 +376,8 @@ regc4 = {svyglm(C4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
 regc4_coef = func_coefs(regc4, "C4")
 regc4_coef_HC0 = func_coefs(regc4, "C4", "HC0")
 regc4_coef_HC1 = func_coefs(regc4, "C4", "HC1")
+regc4_coef_HC3 = func_coefs(regc4, "C4", "HC3")
+regc4_coef_HC4 = func_coefs(regc4, "C4", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du selv har mulighed for at ændre dit arbejdstempo?
 regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -348,6 +387,8 @@ regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
 regc5_coef = func_coefs(regc5, "C5")
 regc5_coef_HC0 = func_coefs(regc5, "C5", "HC0")
 regc5_coef_HC1 = func_coefs(regc5, "C5", "HC1")
+regc5_coef_HC3 = func_coefs(regc5, "C5", "HC3")
+regc5_coef_HC4 = func_coefs(regc5, "C5", "HC4")
 
 #regoutput_org <- formattable(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef), digits = 4, format = "f") #indstillingerne bliver ikke overført til excel
 regoutput_org = as.data.frame(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef))
@@ -358,6 +399,12 @@ write.xlsx(regoutput_org_HC0, "regoutput_org_HC0.xlsx", sheetName = "regoutput_o
 
 regoutput_org_HC1 = as.data.frame(cbind(regc1_coef_HC1, regc2_coef_HC1, regc3_coef_HC1, regc4_coef_HC1, regc5_coef_HC1))
 write.xlsx(regoutput_org_HC1, "regoutput_org_HC1.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+
+regoutput_org_HC3 = as.data.frame(cbind(regc1_coef_HC3, regc2_coef_HC3, regc3_coef_HC3, regc4_coef_HC3, regc5_coef_HC3))
+write.xlsx(regoutput_org_HC3, "regoutput_org_HC3.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+
+regoutput_org_HC4 = as.data.frame(cbind(regc1_coef_HC4, regc2_coef_HC4, regc3_coef_HC4, regc4_coef_HC4, regc5_coef_HC4))
+write.xlsx(regoutput_org_HC4, "regoutput_org_HC4.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 
 
@@ -403,6 +450,9 @@ reg_e3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
 reg_e3a_coef = func_coefs(reg_e3a, "E3a")
 reg_e3a_coef_HC0 = func_coefs(reg_e3a, "E3a", "HC0")
 reg_e3a_coef_HC1 = func_coefs(reg_e3a, "E3a", "HC1")
+reg_e3a_coef_HC3 = func_coefs(reg_e3a, "E3a", "HC3")
+reg_e3a_coef_HC4 = func_coefs(reg_e3a, "E3a", "HC4")
+
 
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at sælge et produkt eller en tjenesteydelse?
@@ -413,6 +463,8 @@ reg_e4a = svyglm(E4a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
 reg_e4a_coef = func_coefs(reg_e4a, "E4a")
 reg_e4a_coef_HC0 = func_coefs(reg_e4a, "E4a", "HC0")
 reg_e4a_coef_HC1 = func_coefs(reg_e4a, "E4a", "HC1")
+reg_e4a_coef_HC3 = func_coefs(reg_e4a, "E4a", "HC3")
+reg_e4a_coef_HC4 = func_coefs(reg_e4a, "E4a", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at forhandle med personer i eller uden for virksomheden eller organisationen?
 reg_e1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -422,6 +474,8 @@ reg_e1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
 reg_e1a_coef = func_coefs(reg_e1a, "E1a")
 reg_e1a_coef_HC0 = func_coefs(reg_e1a, "E1a", "HC0")
 reg_e1a_coef_HC1 = func_coefs(reg_e1a, "E1a", "HC1")
+reg_e1a_coef_HC3 = func_coefs(reg_e1a, "E1a", "HC3")
+reg_e1a_coef_HC4 = func_coefs(reg_e1a, "E1a", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
 reg_e2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -431,6 +485,8 @@ reg_e2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
 reg_e2a_coef = func_coefs(reg_e2a, "E2a")
 reg_e2a_coef_HC0 = func_coefs(reg_e2a, "E2a", "HC0")
 reg_e2a_coef_HC1 = func_coefs(reg_e2a, "E2a", "HC1")
+reg_e2a_coef_HC3 = func_coefs(reg_e2a, "E2a", "HC3")
+reg_e2a_coef_HC4 = func_coefs(reg_e2a, "E2a", "HC4")
 
 
 # Excel output
@@ -443,6 +499,11 @@ write.xlsx(regoutput_soc_HC0, "regoutput_soc_HC0.xlsx", sheetName = "regoutput_s
 regoutput_soc_HC1 = as.data.frame(cbind(reg_e3a_coef_HC1, reg_e4a_coef_HC1, reg_e1a_coef_HC1, reg_e2a_coef_HC1))
 write.xlsx(regoutput_soc_HC1, "regoutput_soc_HC1.xlsx", sheetName = "regoutput_soc_HC1", col.names = TRUE, row.names = TRUE)
 
+regoutput_soc_HC3 = as.data.frame(cbind(reg_e3a_coef_HC3, reg_e4a_coef_HC3, reg_e1a_coef_HC3, reg_e2a_coef_HC3))
+write.xlsx(regoutput_soc_HC3, "regoutput_soc_HC3.xlsx", sheetName = "regoutput_soc_HC3", col.names = TRUE, row.names = TRUE)
+
+regoutput_soc_HC4 = as.data.frame(cbind(reg_e3a_coef_HC4, reg_e4a_coef_HC4, reg_e1a_coef_HC4, reg_e2a_coef_HC4))
+write.xlsx(regoutput_soc_HC4, "regoutput_soc_HC4.xlsx", sheetName = "regoutput_soc_HC4", col.names = TRUE, row.names = TRUE)
 
 
 
