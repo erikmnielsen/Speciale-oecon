@@ -6,6 +6,8 @@ library(ggplot2)
 library(ggthemes)
 library(haven)
 
+#test-erik
+
 dok1 = "aau_job_2019_svar.sas7bdat"
 aau_job_2019_svar = read_sas(dok1, NULL)
 #View(aau_job_2019_svar)
