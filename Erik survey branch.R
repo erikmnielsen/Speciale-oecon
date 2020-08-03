@@ -34,15 +34,15 @@ if (yes=FALSE){
   data$loen4 = ifelse(data$loengrp == 4, 1, 0) 
   
   ## Funktioner
-  data$Ledelsesarbejde = ifelse(data$Functions == 1, 1, 0)
-  data$Højesteniveau = ifelse(data$Functions == 2, 1, 0)
-  data$Mellemniveau = ifelse(data$Functions == 3, 1, 0)
-  data$Kontorkundeservicearbejde = ifelse(data$Functions == 4, 1, 0)
+  data$Ledelsesarbejde = ifelse(data$Functions == 9, 1, 0)
+  data$Højesteniveau = ifelse(data$Functions == 8, 1, 0)
+  data$Mellemniveau = ifelse(data$Functions == 7, 1, 0)
+  data$Kontorkundeservicearbejde = ifelse(data$Functions == 6, 1, 0)
   data$Servicesalgsarbejde = ifelse(data$Functions == 5, 1, 0)
-  data$Landbrugskovbrugfiskeri_fun = ifelse(data$Functions == 6, 1, 0)
-  data$Håndværksprægetarbejde = ifelse(data$Functions == 7, 1, 0)
-  data$Operatørmonteringstransportarbejde = ifelse(data$Functions == 8, 1, 0)
-  data$Andetmanueltarbejde = ifelse(data$Functions == 9, 1, 0)
+  data$Landbrugskovbrugfiskeri_fun = ifelse(data$Functions == 4, 1, 0)
+  data$Håndværksprægetarbejde = ifelse(data$Functions == 3, 1, 0)
+  data$Operatørmonteringstransportarbejde = ifelse(data$Functions == 2, 1, 0)
+  data$Andetmanueltarbejde = ifelse(data$Functions == 1, 1, 0)
   
   ## Brancher
   #data$Landbrugskovbrugfiskeri_bra = ifelse(data$bra10grp == "Landbrug, skovbrug og fiskeri", 1, 0)
@@ -563,7 +563,7 @@ write.xlsx(regoutput_tech_HC1, "regoutput_tech_HC1.xlsx", sheetName = "regoutput
 # JOBKVALITET  --------------
 
 #Alt taget i betragtning, hvor tilfreds er du med arbejdsforholdene i din hovedbeskæftigelse?
-reg_d1 = svyglm(D1 ~ factor(bra10grp) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d1 = svyglm(D1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
@@ -573,7 +573,7 @@ regoutput_org_HC3 = as.data.frame(cbind(reg_d1_coef_HC3))
 write.xlsx(regoutput_org_HC3, "reg_d1_coef_HC3_3.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 #Jeg mister muligvis mit arbejde inden for de næste 6 måneder
-reg_d2 = svyglm(D2 ~ factor(bra10grp) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d2 = svyglm(D2 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
@@ -583,7 +583,7 @@ regoutput_org_HC3 = as.data.frame(cbind(reg_d2_coef_HC3))
 write.xlsx(regoutput_org_HC3, "reg_d2_coef_HC3_3.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 #I betragtning af alle mine bestræbelser og resultater i mit job, føler jeg, at jeg bliver betalt behørigt
-reg_d3 = svyglm(D3 ~ factor(bra10grp) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d3 = svyglm(D3 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
@@ -593,7 +593,7 @@ regoutput_org_HC3 = as.data.frame(cbind(reg_d3_coef_HC3))
 write.xlsx(regoutput_org_HC3, "reg_d3_coef_HC3_3.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 #Mit arbejde giver gode karrieremulighed
-reg_d4 = svyglm(D4 ~ factor(bra10grp) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d4 = svyglm(D4 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
