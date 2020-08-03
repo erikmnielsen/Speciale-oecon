@@ -99,11 +99,13 @@ data$Socialinterationer = ifelse(data$E1 %in% c(1,2), 1,
 # Filtreret for A1=1 (Har du for tiden en lønnet hovedbeskæftigelse), samt branche 9 og 10
 
 #data_A1 = data %>% filter(A1 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
-data_A1 = data %>% filter(A1 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
+data_A1 = data %>% filter(A1 == 1, Functions != "None")
+#Functions != 4, bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10
 
 # Filtreret for A1=1, og A5=1 (Havde du i 2016 en lønnet hovedbeskæftigelse? ), samt branche 9 og 10
 #data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
-data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10) 
+data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None") 
+#, bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10
 
 #Hvorfor er der forskel på de to metoder?
 
@@ -185,9 +187,9 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
 # Ændring til dummy variable ---------------
 
   data$D2 = ifelse(data$D2 %in% c(1,2), 1, 0)
-  data$D1 = ifelse(data$D1 %in% c(1,2), 1, 0)
-  data$D3 = ifelse(data$D3 %in% c(1,2), 1, 0)
-  data$D4 = ifelse(data$D4 %in% c(1,2), 1, 0)
+  data$D1 = ifelse(data$D1 %in% c(1,2,3), 1, 0)
+  data$D3 = ifelse(data$D3 %in% c(1,2,3), 1, 0)
+  data$D4 = ifelse(data$D4 %in% c(1,2,3), 1, 0)
   
   data$C1 = ifelse(data$C1==1, 1, 0)
   data$C2 = ifelse(data$C2==1, 1, 0)
@@ -401,7 +403,7 @@ regoutput_org_HC1 = as.data.frame(cbind(regc1_coef_HC1, regc2_coef_HC1, regc3_co
 write.xlsx(regoutput_org_HC1, "regoutput_org_HC1.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 regoutput_org_HC3 = as.data.frame(cbind(regc1_coef_HC3, regc2_coef_HC3, regc3_coef_HC3, regc4_coef_HC3, regc5_coef_HC3))
-write.xlsx(regoutput_org_HC3, "regoutput_org_HC3.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+write.xlsx(regoutput_org_HC3, "regoutput_org_HC3_1.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 regoutput_org_HC4 = as.data.frame(cbind(regc1_coef_HC4, regc2_coef_HC4, regc3_coef_HC4, regc4_coef_HC4, regc5_coef_HC4))
 write.xlsx(regoutput_org_HC4, "regoutput_org_HC4.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
@@ -563,23 +565,26 @@ write.xlsx(regoutput_tech_HC1, "regoutput_tech_HC1.xlsx", sheetName = "regoutput
 # JOBKVALITET  --------------
 
 #Alt taget i betragtning, hvor tilfreds er du med arbejdsforholdene i din hovedbeskæftigelse?
-reg_d1 = svyglm(D1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d1 = svyglm(D1 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
 
 reg_d1_coef_HC3 = func_coefs(reg_d1, "D1", "HC3")
 
+
 #Jeg mister muligvis mit arbejde inden for de næste 6 måneder
-reg_d2 = svyglm(D2 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d2 = svyglm(D2 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
 
 reg_d2_coef_HC3 = func_coefs(reg_d2, "D2", "HC3")
 
+
+
 #I betragtning af alle mine bestræbelser og resultater i mit job, føler jeg, at jeg bliver betalt behørigt
-reg_d3 = svyglm(D3 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d3 = svyglm(D3 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
@@ -587,7 +592,7 @@ reg_d3 = svyglm(D3 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) +
 reg_d3_coef_HC3 = func_coefs(reg_d3, "D3", "HC3")
 
 #Mit arbejde giver gode karrieremulighed
-reg_d4 = svyglm(D4 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+reg_d4 = svyglm(D4 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)
@@ -596,7 +601,9 @@ reg_d4_coef_HC3 = func_coefs(reg_d4, "D4", "HC3")
 
 
 regoutput_kval_HC3 = as.data.frame(cbind(reg_d1_coef_HC3, reg_d2_coef_HC3, reg_d3_coef_HC3, reg_d4_coef_HC3))
-write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE)
+write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_10.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
+
+table(data$bra10grp_code)
 
 
 
