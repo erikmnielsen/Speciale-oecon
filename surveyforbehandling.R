@@ -574,6 +574,7 @@ disco$ISCO_NU[disco$ISCO_NU == "818" ] = "Stationary plant and machine operators
 disco$ISCO_NU[disco$ISCO_NU == "8181" ] = "Stationary plant and machine operators"
 disco$ISCO_NU[disco$ISCO_NU == "8182" ] = "Stationary plant and machine operators"
 disco$ISCO_NU[disco$ISCO_NU == "8183" ] = "Stationary plant and machine operators"
+disco$ISCO_NU[disco$ISCO_NU == "8189" ] = "Stationary plant and machine operators"
 
 #Assemblers
 disco$ISCO_NU[disco$ISCO_NU == "821" ] = "Assemblers"
@@ -709,16 +710,16 @@ disco$Functions[disco$ISCO_NU == "Food processing, wood working, garment and oth
 disco$Functions[disco$ISCO_NU == "Stationary plant and machine operators"] = 8
 disco$Functions[disco$ISCO_NU == "Assemblers"] = 8
 disco$Functions[disco$ISCO_NU == "Drivers and mobile plant operators"] = 8
-disco$Functions[disco$ISCO_NU == "Cleaners and helpers"] = 8
-disco$Functions[disco$ISCO_NU == "Agricultural, forestry and fishery labourers"] = 8
-disco$Functions[disco$ISCO_NU == "Labourers in mining, construction, manufacturing and transport"] = 8
-disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 8
-disco$Functions[disco$ISCO_NU == "Street and related sales and service workers"] = 8
-disco$Functions[disco$ISCO_NU == "Refuse workers and other elementary workers"] = 8
-disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 8
-disco$Functions[disco$ISCO_NU == "Commissioned armed forces officers"] = 9
-disco$Functions[disco$ISCO_NU == "Non-commissioned armed forces officers"] = 9
-disco$Functions[disco$ISCO_NU == "Armed forces occupations, other ranks"] = 9
+disco$Functions[disco$ISCO_NU == "Cleaners and helpers"] = 9
+disco$Functions[disco$ISCO_NU == "Agricultural, forestry and fishery labourers"] = 9
+disco$Functions[disco$ISCO_NU == "Labourers in mining, construction, manufacturing and transport"] = 9
+disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 9
+disco$Functions[disco$ISCO_NU == "Street and related sales and service workers"] = 9
+disco$Functions[disco$ISCO_NU == "Refuse workers and other elementary workers"] = 9
+disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 9
+disco$Functions[disco$ISCO_NU == "Commissioned armed forces officers"] = 0
+disco$Functions[disco$ISCO_NU == "Non-commissioned armed forces officers"] = 0
+disco$Functions[disco$ISCO_NU == "Armed forces occupations, other ranks"] = 0
 disco$Functions[disco$ISCO_NU == "None"] = "None"
 
 aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "1 Landbrug, skovbrug og fiskeri"] = "Landbrug, skovbrug og fiskeri"
