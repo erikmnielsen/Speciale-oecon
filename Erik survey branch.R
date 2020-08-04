@@ -10,7 +10,7 @@ library(gtools)
 library(openxlsx)
 library(plm)
 
-data <- read_csv("surveydata4.csv") %>% select(-X1)
+data <- read_csv("surveydata.csv") %>% select(-X1)
 
 # Kodning af variable --------------------------------------------------------
 
