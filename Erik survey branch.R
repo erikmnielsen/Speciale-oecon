@@ -603,7 +603,7 @@ reg_d4_coef_HC3 = func_coefs(reg_d4, "D4", "HC3")
 
 
 regoutput_kval_HC3 = as.data.frame(cbind(reg_d1_coef_HC3, reg_d2_coef_HC3, reg_d3_coef_HC3, reg_d4_coef_HC3))
-write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_19.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
+write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
 
 
 
