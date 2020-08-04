@@ -30,6 +30,11 @@ library(ggplot2)
 library(ggthemes)
 library(dplyr)
 
+country="DK"
+dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP")
+dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_QI") #Gross output, faste priser 2010=100
+measure_1="EMP"
+measure_2="GO_QI"
 
 func_coefs <- function(regression, name, method="") {
   
@@ -119,11 +124,11 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   if (method=="AS") {
     #AutorSalomons Industrier:
     
-    data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","RtS","T","U"), 0,1))
+    data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","RtS","T","U"), 0,1)) #bruges til filtrering
     
     
     data$branche <- ifelse(data$code %in% c("B", "DtE", "F"), "b1",
-                           ifelse(data$code %in% c("10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33"), "b2", #kan man ikke bare bruge C, Total Manufacturing?
+                           ifelse(data$code %in% c("10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33"), "b2", 
                                   ifelse(data$code %in% c("P","Q","R", "S"), "b3",
                                          ifelse(data$code %in% c("53", "58t60", "61", "62t63", "K", "MtN"), "b4",
                                                 ifelse(data$code %in% c("45", "46", "47", "49t52", "I", "L"), "b5", 
@@ -173,6 +178,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   #angivelse af branche/industri totaler
   t4 <- data %>% filter(branche!="b0") %>% group_by(year, branche, branche_desc) %>% summarize(EMP=sum(EMP),GO=sum(GO))
+  
   data2 <- data.frame(desc= t4$branche_desc,
                       code=t4$branche,
                       year=t4$year,
@@ -215,7 +221,7 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   b$branche_desc = "Lande Total"
   
-
+  
   #Kodning af variable:
   
   data_fin <- rbind(data, b, data2)
@@ -232,6 +238,15 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
 }
 
+
+DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_QI", "AS")
+DK_ep = func_empprod(DK_emp, DK_go,"DK", "EMP", "GO", "AS")
+
+DK_ind = func_regpanel(DK_ep, 1)
+DK_tot = func_regpanel(DK_ep, 3)
+
+dataset_1 = DK_ep
+
 func_regpanel <- function(dataset_1, type) {
   
   if (type==1) {
@@ -243,7 +258,7 @@ func_regpanel <- function(dataset_1, type) {
     
     ind = dataset_1 %>% filter(sel_industries==1)
     
-    b <- dataset_1 %>% filter(branche=="b-tot")
+    b <- dataset_1 %>% filter(branche=="b-tot") #obs på hvordan btot laves
     b$branche = b$code
     #b$prod_logchanges_b = b$prod_logchanges
     b$EMP_b = b$EMP
@@ -285,7 +300,7 @@ func_regpanel <- function(dataset_1, type) {
     test = test %>% select(code, wgt_i_avg)
     ind = merge(ind, test, by=c("code"), all.x = TRUE)
     
-
+    
     #ind$prod_logchanges_wgt_lag1 = lag(ind$prod_logchanges_wgt, k = 1, shift = "time")
     #ind$prod_logchanges_wgt_lag2 = lag(ind$prod_logchanges_wgt_lag1, k = 1, shift = "time")
     #ind$prod_logchanges_wgt_lag3 = lag(ind$prod_logchanges_wgt_lag2, k = 1, shift = "time")
@@ -361,187 +376,146 @@ func_regpanel <- function(dataset_1, type) {
 
 #Indlæs filer -----
 
-#faste: DK, (US), DE, NL, (SE), AT, CZ, FI, FR, EL, (IT), LV, (SK), (SI)
-#faste komplet: DK, DE, NL, AT, CZ, FI, FR, EL, LV
-
-#løbende: DK, (US), UK, DE, NL, (SE), AT, BE, CY, CZ, ES, FI, FR, (EE), EL, HU, IE, IT, LT, LV, PL, PT, (SK), (SI)
-#løbende komplet: DK, UK, DE, NL, AT, BE, CY, CZ, ES, FI, FR, EL, HU, IE, IT, LT, LV, PL, PT, SI
-
 DK_emp <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP") #Number of persons engaged (thousands)
 DK_go <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO") #Gross Output at current basic prices (in millions of national currency)
 DK_gop <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_QI")  #Gross output, price indices, 2010 = 100 #komplet 1975-2015
 
 US_emp <- read_excel("Data/US_output_17ii.xlsx", sheet = "EMP") 
-US_gop <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_QI") #mangler 61 og T, ellers komplet fra 1970-2015
+US_gop <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO_QI") 
 US_go <- read_excel("Data/US_output_17ii.xlsx", sheet = "GO") #mangler 45, 61 og T, ellers komplet fra 1970-2015
 
 UK_emp <- read_excel("Data/UK_output_17ii.xlsx", sheet = "EMP") 
 #UK_gop <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO_QI") #findes ikke
 UK_go <- read_excel("Data/UK_output_17ii.xlsx", sheet = "GO") #komplet 1995-2014
 
+
 DE_emp <- read_excel("Data/DE_output_17ii.xlsx", sheet = "EMP") 
-DE_gop <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO_QI") #komplet 1995-2015
+DE_gop <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO_QI")
 DE_go <- read_excel("Data/DE_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 NL_emp <- read_excel("Data/NL_output_17ii.xlsx", sheet = "EMP") 
-NL_gop <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO_QI") #komplet 1995-2015
+NL_gop <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO_QI") 
 NL_go <- read_excel("Data/NL_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
-SE_emp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "EMP") 
-SE_gop <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO_QI") #mangler 20-21, 49-52 og 53, ellers komplet 1993-2014
-SE_go <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO") #mangler 49-52 og 53, ellers komplet 1993-2014
+#SE_emp <- read_excel("Data/SE_output_17ii.xlsx", sheet = "EMP") 
+#SE_gop <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO_QI") 
+#SE_go <- read_excel("Data/SE_output_17ii.xlsx", sheet = "GO") #mangler 49-52 og 53, ellers komplet 1993-2014
 
 AT_emp = read_excel("Data/AT_output_17ii.xlsx", sheet = "EMP") 
-AT_gop = read_excel("Data/AT_output_17ii.xlsx", sheet = "GO_QI") #komplet 1995-2015
+AT_gop = read_excel("Data/AT_output_17ii.xlsx", sheet = "GO_QI") 
 AT_go= read_excel("Data/AT_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 BE_emp = read_excel("Data/BE_output_17ii.xlsx", sheet = "EMP") 
-#BE_gop = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO_QI") #ikke angivet korrekt
+BE_gop = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO_QI") 
 BE_go = read_excel("Data/BE_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
-CY_emp = read_excel("Data/CY_output_17ii.xlsx", sheet = "EMP") 
-#CY_gpo= read_excel("Data/CY_output_17ii.xlsx", sheet = "GO_QI") #GO_QI ikke mulig
+CY_emp = read_excel("Data/CY_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
 CY_go= read_excel("Data/CY_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 CZ_emp = read_excel("Data/CZ_output_17ii.xlsx", sheet = "EMP") 
-CZ_gop = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO_QI") #komplet 1995-2014
+CZ_gop = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO_QI") 
 CZ_go = read_excel("Data/CZ_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
-ES_emp = read_excel("Data/ES_output_17ii.xlsx", sheet = "EMP") 
-#ES_gop= read_excel("Data/ES_output_17ii.xlsx", sheet = "GO_QI") #GO_QI ikke mulig
+ES_emp = read_excel("Data/ES_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
 ES_go= read_excel("Data/ES_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 FI_emp = read_excel("Data/FI_output_17ii.xlsx", sheet = "EMP") 
-FI_gop = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO_QI") #komplet 1980-2015
-FI_go = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO") #komplet 1980-2015
+FI_gop = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO_QI") 
+FI_go = read_excel("Data/FI_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 FR_emp = read_excel("Data/FR_output_17ii.xlsx", sheet = "EMP") 
-FR_gop = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_QI") #fra 1975-1994 mangler 45,46,47, 49-52,53  - komplet 1995-2015
+FR_gop = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO_QI") 
 FR_go = read_excel("Data/FR_output_17ii.xlsx", sheet = "GO") #fra 1975-1994 mangler 45,46,47, 49-52,53  - komplet 1995-2015
 
-EE_emp = read_excel("Data/EE_output_17ii.xlsx", sheet = "EMP") 
-#EE_gop= read_excel("Data/EE_output_17ii.xlsx", sheet = "GO_QI") #GO_QI ikke mulig
-EE_go= read_excel("Data/EE_output_17ii.xlsx", sheet = "GO") #T mangler, komplet 1995-2015
+EE_emp = read_excel("Data/EE_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+EE_go= read_excel("Data/EE_output_17ii.xlsx", sheet = "GO") #ikke komplet 1995-2015 og T ikke observeret
 
 EL_emp = read_excel("Data/EL_output_17ii.xlsx", sheet = "EMP") 
-EL_gop = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO_QI") #komplet 1995-2015
+EL_gop = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO_QI") 
 EL_go = read_excel("Data/EL_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
-HU_emp = read_excel("Data/HU_output_17ii.xlsx", sheet = "EMP") 
-#HU_gop= read_excel("Data/HU_output_17ii.xlsx", sheet = "GO_QI") #GO_QI ikke mulig
+HU_emp = read_excel("Data/HU_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
 HU_go= read_excel("Data/HU_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
-IE_emp = read_excel("Data/IE_output_17ii.xlsx", sheet = "EMP") 
-#IE_gop= read_excel("Data/IE_output_17ii.xlsx", sheet = "GO_QI") #GO_QI ikke mulig
+IE_emp = read_excel("Data/IE_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
 IE_go= read_excel("Data/IE_output_17ii.xlsx", sheet = "GO") #komplet 1998-2015
 
 IT_emp = read_excel("Data/IT_output_17ii.xlsx", sheet = "EMP") 
-IT_gop = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO_QI") #mangler R, S og T, ellers komplet 1995-2015
+IT_gop = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO_QI") 
 IT_go = read_excel("Data/IT_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
-LT_emp = read_excel("Data/LT_output_17ii.xlsx", sheet = "EMP") 
-#LT_go= read_excel("Data/LT_output_17ii.xlsx", sheet = "GO") #GO_QI ikke mulig
-LT_go= read_excel("Data/LT_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
+#LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") 
+#LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") 
 
-#LU_emp = read_excel("Data/LU_output_17ii.xlsx", sheet = "EMP") 
-#LU_gop = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO_QI") #ikke komplet, mangler 19+20-21+26-27+28+49-52+53
-#LU_go = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO") #ikke komplet, mangler 19+20-21+26-27+28+49-52+53
+LT_emp = read_excel("Data/LT_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
+LT_go= read_excel("Data/LT_output_17ii.xlsx", sheet = "GO") #komplet 1998-2015
+
+LU_emp = read_excel("Data/LU_output_17ii.xlsx", sheet = "EMP") 
+LU_gop = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO_QI") 
+LU_go = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO") #ikke komplet, mangler 19+20-21+26-27+28+49-52+53
 
 LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") 
-LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") #mange huller fra 95-99, komplet 2000-2015
-LV_go = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO") #mange huller fra 95-99, komplet 2000-2015
+LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") 
+LV_go = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO") #komplet 2000-2015
 
-PL_emp = read_excel("Data/PL_output_17ii.xlsx", sheet = "EMP") 
-#PL_gop= read_excel("Data/PL_output_17ii.xlsx", sheet = "GO") #GO_QI ikke mulig
+PL_emp = read_excel("Data/PL_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
 PL_go= read_excel("Data/PL_output_17ii.xlsx", sheet = "GO") #komplet 2000-2015
 
-PT_emp = read_excel("Data/PT_output_17ii.xlsx", sheet = "EMP") 
-#PT_gop= read_excel("Data/PT_output_17ii.xlsx", sheet = "GO_QI")#GO_QI ikke mulig
+PT_emp = read_excel("Data/PT_output_17ii.xlsx", sheet = "EMP") #GO_QI ikke mulig
 PT_go= read_excel("Data/PT_output_17ii.xlsx", sheet = "GO") #komplet 2000-2015
 
 SK_emp = read_excel("Data/SK_output_17ii.xlsx", sheet = "EMP") 
-SK_gop = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO_QI") #mangler R, S, og T, ellers komplet 1995-2015
+SK_gop = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO_QI") 
 SK_go = read_excel("Data/SK_output_17ii.xlsx", sheet = "GO") #mangler T, ellers komplet 1995-2015
 
 SI_emp = read_excel("Data/SI_output_17ii.xlsx", sheet = "EMP") 
-SI_gop = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_QI") #mangler R, S, og T, ellers komplet 2000-2015
+SI_gop = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO_QI") 
 SI_go = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
+
+
 
 
 # Country data  ----------------------------------------------------- 
 
-#faste: DK, (US), DE, NL, (SE), AT, CZ, FI, FR, EL, (IT), LV, (SK), (SI)
-#faste komplet: DK, DE, NL, AT, CZ, FI, FR, EL, LV
-
-#løbende: DK, (US), UK, DE, NL, (SE), AT, BE, CY, CZ, ES, FI, FR, (EE), EL, HU, IE, (IT), LT, LV, PL, PT, (SK), (SI)
-#løbende komplet: DK, UK, DE, NL, AT, BE, CY, CZ, ES, FI, FR, EL, HU, IE, IT, LT, LV, PL, PT, SI
-
+PRISER = "faste" # virker ikke, men Autor bruger vidst faste priser??
 PRISER = "løbende"
-PRISER = "faste" 
-KOMPLET = FALSE
-KOMPLET = TRUE
 
 # nogle af industrierne (eller subkategorierne) findes ikke i alle lande, fx findes 45,46,47 ikke i Frankrig før 1995, selvom overkategorien G findes
 
 #Employment and productivty
 
-if (PRISER=="faste" & KOMPLET == TRUE) {
-  DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_QI", "AS")
-  DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_QI", "AS")
-  NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_QI", "AS")
-  AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_QI", "AS")
-  CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_QI", "AS")
-  FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_QI", "AS")
-  FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_QI", "AS")
-  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", "AS")
-  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", "AS")
-  
-} else if (PRISER=="faste" &KOMPLET == FALSE) {
+if (PRISER=="faste"){
   DK_ep = func_empprod(DK_emp, DK_gop,"DK", "EMP", "GO_QI", "AS")
   US_ep = func_empprod(US_emp, US_gop,"US", "EMP", "GO_QI", "AS")
+  #UK_ep = func_empprod(UK_emp, UK_gop,"UK", "EMP", "GO_QI", "AS")
   DE_ep = func_empprod(DE_emp, DE_gop,"DE", "EMP", "GO_QI", "AS")
   NL_ep = func_empprod(NL_emp, NL_gop,"NL", "EMP", "GO_QI", "AS")
-  SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_QI", "AS")
+  #SE_ep = func_empprod(SE_emp, SE_gop,"SE", "EMP", "GO_QI", "AS")
   AT_ep = func_empprod(AT_emp, AT_gop,"AT", "EMP", "GO_QI", "AS")
+  BE_ep = func_empprod(BE_emp, BE_gop,"BE", "EMP", "GO_QI", "AS")
   CZ_ep = func_empprod(CZ_emp, CZ_gop,"CZ", "EMP", "GO_QI", "AS")
+  #CY_ep = func_empprod(CY_emp, CY_gop,"CY", "EMP", "GO_QI", "AS")
+  #EE_ep = func_empprod(EE_emp, EE_gop,"EE", "EMP", "GO_QI", "AS")
+  #ES_ep = func_empprod(ES_emp, ES_gop,"ES", "EMP", "GO_QI", "AS")
+  #EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", "AS")
   FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_QI", "AS")
   FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_QI", "AS")
-  EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", "AS")
+  #HU_ep = func_empprod(HU_emp, HU_gop,"HU", "EMP", "GO_QI", "AS")
   IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_QI", "AS")
+  IE_ep = func_empprod(IE_emp, IE_gop,"IE", "EMP", "GO_QI", "AS")
   LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", "AS")
+  LT_ep = func_empprod(LT_emp, LT_gop,"LT", "EMP", "GO_QI", "AS")
+  #PL_ep = func_empprod(PL_emp, PL_gop,"PL", "EMP", "GO_QI", "AS")
+  #PT_ep = func_empprod(PT_emp, PT_gop,"PT", "EMP", "GO_QI", "AS")
   SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_QI", "AS")
   SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_QI", "AS")
-
-   
-} else if (PRISER=="løbende" & KOMPLET == TRUE) {
-  DK_ep = func_empprod(DK_emp, DK_go,"DK", "EMP", "GO", "AS")
-  UK_ep = func_empprod(UK_emp, UK_go,"UK", "EMP", "GO", "AS")
-  DE_ep = func_empprod(DE_emp, DE_go,"DE", "EMP", "GO", "AS")
-  NL_ep = func_empprod(NL_emp, NL_go,"NL", "EMP", "GO", "AS")
-  AT_ep = func_empprod(AT_emp, AT_go,"AT", "EMP", "GO", "AS")
-  BE_ep = func_empprod(BE_emp, BE_go,"BE", "EMP", "GO", "AS")
-  CZ_ep = func_empprod(CZ_emp, CZ_go,"CZ", "EMP", "GO", "AS")
-  CY_ep = func_empprod(CY_emp, CY_go,"CY", "EMP", "GO", "AS")
-  ES_ep = func_empprod(ES_emp, ES_go,"ES", "EMP", "GO", "AS")
-  EL_ep = func_empprod(EL_emp, EL_go,"EL", "EMP", "GO", "AS")
-  FI_ep = func_empprod(FI_emp, FI_go,"FI", "EMP", "GO", "AS")
-  FR_ep = func_empprod(FR_emp, FR_go,"FR", "EMP", "GO", "AS")
-  HU_ep = func_empprod(HU_emp, HU_go,"HU", "EMP", "GO", "AS")
-  IT_ep = func_empprod(IT_emp, IT_go,"IT", "EMP", "GO", "AS")
-  IE_ep = func_empprod(IE_emp, IE_go,"IE", "EMP", "GO", "AS")
-  LV_ep = func_empprod(LV_emp, LV_go,"LV", "EMP", "GO", "AS")
-  LT_ep = func_empprod(LT_emp, LT_go,"LT", "EMP", "GO", "AS")
-  PL_ep = func_empprod(PL_emp, PL_go,"PL", "EMP", "GO", "AS")
-  PT_ep = func_empprod(PT_emp, PT_go,"PT", "EMP", "GO", "AS")
-  SI_ep = func_empprod(SI_emp, SI_go,"SI", "EMP", "GO", "AS")
-  
-} else if (PRISER=="løbende" & KOMPLET == FALSE) {
+} else if (PRISER=="løbende") {
   DK_ep = func_empprod(DK_emp, DK_go,"DK", "EMP", "GO", "AS")
   US_ep = func_empprod(US_emp, US_go,"US", "EMP", "GO", "AS")
   UK_ep = func_empprod(UK_emp, UK_go,"UK", "EMP", "GO", "AS")
   DE_ep = func_empprod(DE_emp, DE_go,"DE", "EMP", "GO", "AS")
   NL_ep = func_empprod(NL_emp, NL_go,"NL", "EMP", "GO", "AS")
-  SE_ep = func_empprod(SE_emp, SE_go,"SE", "EMP", "GO", "AS")
+  #SE_ep = func_empprod(SE_emp, SE_go,"SE", "EMP", "GO", "AS")
   AT_ep = func_empprod(AT_emp, AT_go,"AT", "EMP", "GO", "AS")
   BE_ep = func_empprod(BE_emp, BE_go,"BE", "EMP", "GO", "AS")
   CZ_ep = func_empprod(CZ_emp, CZ_go,"CZ", "EMP", "GO", "AS")
@@ -560,61 +534,61 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   PT_ep = func_empprod(PT_emp, PT_go,"PT", "EMP", "GO", "AS")
   SK_ep = func_empprod(SK_emp, SK_go,"SK", "EMP", "GO", "AS")
   SI_ep = func_empprod(SI_emp, SI_go,"SI", "EMP", "GO", "AS")
-
+  
 }
 
 #PLM analyse
 {
-DK_ind = func_regpanel(DK_ep, 1)
-DK_tot = func_regpanel(DK_ep, 3)
-US_ind = func_regpanel(US_ep, 1)
-US_tot = func_regpanel(US_ep, 3)
-UK_ind = func_regpanel(UK_ep, 1)
-UK_tot = func_regpanel(UK_ep, 3)
-DE_ind = func_regpanel(DE_ep, 1)
-DE_tot = func_regpanel(DE_ep, 3)
-NL_ind = func_regpanel(NL_ep, 1)
-NL_tot = func_regpanel(NL_ep, 3)
-#SE_ind = func_regpanel(SE_ep, 1)
-#SE_tot = func_regpanel(SE_ep, 3)
-AT_ind = func_regpanel(AT_ep, 1)
-AT_tot = func_regpanel(AT_ep, 3)
-BE_ind = func_regpanel(BE_ep, 1)
-BE_tot = func_regpanel(BE_ep, 3)
-CZ_ind = func_regpanel(CZ_ep, 1)
-CZ_tot = func_regpanel(CZ_ep, 3)
-CY_ind = func_regpanel(CY_ep, 1)
-CY_tot = func_regpanel(CY_ep, 3)
-EE_ind = func_regpanel(EE_ep, 1)
-EE_tot = func_regpanel(EE_ep, 3)
-ES_ind = func_regpanel(ES_ep, 1)
-ES_tot = func_regpanel(ES_ep, 3)
-EL_ind = func_regpanel(EL_ep, 1)
-EL_tot = func_regpanel(EL_ep, 3)
-FI_ind = func_regpanel(FI_ep, 1)
-FI_tot = func_regpanel(FI_ep, 3)
-FR_ind = func_regpanel(FR_ep, 1)
-FR_tot = func_regpanel(FR_ep, 3)
-HU_ind = func_regpanel(HU_ep, 1)
-HU_tot = func_regpanel(HU_ep, 3)
-IE_ind = func_regpanel(IE_ep, 1)
-IE_tot = func_regpanel(IE_ep, 3)
-IT_ind = func_regpanel(IT_ep, 1)
-IT_tot = func_regpanel(IT_ep, 3)
-LV_ind = func_regpanel(LV_ep, 1)
-LV_tot = func_regpanel(LV_ep, 3)
-LT_ind = func_regpanel(LT_ep, 1)
-LT_tot = func_regpanel(LT_ep, 3)
-#LU_ind = func_regpanel(LU_ep, 1)
-#LU_tot = func_regpanel(LU_ep, 3)
-PL_ind = func_regpanel(PL_ep, 1)
-PL_tot = func_regpanel(PL_ep, 3)
-PT_ind = func_regpanel(PT_ep, 1)
-PT_tot = func_regpanel(PT_ep, 3)
-SK_ind = func_regpanel(SK_ep, 1)
-SK_tot = func_regpanel(SK_ep, 3)
-SI_ind = func_regpanel(SI_ep, 1)
-SI_tot = func_regpanel(SI_ep, 3)
+  DK_ind = func_regpanel(DK_ep, 1)
+  DK_tot = func_regpanel(DK_ep, 3)
+  US_ind = func_regpanel(US_ep, 1)
+  US_tot = func_regpanel(US_ep, 3)
+  UK_ind = func_regpanel(UK_ep, 1)
+  UK_tot = func_regpanel(UK_ep, 3)
+  DE_ind = func_regpanel(DE_ep, 1)
+  DE_tot = func_regpanel(DE_ep, 3)
+  NL_ind = func_regpanel(NL_ep, 1)
+  NL_tot = func_regpanel(NL_ep, 3)
+  #SE_ind = func_regpanel(SE_ep, 1)
+  #SE_tot = func_regpanel(SE_ep, 3)
+  AT_ind = func_regpanel(AT_ep, 1)
+  AT_tot = func_regpanel(AT_ep, 3)
+  BE_ind = func_regpanel(BE_ep, 1)
+  BE_tot = func_regpanel(BE_ep, 3)
+  CZ_ind = func_regpanel(CZ_ep, 1)
+  CZ_tot = func_regpanel(CZ_ep, 3)
+  CY_ind = func_regpanel(CY_ep, 1)
+  CY_tot = func_regpanel(CY_ep, 3)
+  EE_ind = func_regpanel(EE_ep, 1)
+  EE_tot = func_regpanel(EE_ep, 3)
+  ES_ind = func_regpanel(ES_ep, 1)
+  ES_tot = func_regpanel(ES_ep, 3)
+  EL_ind = func_regpanel(EL_ep, 1)
+  EL_tot = func_regpanel(EL_ep, 3)
+  FI_ind = func_regpanel(FI_ep, 1)
+  FI_tot = func_regpanel(FI_ep, 3)
+  FR_ind = func_regpanel(FR_ep, 1)
+  FR_tot = func_regpanel(FR_ep, 3)
+  HU_ind = func_regpanel(HU_ep, 1)
+  HU_tot = func_regpanel(HU_ep, 3)
+  IE_ind = func_regpanel(IE_ep, 1)
+  IE_tot = func_regpanel(IE_ep, 3)
+  IT_ind = func_regpanel(IT_ep, 1)
+  IT_tot = func_regpanel(IT_ep, 3)
+  LV_ind = func_regpanel(LV_ep, 1)
+  LV_tot = func_regpanel(LV_ep, 3)
+  LT_ind = func_regpanel(LT_ep, 1)
+  LT_tot = func_regpanel(LT_ep, 3)
+  #LU_ind = func_regpanel(LU_ep, 1)
+  #LU_tot = func_regpanel(LU_ep, 3)
+  PL_ind = func_regpanel(PL_ep, 1)
+  PL_tot = func_regpanel(PL_ep, 3)
+  PT_ind = func_regpanel(PT_ep, 1)
+  PT_tot = func_regpanel(PT_ep, 3)
+  SK_ind = func_regpanel(SK_ep, 1)
+  SK_tot = func_regpanel(SK_ep, 3)
+  SI_ind = func_regpanel(SI_ep, 1)
+  SI_tot = func_regpanel(SI_ep, 3)
 }
 
 #Final Panels for analysis:
@@ -784,13 +758,13 @@ summary(lsdv.mm_feciy2)
 
 
 ci_panel_ss = ci_panel %>% select(year, country, code, desc, branche, branche_desc, wgt_i, wgt_i_avg, emp_logchanges, 
-                                    dLP_I_b1, dLP_I_b2, dLP_I_b3, dLP_I_b4, dLP_I_b5,
-                                    #dLP_I_b1_dum, dLP_I_b2_dum, dLP_I_b3_dum, dLP_I_b4_dum, dLP_I_b5_dum,
-                                    dLP_BwoI_b1, dLP_BwoI_b1_lag1, dLP_BwoI_b1_lag2, dLP_BwoI_b1_lag3,
-                                    dLP_BwoI_b2, dLP_BwoI_b2_lag1, dLP_BwoI_b2_lag2, dLP_BwoI_b2_lag3,
-                                    dLP_BwoI_b3, dLP_BwoI_b3_lag1, dLP_BwoI_b3_lag2, dLP_BwoI_b3_lag3,
-                                    dLP_BwoI_b4, dLP_BwoI_b4_lag1, dLP_BwoI_b4_lag2, dLP_BwoI_b4_lag3,
-                                    dLP_BwoI_b5, dLP_BwoI_b5_lag1, dLP_BwoI_b5_lag2, dLP_BwoI_b5_lag3)
+                                  dLP_I_b1, dLP_I_b2, dLP_I_b3, dLP_I_b4, dLP_I_b5,
+                                  #dLP_I_b1_dum, dLP_I_b2_dum, dLP_I_b3_dum, dLP_I_b4_dum, dLP_I_b5_dum,
+                                  dLP_BwoI_b1, dLP_BwoI_b1_lag1, dLP_BwoI_b1_lag2, dLP_BwoI_b1_lag3,
+                                  dLP_BwoI_b2, dLP_BwoI_b2_lag1, dLP_BwoI_b2_lag2, dLP_BwoI_b2_lag3,
+                                  dLP_BwoI_b3, dLP_BwoI_b3_lag1, dLP_BwoI_b3_lag2, dLP_BwoI_b3_lag3,
+                                  dLP_BwoI_b4, dLP_BwoI_b4_lag1, dLP_BwoI_b4_lag2, dLP_BwoI_b4_lag3,
+                                  dLP_BwoI_b5, dLP_BwoI_b5_lag1, dLP_BwoI_b5_lag2, dLP_BwoI_b5_lag3)
 
 ci_panel_ss = as.data.frame(ci_panel_ss)
 
