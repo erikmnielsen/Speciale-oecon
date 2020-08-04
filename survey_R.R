@@ -4,8 +4,9 @@ library(haven)
 library(ggplot2)
 library(ggthemes)
 library(GGally)
+library(readr)
 
-data <- read_csv("surveydata.csv") %>% select(-X1)
+data <- read_csv("surveydata1.csv") %>% select(-X1)
 
 # Kodning af variable --------------------------------------------------------
 
@@ -296,5 +297,63 @@ rege2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) +
                design=svydesign_A1A5, 
                data=data_A1A5)
 summary(rege2a)
+
+
+
+
+#Hvor ofte plejer du i dinhovedbeskæftigelse at aflevere input eller modtage output såsom råmaterialer, slutprodukter eller halvfabrikata til eller fra en robot?
+rege3 = svyglm(E3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               data=data_A1)
+summary(rege3)
+
+#Hvor ofte plejer du i din hovedbeskæftigelse at sælge et produkt eller en tjenesteydelse?
+rege4 = svyglm(E4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)
+summary(rege4)
+
+#Hvor ofte plejer du i din hovedbeskæftigelse at varetage egentlig forhandlinger om kontrakter eller vilkår mere generelt med personer i eller uden for virksomheden eller organisationen?
+rege1 = svyglm(E1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)
+summary(rege1)
+
+#Hvor ofte plejer du i din hovedbeskæftigelse at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
+rege2 = svyglm(E2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+               family=gaussian(), 
+               design=svydesign_A1, 
+               data=data_A1)
+summary(rege2)
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at rådgive, oplære, instruere eller undervise andre – individuelt eller i grupper?
+rege3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(rege3a)
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at sælge et produkt eller en tjenesteydelse?
+rege4a = svyglm(E4a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(regc5)
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at forhandle med personer i eller uden for virksomheden eller organisationen?
+rege1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(regc5)
+
+#Sammenlignet med din hovedbeskæftigelse i 2016: at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
+rege2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)
+summary(rege2a)
+
 
 
