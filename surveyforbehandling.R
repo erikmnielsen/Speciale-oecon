@@ -759,3 +759,4 @@ data = merge(disco, aau_job_2019_svar)
 
 write.csv(data, "surveydata.csv")
 
+
