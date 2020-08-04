@@ -733,9 +733,9 @@ aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "8 Erhvervsservice"] = 
 aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "9 Offentlig administration, undervisning og sundhed"] = "Offentlig administration, undervisning og sundhed"
 aau_job_2019_svar$bra10grp[aau_job_2019_svar$bra10grp == "10 Kultur, fritid og anden service"] = "Kultur, fritid og anden service"
 
-aau_job_2019_svar = aau_job_2019_svar %>% mutate(bra10grp_code = ifelse(bra10grp=="Landbrug, skovbrug og fiskeri",1,
+aau_job_2019_svar = aau_job_2019_svar %>% mutate(bra10grp_code = ifelse(bra10grp=="Landbrug, skovbrug og fiskeri",3,
                                                                         ifelse(bra10grp=="Industri, råstofindvinding og forsyningsvirksomhed",2,
-                                                                               ifelse(bra10grp=="Bygge og anlæg",3,
+                                                                               ifelse(bra10grp=="Bygge og anlæg",1,
                                                                                       ifelse(bra10grp=="Handel og transport",4,
                                                                                              ifelse(bra10grp=="Information og kommunikation",5,
                                                                                                     ifelse(bra10grp=="Finansiering og forsikring",6,
@@ -757,5 +757,5 @@ disco = disco %>% select(c(Resp_ID1, ISCO_NU, Functions)) %>% rename(Resp_id1 = 
 
 data = merge(disco, aau_job_2019_svar)
 
-write.csv(data, "surveydata3.csv")
+write.csv(data, "surveydata.csv")
 
