@@ -30,11 +30,11 @@ library(ggplot2)
 library(ggthemes)
 library(dplyr)
 
-country="DK"
-dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP")
-dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_QI") #Gross output, faste priser 2010=100
-measure_1="EMP"
-measure_2="GO_QI"
+#country="DK"
+#dataset_1 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "EMP")
+#dataset_2 <- read_excel("Data/DK_output_17ii.xlsx", sheet = "GO_QI") #Gross output, faste priser 2010=100
+#measure_1="EMP"
+#measure_2="GO_QI"
 
   
 func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure_2="GO", method) {
@@ -180,8 +180,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
 }
-
-dataset_1 = LV_ep
 
 func_regpanel <- function(dataset_1, type) {
   
@@ -413,7 +411,7 @@ SI_go = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 # Country data  ----------------------------------------------------- 
 
-PRISER = "faste"
+PRISER = "faste" # virker ikke, men Autor bruger vidst faste priser??
 PRISER = "løbende"
 
 # nogle af industrierne (eller subkategorierne) findes ikke i alle lande, fx findes 45,46,47 ikke i Frankrig før 1995, selvom overkategorien G findes
@@ -555,17 +553,38 @@ lsdv.c_feci2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + pro
 
 summary(lsdv.c_pool1)
 
-lsdv.c_pool1_coef = coeftest(lsdv.c_pool1, vcov. = vcovHC, type = "HC1")
-lsdv.c_fec1_coef = coeftest(lsdv.c_fec1, vcov. = vcovHC, type = "HC1")
-lsdv.c_feci1_coef = coeftest(lsdv.c_feci1, vcov. = vcovHC, type = "HC1")
-lsdv.c_pool2_coef = coeftest(lsdv.c_pool2, vcov. = vcovHC, type = "HC1")
-lsdv.c_fec2_coef = coeftest(lsdv.c_fec2, vcov. = vcovHC, type = "HC1")
-lsdv.c_feci2_coef = coeftest(lsdv.c_feci2, vcov. = vcovHC, type = "HC1")
+lsdv.c_pool1_coef = coeftest(lsdv.c_pool1, vcov. = vcovHC, type = "HC1")[,c(1,4)]
+lsdv.c_fec1_coef = coeftest(lsdv.c_fec1, vcov. = vcovHC, type = "HC1")[,c(1,4)]
+lsdv.c_feci1_coef = coeftest(lsdv.c_feci1, vcov. = vcovHC, type = "HC1")[,c(1,4)]
+lsdv.c_pool2_coef = coeftest(lsdv.c_pool2, vcov. = vcovHC, type = "HC1")[,c(1,4)]
+lsdv.c_fec2_coef = coeftest(lsdv.c_fec2, vcov. = vcovHC, type = "HC1")[,c(1,4)]
+lsdv.c_feci2_coef = coeftest(lsdv.c_feci2, vcov. = vcovHC, type = "HC1")[,c(1,4)]
 
 #coeftest(fixed.dum, vcov. = vcovHC, method = "arellano")
 
-write.csv(cbind(lsdv.c_pool_coef, lsdv.c_feci_coef, lsdv.c_fecy_coef, lsdv.c_feyi_coef), "fixeddum_ci_panel.csv")
+m1 = merge(lsdv.c_pool1_coef, lsdv.c_fec1_coef, by = "row.names", all = TRUE)
+m2 = merge(m1, lsdv.c_feci1_coef, by = "row.names", all = TRUE)
 
+regoutput_c_panel = merge(merge(merge(merge(merge(lsdv.c_pool1_coef, lsdv.c_fec1_coef, by = "row.names", all = TRUE), 
+           lsdv.c_feci1_coef, by = "row.names", all = TRUE),
+           lsdv.c_pool2_coef, by = "row.names", all = TRUE),
+           lsdv.c_fec2_coef, by = "row.names", all = TRUE),
+           lsdv.c_feci2_coef, by = "row.names", all = TRUE)
+           
+
+write.xlsx(regoutput_c_panel, "regoutput_c_panel.xlsx")
+
+siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC1")[,4])
+reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC1")[,c(1,4)], siglvl)
+#regc5_coef = summary(regression)$coefficients[,c(1,4)]
+colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+
+
+regoutput_c_panel <- Reduce(function(a,b){
+  ans <- merge(a,b,by="row.names",all=T)
+  row.names(ans) <- ans[,"Row.names"]
+  ans[,!names(ans) %in% "Row.names"]
+}, list(lsdv.c_pool1_coef,lsdv.c_fec1_coef,lsdv.c_feci1_coef))
 
 #Tester resultater ved brug af plm istedet: 
 {

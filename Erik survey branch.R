@@ -94,6 +94,53 @@ data$Socialinterationer = ifelse(data$E1 %in% c(1,2), 1,
 
 
 
+
+
+# Ændring til dummy variable ---------------
+
+data$D2 = ifelse(data$D2 %in% c(1,2,3), 1, 0)
+data$D1 = ifelse(data$D1 %in% c(1,2,3), 1, 0)
+data$D3 = ifelse(data$D3 %in% c(1,2,3), 1, 0)
+data$D4 = ifelse(data$D4 %in% c(1,2,3), 1, 0)
+
+data$C1 = ifelse(data$C1==1, 1, 0)
+data$C2 = ifelse(data$C2==1, 1, 0)
+data$C3 = ifelse(data$C3==1, 1, 0)
+data$C4 = ifelse(data$C4==1, 1, 0)
+data$C5 = ifelse(data$C5==1, 1, 0)
+
+data$B3 = ifelse(data$B3 %in% c(1,2),1,0)
+data$B5 = ifelse(data$B5 %in% c(1,2),1,0)
+data$B7 = ifelse(data$B7 %in% c(1,2),1,0)
+data$B9 = ifelse(data$B9 %in% c(1,2),1,0)
+data$B11 = ifelse(data$B11 %in% c(1,2),1,0)
+
+data$E1 = ifelse(data$E1 %in% c(1,2), 1, 0)
+data$E2 = ifelse(data$E2 %in% c(1,2), 1, 0)
+data$E3 = ifelse(data$E3 %in% c(1,2), 1, 0)
+data$E4 = ifelse(data$E4 %in% c(1,2), 1, 0)
+
+data$E1a = ifelse(data$E1a==1, 1, 0)
+data$E2a = ifelse(data$E2a==1, 1, 0)
+data$E3a = ifelse(data$E3a==1, 1, 0)
+data$E4a = ifelse(data$E4a==1, 1, 0)
+
+data$F1 = ifelse(data$F1 %in% c(1,2), 1, 0)
+data$F2 = ifelse(data$F2 %in% c(1,2), 1, 0)
+
+data$F1a = ifelse(data$F1a==1, 1, 0)
+data$F2a = ifelse(data$F2a==1, 1, 0)
+
+data$G1 = ifelse(data$G1 %in% c(1,2), 1, 0)
+data$G2 = ifelse(data$G2 %in% c(1,2), 1, 0)
+data$G3 = ifelse(data$G3 %in% c(1,2), 1, 0)
+
+data$G1a = ifelse(data$G1a==1, 1, 0)
+data$G2a = ifelse(data$G2a==1, 1, 0)
+data$G3a = ifelse(data$G3a==1, 1, 0)
+
+
+
 # Dataforberedelse -----------------------------------------------------------------------
 
 # Filtreret for A1=1 (Har du for tiden en lønnet hovedbeskæftigelse), samt branche 9 og 10
@@ -182,6 +229,7 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
 
 
 
+<<<<<<< HEAD
 
 
 # Ændring til dummy variable ---------------
@@ -228,6 +276,8 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
   data$G3a = ifelse(data$G3a==1, 1, 0)
 
 
+=======
+>>>>>>> 844b89ceaac4dea4fbf73fecf7ea87064837f7fc
 # REGRESSIONER: Indhold af arbejde  --------------------------------------------------------
 
   func_coefs <- function(regression, name, method="") {
@@ -601,10 +651,14 @@ reg_d4_coef_HC3 = func_coefs(reg_d4, "D4", "HC3")
 
 
 regoutput_kval_HC3 = as.data.frame(cbind(reg_d1_coef_HC3, reg_d2_coef_HC3, reg_d3_coef_HC3, reg_d4_coef_HC3))
+<<<<<<< HEAD
 write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_10.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
 
 table(data$bra10grp_code)
 
+=======
+write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_2.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
+>>>>>>> 844b89ceaac4dea4fbf73fecf7ea87064837f7fc
 
 
 
