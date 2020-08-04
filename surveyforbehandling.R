@@ -757,5 +757,7 @@ disco = disco %>% select(c(Resp_ID1, ISCO_NU, Functions)) %>% rename(Resp_id1 = 
 
 data = merge(disco, aau_job_2019_svar)
 
-write.csv(data, "surveydata3.csv")
 
+write.csv(data, "surveydata.csv")
+
+#test
