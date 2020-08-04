@@ -746,6 +746,7 @@ aau_job_2019_svar = aau_job_2019_svar %>% mutate(bra10grp_code = ifelse(bra10grp
                                                                                                                                        NA)))))))))))
 
 
+
 aau_job_2019_svar = aau_job_2019_svar[,c(1,2,3,85,4:(ncol(aau_job_2019_svar)-1))] 
 
 aau_job_2019_svar = aau_job_2019_svar %>% filter(bra10grp != "11 Uoplyst")
@@ -756,5 +757,5 @@ disco = disco %>% select(c(Resp_ID1, ISCO_NU, Functions)) %>% rename(Resp_id1 = 
 
 data = merge(disco, aau_job_2019_svar)
 
-write.csv(data, "surveydata.csv")
+write.csv(data, "surveydata3.csv")
 

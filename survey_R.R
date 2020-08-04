@@ -143,7 +143,7 @@ data$G3a = ifelse(data$G3a==1, 1, 0)
 data_A1 = data %>% filter(A1 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
 
 # Filtreret for A1=1, og A5=1 (Havde du i 2016 en lønnet hovedbeskæftigelse? ), samt branche 9 og 10
-#data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
+data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
 data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10) 
 
 #Hvorfor er der forskel på de to metoder?
@@ -157,7 +157,7 @@ svydesign_A1A5 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1A5, nest
 #DESKRIPTIVT: Indhold af arbejde  --------------------------------------------------------
 
 #Arbejdsfunktioner
-ggplot(data, aes(Functions)) + 
+ggplot(data_A1A5, aes(Functions)) + 
   geom_histogram(binwidth = 0.5, color="black") + 
   scale_x_discrete(limits=c("Ledelsesarbejde","Højeste niveau","Mellemniveau","Kontor- og kundeservicearbejde","Service- og salgsarbejde","Landbrug, skovbrug og fiskeri","Håndværkspræget arbejde","Operatør-, monterings- og transportarbejde","Andet manuelt arbejde","9999")) + 
   theme_economist() + scale_color_economist() +
