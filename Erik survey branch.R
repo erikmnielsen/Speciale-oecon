@@ -9,8 +9,66 @@ library(gtools)
 #library(formattable)
 library(openxlsx)
 library(plm)
+library(readr)
 
 data <- read_csv("surveydata.csv") %>% select(-X1)
+
+func_coefs <- function(regression, name, method="") {
+  
+  options(scipen=999, digits=4) 
+  #options(scipen=0, digits=7) #default
+  
+  if (method=="HC1") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC1")[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC1")[,c(1,4)], siglvl)
+    #regc5_coef = summary(regression)$coefficients[,c(1,4)]
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    
+  } else if (method=="HC0") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC0")[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    #reg_coef = summary(regression)$coefficients[,c(1,4)]
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    
+  } else if (method=="HC2") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC2")[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    #reg_coef = summary(regression)$coefficients[,c(1,4)]
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    
+  } else if (method=="HC3") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC3")[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    #reg_coef = summary(regression)$coefficients[,c(1,4)]
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    
+  } else if (method=="HC4") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC4")[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    #reg_coef = summary(regression)$coefficients[,c(1,4)]
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    
+  } else {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    #reg_coef = summary(regression)$coefficients[,c(1,4)]
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+  }
+  
+  reg_coef
+  
+}
 
 # Kodning af variable --------------------------------------------------------
 
@@ -93,9 +151,6 @@ data$Socialinterationer = ifelse(data$E1 %in% c(1,2), 1,
                                                       0))))
 
 
-
-
-
 # Ændring til dummy variable ---------------
 
 data$D2 = ifelse(data$D2 %in% c(1,2,3), 1, 0)
@@ -140,19 +195,16 @@ data$G2a = ifelse(data$G2a==1, 1, 0)
 data$G3a = ifelse(data$G3a==1, 1, 0)
 
 
-
 # Dataforberedelse -----------------------------------------------------------------------
 
 # Filtreret for A1=1 (Har du for tiden en lønnet hovedbeskæftigelse), samt branche 9 og 10
 
 #data_A1 = data %>% filter(A1 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
-data_A1 = data %>% filter(A1 == 1, Functions != "None")
-#Functions != 4, bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10
+data_A1 = data %>% filter(A1 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
 
 # Filtreret for A1=1, og A5=1 (Havde du i 2016 en lønnet hovedbeskæftigelse? ), samt branche 9 og 10
 #data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
-data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None") 
-#, bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10
+data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
 
 #Hvorfor er der forskel på de to metoder?
 
@@ -162,181 +214,6 @@ svydesign_A1 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1, nest=TRU
 svydesign_A1A5 = svydesign(id=~Resp_id1, weights = ~pervgt, data=data_A1A5, nest=TRUE)
 
 
-#DESKRIPTIVT: Indhold af arbejde  --------------------------------------------------------
-
-
-#Svar på spørgsmål C1-5
-
-df.long1 = data_A1A5 %>% select(Resp_id1, C1, C2, C3, C4, C5) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
-df.long1_pct <- df.long1 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
-
-ggplot(df.long1_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
-  geom_bar(stat="identity", width = 0.7) +
-  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
-  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
-
-
-df.long1b = data_A1A5 %>% select(Resp_id1, B3, B5, B7, B9, B11) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
-df.long1b_pct <- df.long1b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
-
-ggplot(df.long1b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
-  geom_bar(stat="identity", width = 0.7) +
-  labs(x = "Spørgsmål", y = "Procent", fill = "1=Altid, 2=Ofte, 3=Af og til, 4=Sjældent, 5=Aldrig") +
-  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
-
-
-
-#Svar på spørgsmål E1a-4a
-
-df.long2 = data_A1A5 %>% select(Resp_id1, E1a, E2a, E3a, E4a) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9)
-# ggplot(df.long2, aes(x=variable, fill=as.factor(value))) + geom_bar()
-df.long2_pct <- df.long2 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
-
-ggplot(df.long2_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
-  geom_bar(stat="identity", width = 0.7) +
-  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
-  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
-
-
-df.long2b = data_A1A5 %>% select(Resp_id1, E1, E2, E3, E4) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
-df.long2b_pct <- df.long2b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
-
-ggplot(df.long2b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
-  geom_bar(stat="identity", width = 0.7) +
-  labs(x = "Spørgsmål", y = "Procent", fill = "1=Hver dag, 2=Mindst én gang om ugen, 3=1-3 gange om måneden, 4=Sjældnere end én gang om måneden, 5=Aldrig") +
-  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
-
-
-
-
-#Svar på spørgsmål F1A, F2A, G1A, G3A
-
-df.long3 = data_A1A5 %>% select(Resp_id1, F1a, F2a, G1a, G3a) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9)
-df.long3_pct <- df.long3 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
-
-ggplot(df.long3_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
-  geom_bar(stat="identity", width = 0.7) +
-  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
-  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
-
-df.long3b = data_A1A5 %>% select(Resp_id1, F1, F2, G1, G3) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
-df.long3b_pct <- df.long3b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
-
-ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
-  geom_bar(stat="identity", width = 0.7) +
-  labs(x = "Spørgsmål", y = "Procent", fill = "1=Hver dag, 2=Mindst én gang om ugen, 3=1-3 gange om måneden, 4=Sjældnere end én gang om måneden, 5=Aldrig") +
-  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
-
-
-
-<<<<<<< HEAD
-
-
-# Ændring til dummy variable ---------------
-
-  data$D2 = ifelse(data$D2 %in% c(1,2), 1, 0)
-  data$D1 = ifelse(data$D1 %in% c(1,2,3), 1, 0)
-  data$D3 = ifelse(data$D3 %in% c(1,2,3), 1, 0)
-  data$D4 = ifelse(data$D4 %in% c(1,2,3), 1, 0)
-  
-  data$C1 = ifelse(data$C1==1, 1, 0)
-  data$C2 = ifelse(data$C2==1, 1, 0)
-  data$C3 = ifelse(data$C3==1, 1, 0)
-  data$C4 = ifelse(data$C4==1, 1, 0)
-  data$C5 = ifelse(data$C5==1, 1, 0)
-  
-  data$B3 = ifelse(data$B3 %in% c(1,2),1,0)
-  data$B5 = ifelse(data$B5 %in% c(1,2),1,0)
-  data$B7 = ifelse(data$B7 %in% c(1,2),1,0)
-  data$B9 = ifelse(data$B9 %in% c(1,2),1,0)
-  data$B11 = ifelse(data$B11 %in% c(1,2),1,0)
-  
-  data$E1 = ifelse(data$E1 %in% c(1,2), 1, 0)
-  data$E2 = ifelse(data$E2 %in% c(1,2), 1, 0)
-  data$E3 = ifelse(data$E3 %in% c(1,2), 1, 0)
-  data$E4 = ifelse(data$E4 %in% c(1,2), 1, 0)
-  
-  data$E1a = ifelse(data$E1a==1, 1, 0)
-  data$E2a = ifelse(data$E2a==1, 1, 0)
-  data$E3a = ifelse(data$E3a==1, 1, 0)
-  data$E4a = ifelse(data$E4a==1, 1, 0)
-  
-  data$F1 = ifelse(data$F1 %in% c(1,2), 1, 0)
-  data$F2 = ifelse(data$F2 %in% c(1,2), 1, 0)
-  
-  data$F1a = ifelse(data$F1a==1, 1, 0)
-  data$F2a = ifelse(data$F2a==1, 1, 0)
-  
-  data$G1 = ifelse(data$G1 %in% c(1,2), 1, 0)
-  data$G2 = ifelse(data$G2 %in% c(1,2), 1, 0)
-  data$G3 = ifelse(data$G3 %in% c(1,2), 1, 0)
-  
-  data$G1a = ifelse(data$G1a==1, 1, 0)
-  data$G2a = ifelse(data$G2a==1, 1, 0)
-  data$G3a = ifelse(data$G3a==1, 1, 0)
-
-
-=======
->>>>>>> 844b89ceaac4dea4fbf73fecf7ea87064837f7fc
-# REGRESSIONER: Indhold af arbejde  --------------------------------------------------------
-
-  func_coefs <- function(regression, name, method="") {
-    
-    options(scipen=999, digits=4) 
-    #options(scipen=0, digits=7) #default
-    
-    if (method=="HC1") {
-      
-      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC1")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC1")[,c(1,4)], siglvl)
-      #regc5_coef = summary(regression)$coefficients[,c(1,4)]
-      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-      
-      
-    } else if (method=="HC0") {
-      
-      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC0")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-      #reg_coef = summary(regression)$coefficients[,c(1,4)]
-      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-      
-      
-    } else if (method=="HC2") {
-      
-      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC2")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-      #reg_coef = summary(regression)$coefficients[,c(1,4)]
-      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-      
-      
-    } else if (method=="HC3") {
-      
-      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC3")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-      #reg_coef = summary(regression)$coefficients[,c(1,4)]
-      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-      
-      
-    } else if (method=="HC4") {
-      
-      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC4")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-      #reg_coef = summary(regression)$coefficients[,c(1,4)]
-      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-      
-      
-    } else {
-      
-      siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-      #reg_coef = summary(regression)$coefficients[,c(1,4)]
-      colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    }
-    
-    reg_coef
-    
-  }
-  
 # ORGANISERING  --------------
 
 #Nuværende:
@@ -388,6 +265,12 @@ regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
+
+regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1A5, 
+                data=data_A1A5)}
+
 
 
 regc1_coef = func_coefs(regc1, "C1")
@@ -660,6 +543,75 @@ table(data$bra10grp_code)
 write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_2.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
 >>>>>>> 844b89ceaac4dea4fbf73fecf7ea87064837f7fc
 
+
+
+
+
+
+#DESKRIPTIVT: Indhold af arbejde  --------------------------------------------------------
+
+
+#Svar på spørgsmål C1-5
+
+df.long1 = data_A1A5 %>% select(Resp_id1, C1, C2, C3, C4, C5) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long1_pct <- df.long1 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long1_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+df.long1b = data_A1A5 %>% select(Resp_id1, B3, B5, B7, B9, B11) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long1b_pct <- df.long1b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long1b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Altid, 2=Ofte, 3=Af og til, 4=Sjældent, 5=Aldrig") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+
+#Svar på spørgsmål E1a-4a
+
+df.long2 = data_A1A5 %>% select(Resp_id1, E1a, E2a, E3a, E4a) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9)
+# ggplot(df.long2, aes(x=variable, fill=as.factor(value))) + geom_bar()
+df.long2_pct <- df.long2 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long2_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+df.long2b = data_A1A5 %>% select(Resp_id1, E1, E2, E3, E4) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long2b_pct <- df.long2b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long2b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Hver dag, 2=Mindst én gang om ugen, 3=1-3 gange om måneden, 4=Sjældnere end én gang om måneden, 5=Aldrig") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+
+
+
+#Svar på spørgsmål F1A, F2A, G1A, G3A
+
+df.long3 = data_A1A5 %>% select(Resp_id1, F1a, F2a, G1a, G3a) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9)
+df.long3_pct <- df.long3 %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long3_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Oftere, 2=Sjældnere, 3=Uændret") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
+
+df.long3b = data_A1A5 %>% select(Resp_id1, F1, F2, G1, G3) %>% gather(variable, value, -Resp_id1) %>% filter(value!=8,value!=9) 
+df.long3b_pct <- df.long3b %>% group_by(variable, value) %>% summarise(count=n()) %>% mutate(perc=count/sum(count))
+
+ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) + 
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Spørgsmål", y = "Procent", fill = "1=Hver dag, 2=Mindst én gang om ugen, 3=1-3 gange om måneden, 4=Sjældnere end én gang om måneden, 5=Aldrig") +
+  theme_economist() + scale_color_economist() # + theme_minimal(base_size = 14) + ggtitle("")
 
 
 
