@@ -6,8 +6,6 @@ library(ggplot2)
 library(ggthemes)
 library(haven)
 
-#test-erik
-
 dok1 = "aau_job_2019_svar.sas7bdat"
 aau_job_2019_svar = read_sas(dok1, NULL)
 #View(aau_job_2019_svar)
@@ -676,47 +674,56 @@ disco$ISCO_NU[disco$ISCO_NU == "9999" ] = "None"
 disco["Functions"] = NA
 
 #Functions
-disco$Functions[disco$ISCO_NU == "Chief executives, senior officials and legislators"] = 1
-disco$Functions[disco$ISCO_NU == "Administrative and commercial managers"] = 1
-disco$Functions[disco$ISCO_NU == "Production and specialised services managers"] = 1
-disco$Functions[disco$ISCO_NU == "Hospitality, retail and other services managers"] = 1
+disco$Functions[disco$ISCO_NU == "Chief executives, senior officials and legislators"] = 9
+disco$Functions[disco$ISCO_NU == "Administrative and commercial managers"] = 9
+disco$Functions[disco$ISCO_NU == "Production and specialised services managers"] = 9
+disco$Functions[disco$ISCO_NU == "Hospitality, retail and other services managers"] = 9
+
 disco$Functions[disco$ISCO_NU == "Science and engineering professionals"] = 2
 disco$Functions[disco$ISCO_NU == "Health professionals"] = 2
 disco$Functions[disco$ISCO_NU == "Teaching professionals"] = 2
 disco$Functions[disco$ISCO_NU == "Business and administration professionals"] = 2
 disco$Functions[disco$ISCO_NU == "Information and communications technology"] = 2
 disco$Functions[disco$ISCO_NU == "Legal, social and cultural professionals"] = 2
+
 disco$Functions[disco$ISCO_NU == "Science and engineering associate professionals"] = 3
 disco$Functions[disco$ISCO_NU == "Health associate professionals"] = 3
 disco$Functions[disco$ISCO_NU == "Business and administration associate professionals"] = 3
 disco$Functions[disco$ISCO_NU == "Legal, social, cultural and related associate"] = 3
 disco$Functions[disco$ISCO_NU == "Information and communications technicians"] = 3
+
 disco$Functions[disco$ISCO_NU == "General and keyboard clerks"] = 4
 disco$Functions[disco$ISCO_NU == "Customer services clerks"] = 4
 disco$Functions[disco$ISCO_NU == "Numerical and material recording clerks"] = 4
 disco$Functions[disco$ISCO_NU == "Other clerical support workers"] = 4
+
 disco$Functions[disco$ISCO_NU == "Personal service workers"] = 5
 disco$Functions[disco$ISCO_NU == "Sales workers"] = 5
 disco$Functions[disco$ISCO_NU == "Personal care workers"] = 5
 disco$Functions[disco$ISCO_NU == "Protective services workers"] = 5
+
 disco$Functions[disco$ISCO_NU == "Market-oriented skilled agricultural workers"] = 6
 disco$Functions[disco$ISCO_NU == "Market-oriented skilled forestry, fishery and hunting"] = 6
 disco$Functions[disco$ISCO_NU == "Subsistence farmers, fishers, hunters and gatherers"] = 6
+
 disco$Functions[disco$ISCO_NU == "Building and related trades workers, excluding electricians"] = 7
 disco$Functions[disco$ISCO_NU == "Metal, machinery and related trades workers"] = 7
 disco$Functions[disco$ISCO_NU == "Handicraft and printing workers"] = 7
 disco$Functions[disco$ISCO_NU == "Electrical and electronic trades workers"] = 7
 disco$Functions[disco$ISCO_NU == "Food processing, wood working, garment and other craft and related trades workers"] = 7
+
 disco$Functions[disco$ISCO_NU == "Stationary plant and machine operators"] = 8
 disco$Functions[disco$ISCO_NU == "Assemblers"] = 8
 disco$Functions[disco$ISCO_NU == "Drivers and mobile plant operators"] = 8
-disco$Functions[disco$ISCO_NU == "Cleaners and helpers"] = 9
-disco$Functions[disco$ISCO_NU == "Agricultural, forestry and fishery labourers"] = 9
-disco$Functions[disco$ISCO_NU == "Labourers in mining, construction, manufacturing and transport"] = 9
-disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 9
-disco$Functions[disco$ISCO_NU == "Street and related sales and service workers"] = 9
-disco$Functions[disco$ISCO_NU == "Refuse workers and other elementary workers"] = 9
-disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 9
+
+disco$Functions[disco$ISCO_NU == "Cleaners and helpers"] = 1
+disco$Functions[disco$ISCO_NU == "Agricultural, forestry and fishery labourers"] = 1
+disco$Functions[disco$ISCO_NU == "Labourers in mining, construction, manufacturing and transport"] = 1
+disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 1
+disco$Functions[disco$ISCO_NU == "Street and related sales and service workers"] = 1
+disco$Functions[disco$ISCO_NU == "Refuse workers and other elementary workers"] = 1
+disco$Functions[disco$ISCO_NU == "Food preparation assistants"] = 1
+
 disco$Functions[disco$ISCO_NU == "Commissioned armed forces officers"] = 0
 disco$Functions[disco$ISCO_NU == "Non-commissioned armed forces officers"] = 0
 disco$Functions[disco$ISCO_NU == "Armed forces occupations, other ranks"] = 0
@@ -760,4 +767,3 @@ data = merge(disco, aau_job_2019_svar)
 
 write.csv(data, "surveydata.csv")
 
-#test
