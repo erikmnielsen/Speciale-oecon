@@ -10,7 +10,7 @@ library(gtools)
 library(openxlsx)
 library(plm)
 
-data <- read_csv("surveydata.csv") %>% select(-X1)
+data <- read_csv("surveydata4.csv") %>% select(-X1)
 
 # Kodning af variable --------------------------------------------------------
 
@@ -186,10 +186,10 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
 
 # Ændring til dummy variable ---------------
 
-  data$D2 = ifelse(data$D2 %in% c(1,2), 1, 0)
-  data$D1 = ifelse(data$D1 %in% c(1,2,3), 1, 0)
-  data$D3 = ifelse(data$D3 %in% c(1,2,3), 1, 0)
-  data$D4 = ifelse(data$D4 %in% c(1,2,3), 1, 0)
+  data$D2 = ifelse(data$D2 %in% c(3,4), 1, 0)
+  data$D1 = ifelse(data$D1 %in% c(4,5), 1, 0)
+  data$D3 = ifelse(data$D3 %in% c(4,5), 1, 0)
+  data$D4 = ifelse(data$D4 %in% c(4,5), 1, 0)
   
   data$C1 = ifelse(data$C1==1, 1, 0)
   data$C2 = ifelse(data$C2==1, 1, 0)
@@ -246,7 +246,7 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
     } else if (method=="HC0") {
       
       siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC0")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC0")[,c(1,4)], siglvl)
       #reg_coef = summary(regression)$coefficients[,c(1,4)]
       colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
       
@@ -254,7 +254,7 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
     } else if (method=="HC2") {
       
       siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC2")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC2")[,c(1,4)], siglvl)
       #reg_coef = summary(regression)$coefficients[,c(1,4)]
       colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
       
@@ -262,7 +262,7 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
     } else if (method=="HC3") {
       
       siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC3")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC3")[,c(1,4)], siglvl)
       #reg_coef = summary(regression)$coefficients[,c(1,4)]
       colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
       
@@ -270,7 +270,7 @@ ggplot(df.long3b_pct, aes(x=variable, y = perc*100, fill=as.factor(value))) +
     } else if (method=="HC4") {
       
       siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC4")[,4])
-      reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+      reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC4")[,c(1,4)], siglvl)
       #reg_coef = summary(regression)$coefficients[,c(1,4)]
       colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
       
@@ -579,6 +579,8 @@ reg_d2 = svyglm(D2 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp)
                 design=svydesign_A1, 
                 data=data_A1)
 
+summary(reg_d2)
+
 reg_d2_coef_HC3 = func_coefs(reg_d2, "D2", "HC3")
 
 
@@ -601,10 +603,7 @@ reg_d4_coef_HC3 = func_coefs(reg_d4, "D4", "HC3")
 
 
 regoutput_kval_HC3 = as.data.frame(cbind(reg_d1_coef_HC3, reg_d2_coef_HC3, reg_d3_coef_HC3, reg_d4_coef_HC3))
-write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_10.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
-
-table(data$bra10grp_code)
-
+write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_19.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
 
 
 
