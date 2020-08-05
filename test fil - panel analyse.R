@@ -316,6 +316,13 @@ func_regpanel <- function(dataset_1, type) {
     
     #Beta2 variable og lags, sektor spillover - obs hvis faste priser kan totaler fra euklems ikke bruges
     ind$dLP_BwoI_b1 = ifelse(ind$branche=="b1", diff(log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b1/ind$EMP_b1), lag = 1, shift = "time")*100)
+    
+    #tester for om der faktisk er nogle NaNs i datasættet.... konklusion: det er som R kører første led for alle brancher, hvorfor der kommer NaNs for ikke relevante brancher
+    #erik3 = as.data.frame(ifelse(ind$branche=="b1", log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)), "erik")) #R rapportere NANs, men der kan ikke ses nogen
+    #erik = ind %>% filter(branche=="b1")
+    #erik = as.data.frame(log((erik$GO_b1-erik$GO)/(erik$EMP_b1-erik$EMP)) )#R rapportere ikke NANs
+    #erik2 = as.data.frame(log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)) ) #R rapportere NANs, men der kan ikke ses nogen
+    
     ind$dLP_BwoI_b2 = ifelse(ind$branche=="b2", diff(log((ind$GO_b2-ind$GO)/(ind$EMP_b2-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b2/ind$EMP_b2), lag = 1, shift = "time")*100)
     ind$dLP_BwoI_b3 = ifelse(ind$branche=="b3", diff(log((ind$GO_b3-ind$GO)/(ind$EMP_b3-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b3/ind$EMP_b3), lag = 1, shift = "time")*100)
     ind$dLP_BwoI_b4 = ifelse(ind$branche=="b4", diff(log((ind$GO_b4-ind$GO)/(ind$EMP_b4-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b4/ind$EMP_b4), lag = 1, shift = "time")*100)
