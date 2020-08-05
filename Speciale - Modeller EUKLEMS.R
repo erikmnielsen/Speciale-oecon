@@ -296,8 +296,12 @@ func_regpanel <- function(dataset_1, type) {
     ind = pdata.frame(ind, index = c("code", "year"))
     
     ind$prod_logchanges_lag1 = lag(ind$prod_logchanges, k = 1, shift = "time")
-    ind$prod_logchanges_lag2 = lag(ind$prod_logchanges_lag1, k = 1, shift = "time")
-    ind$prod_logchanges_lag3 = lag(ind$prod_logchanges_lag2, k = 1, shift = "time")
+    ind$prod_logchanges_lag2 = lag(ind$prod_logchanges, k = 2, shift = "time")
+    ind$prod_logchanges_lag3 = lag(ind$prod_logchanges, k = 3, shift = "time")
+    
+    #ind$prod_logchanges_lag1 = lag(ind$prod_logchanges, k = 1, shift = "time")
+    #ind$prod_logchanges_lag2 = lag(ind$prod_logchanges_lag1, k = 1, shift = "time")
+    #ind$prod_logchanges_lag3 = lag(ind$prod_logchanges_lag2, k = 1, shift = "time")
     
     #Beta2 variable og lags, mikro + makro
     ind$dLP_CwoI = diff(log((ind$GO_tot-ind$GO)/(ind$EMP_tot-ind$EMP)), lag = 1, shift = "time")*100
@@ -835,6 +839,7 @@ lsdv.ci_fecy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(y
 #med vægte og lags - kan ikke køre regressionerne, den siger der er NA/NaN i x variablerne
 
 ci_panel_1_lags = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, prod_logchanges_lag1, prod_logchanges_lag2, prod_logchanges_lag3, wgt_i_avg)
+
 ci_panel_1_lags = na.omit(ci_panel_1_lags)
 
 lsdv.ci_pool3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3, data=ci_panel_1_lags, weights = wgt_i_avg)
