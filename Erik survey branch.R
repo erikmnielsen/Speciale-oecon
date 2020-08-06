@@ -10,6 +10,7 @@ library(gtools)
 library(openxlsx)
 library(plm)
 library(readr)
+library(sjstats)
 
 data <- read_csv("surveydata.csv") %>% select(-X1)
 
@@ -154,9 +155,9 @@ data$Socialinterationer = ifelse(data$E1 %in% c(1,2), 1,
 # Ændring til dummy variable ---------------
 
 data$D2 = ifelse(data$D2 %in% c(1,2,3), 1, 0)
-data$D1 = ifelse(data$D1 %in% c(1,2,3), 1, 0)
-data$D3 = ifelse(data$D3 %in% c(1,2,3), 1, 0)
-data$D4 = ifelse(data$D4 %in% c(1,2,3), 1, 0)
+data$D1 = ifelse(data$D1 %in% c(1,2), 1, 0)
+data$D3 = ifelse(data$D3 %in% c(1,2), 1, 0)
+data$D4 = ifelse(data$D4 %in% c(1,2), 1, 0)
 
 data$C1 = ifelse(data$C1==1, 1, 0)
 data$C2 = ifelse(data$C2==1, 1, 0)
@@ -261,87 +262,52 @@ summary(regb11)
 #Nuværende vs 2016:
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du løser uforudsete problemer på egen hånd?
-regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
 
-regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
-                family=gaussian(), 
-                design=svydesign_A1A5, 
-                data=data_A1A5)}
-
-
-
 regc1_coef = func_coefs(regc1, "C1")
-regc1_coef_HC0 = func_coefs(regc1, "C1", "HC0")
-regc1_coef_HC1 = func_coefs(regc1, "C1", "HC1")
-regc1_coef_HC2 = func_coefs(regc1, "C1", "HC2")
 regc1_coef_HC3 = func_coefs(regc1, "C1", "HC3")
-regc1_coef_HC4 = func_coefs(regc1, "C1", "HC4")
-
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Komplekse problemer?
-regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
+regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
 regc2_coef = func_coefs(regc2, "C2")
-regc2_coef_HC0 = func_coefs(regc2, "C2", "HC0")
-regc2_coef_HC1 = func_coefs(regc2, "C2", "HC1")
 regc2_coef_HC3 = func_coefs(regc2, "C2", "HC3")
-regc2_coef_HC4 = func_coefs(regc2, "C2", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
-regc3 = {svyglm(C3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+regc3 = {svyglm(C3 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
 regc3_coef = func_coefs(regc3, "C3")
-regc3_coef_HC0 = func_coefs(regc3, "C3", "HC0")
-regc3_coef_HC1 = func_coefs(regc3, "C3", "HC1")
 regc3_coef_HC3 = func_coefs(regc3, "C3", "HC3")
-regc3_coef_HC4 = func_coefs(regc3, "C3", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
-regc4 = {svyglm(C4 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+regc4 = {svyglm(C4 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
 regc4_coef = func_coefs(regc4, "C4")
-regc4_coef_HC0 = func_coefs(regc4, "C4", "HC0")
-regc4_coef_HC1 = func_coefs(regc4, "C4", "HC1")
 regc4_coef_HC3 = func_coefs(regc4, "C4", "HC3")
-regc4_coef_HC4 = func_coefs(regc4, "C4", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du selv har mulighed for at ændre dit arbejdstempo?
-regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1A5, 
                data=data_A1A5)}
 regc5_coef = func_coefs(regc5, "C5")
-regc5_coef_HC0 = func_coefs(regc5, "C5", "HC0")
-regc5_coef_HC1 = func_coefs(regc5, "C5", "HC1")
 regc5_coef_HC3 = func_coefs(regc5, "C5", "HC3")
-regc5_coef_HC4 = func_coefs(regc5, "C5", "HC4")
 
 #regoutput_org <- formattable(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef), digits = 4, format = "f") #indstillingerne bliver ikke overført til excel
 regoutput_org = as.data.frame(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef))
 write.xlsx(regoutput_org, "regoutput_org.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
-regoutput_org_HC0 = as.data.frame(cbind(regc1_coef_HC0, regc2_coef_HC0, regc3_coef_HC0, regc4_coef_HC0, regc5_coef_HC0))
-write.xlsx(regoutput_org_HC0, "regoutput_org_HC0.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
-
-regoutput_org_HC1 = as.data.frame(cbind(regc1_coef_HC1, regc2_coef_HC1, regc3_coef_HC1, regc4_coef_HC1, regc5_coef_HC1))
-write.xlsx(regoutput_org_HC1, "regoutput_org_HC1.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
-
 regoutput_org_HC3 = as.data.frame(cbind(regc1_coef_HC3, regc2_coef_HC3, regc3_coef_HC3, regc4_coef_HC3, regc5_coef_HC3))
 write.xlsx(regoutput_org_HC3, "regoutput_org_HC3_1.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
-
-regoutput_org_HC4 = as.data.frame(cbind(regc1_coef_HC4, regc2_coef_HC4, regc3_coef_HC4, regc4_coef_HC4, regc5_coef_HC4))
-write.xlsx(regoutput_org_HC4, "regoutput_org_HC4.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
-
-
 
 # SOCIALE INTERAKTIONER  --------------
 
@@ -454,16 +420,14 @@ reg_f1a = svyglm(F1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
 reg_f1a_coef = func_coefs(reg_f1a, "F1a")
-reg_f1a_coef_HC0 = func_coefs(reg_f1a, "F1a", "HC0")
-reg_f1a_coef_HC1 = func_coefs(reg_f1a, "F1a", "HC1")
+reg_f1a_coef_HC0 = func_coefs(reg_f1a, "F1a", "HC3")
 
 reg_f2a = svyglm(F2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
 reg_f2a_coef = func_coefs(reg_f2a, "F2a")
-reg_f2a_coef_HC0 = func_coefs(reg_f2a, "F2a", "HC0")
-reg_f2a_coef_HC1 = func_coefs(reg_f2a, "F2a", "HC1")
+reg_f2a_coef_HC0 = func_coefs(reg_f2a, "F2a", "HC3")
 
 reg_g1a = svyglm(G1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
@@ -503,7 +467,12 @@ reg_d1 = svyglm(D1 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp)
                 design=svydesign_A1, 
                 data=data_A1)
 
-reg_d1_coef_HC3 = func_coefs(reg_d1, "D1", "HC3")
+reg_d1_coef_HC3 = func_coefs(reg_d1, "D1", "HC0")
+
+reg_d1 = svyglm(D1 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
+                family=gaussian(), 
+                design=svydesign_A1, 
+                data=data_A1)
 
 
 #Jeg mister muligvis mit arbejde inden for de næste 6 måneder
@@ -513,8 +482,6 @@ reg_d2 = svyglm(D2 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp)
                 data=data_A1)
 
 reg_d2_coef_HC3 = func_coefs(reg_d2, "D2", "HC3")
-
-
 
 #I betragtning af alle mine bestræbelser og resultater i mit job, føler jeg, at jeg bliver betalt behørigt
 reg_d3 = svyglm(D3 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -531,20 +498,17 @@ reg_d4 = svyglm(D4 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp)
                 data=data_A1)
 
 reg_d4_coef_HC3 = func_coefs(reg_d4, "D4", "HC3")
+r2(reg_d4)
 
+library(sjmisc)
+#Excel output
 
 regoutput_kval_HC3 = as.data.frame(cbind(reg_d1_coef_HC3, reg_d2_coef_HC3, reg_d3_coef_HC3, reg_d4_coef_HC3))
-<<<<<<< HEAD
-write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_10.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
 
-table(data$bra10grp_code)
-
-=======
-write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_2.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
->>>>>>> 844b89ceaac4dea4fbf73fecf7ea87064837f7fc
+write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_1.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
 
 
-
+#Modeltjek
 
 
 
