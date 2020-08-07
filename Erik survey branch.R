@@ -240,8 +240,8 @@ regb7 = {svyglm(B7 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)}
-summary(regb7)
-regb7_coef_HC4 = func_coefs(regb7, "B7", "HC4")
+summary(regb7)s
+regb7_coef_HC4 = func_coefs(regb7, "B7", "HC3")
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
 regb9 = {svyglm(B9 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -349,10 +349,7 @@ reg_e3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 data=data_A1A5)
 
 reg_e3a_coef = func_coefs(reg_e3a, "E3a")
-reg_e3a_coef_HC0 = func_coefs(reg_e3a, "E3a", "HC0")
-reg_e3a_coef_HC1 = func_coefs(reg_e3a, "E3a", "HC1")
 reg_e3a_coef_HC3 = func_coefs(reg_e3a, "E3a", "HC3")
-reg_e3a_coef_HC4 = func_coefs(reg_e3a, "E3a", "HC4")
 
 
 
@@ -362,10 +359,7 @@ reg_e4a = svyglm(E4a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
 reg_e4a_coef = func_coefs(reg_e4a, "E4a")
-reg_e4a_coef_HC0 = func_coefs(reg_e4a, "E4a", "HC0")
-reg_e4a_coef_HC1 = func_coefs(reg_e4a, "E4a", "HC1")
 reg_e4a_coef_HC3 = func_coefs(reg_e4a, "E4a", "HC3")
-reg_e4a_coef_HC4 = func_coefs(reg_e4a, "E4a", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at forhandle med personer i eller uden for virksomheden eller organisationen?
 reg_e1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -373,10 +367,7 @@ reg_e1a = svyglm(E1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
 reg_e1a_coef = func_coefs(reg_e1a, "E1a")
-reg_e1a_coef_HC0 = func_coefs(reg_e1a, "E1a", "HC0")
-reg_e1a_coef_HC1 = func_coefs(reg_e1a, "E1a", "HC1")
 reg_e1a_coef_HC3 = func_coefs(reg_e1a, "E1a", "HC3")
-reg_e1a_coef_HC4 = func_coefs(reg_e1a, "E1a", "HC4")
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: at dele arbejdsrelateret information med andre mennesker i eller uden for virksomheden eller organisationen?
 reg_e2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
@@ -384,28 +375,12 @@ reg_e2a = svyglm(E2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
 reg_e2a_coef = func_coefs(reg_e2a, "E2a")
-reg_e2a_coef_HC0 = func_coefs(reg_e2a, "E2a", "HC0")
-reg_e2a_coef_HC1 = func_coefs(reg_e2a, "E2a", "HC1")
 reg_e2a_coef_HC3 = func_coefs(reg_e2a, "E2a", "HC3")
-reg_e2a_coef_HC4 = func_coefs(reg_e2a, "E2a", "HC4")
 
 
 # Excel output
-regoutput_soc = as.data.frame(cbind(reg_e3a_coef, reg_e4a_coef, reg_e1a_coef, reg_e2a_coef))
-write.xlsx(regoutput_soc, "regoutput_soc.xlsx", sheetName = "regoutput_soc", col.names = TRUE, row.names = TRUE)
-
-regoutput_soc_HC0 = as.data.frame(cbind(reg_e3a_coef_HC0, reg_e4a_coef_HC0, reg_e1a_coef_HC0, reg_e2a_coef_HC0))
-write.xlsx(regoutput_soc_HC0, "regoutput_soc_HC0.xlsx", sheetName = "regoutput_soc_HC0", col.names = TRUE, row.names = TRUE)
-
-regoutput_soc_HC1 = as.data.frame(cbind(reg_e3a_coef_HC1, reg_e4a_coef_HC1, reg_e1a_coef_HC1, reg_e2a_coef_HC1))
-write.xlsx(regoutput_soc_HC1, "regoutput_soc_HC1.xlsx", sheetName = "regoutput_soc_HC1", col.names = TRUE, row.names = TRUE)
-
 regoutput_soc_HC3 = as.data.frame(cbind(reg_e3a_coef_HC3, reg_e4a_coef_HC3, reg_e1a_coef_HC3, reg_e2a_coef_HC3))
 write.xlsx(regoutput_soc_HC3, "regoutput_soc_HC3.xlsx", sheetName = "regoutput_soc_HC3", col.names = TRUE, row.names = TRUE)
-
-regoutput_soc_HC4 = as.data.frame(cbind(reg_e3a_coef_HC4, reg_e4a_coef_HC4, reg_e1a_coef_HC4, reg_e2a_coef_HC4))
-write.xlsx(regoutput_soc_HC4, "regoutput_soc_HC4.xlsx", sheetName = "regoutput_soc_HC4", col.names = TRUE, row.names = TRUE)
-
 
 
 # BRUG AF TEKNOLOGI  --------------
@@ -434,16 +409,14 @@ reg_g1a = svyglm(G1a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
 reg_g1a_coef = func_coefs(reg_g1a, "G1a")
-reg_g1a_coef_HC0 = func_coefs(reg_g1a, "G1a", "HC0")
-reg_g1a_coef_HC1 = func_coefs(reg_g1a, "G1a", "HC1")
+reg_g1a_coef_HC0 = func_coefs(reg_g1a, "G1a", "HC3")
 
 reg_g2a = svyglm(G2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1A5, 
                 data=data_A1A5)
 reg_g2a_coef = func_coefs(reg_g2a, "G2a")
-reg_g2a_coef_HC0 = func_coefs(reg_g2a, "G2a", "HC0")
-reg_g2a_coef_HC1 = func_coefs(reg_g2a, "G2a", "HC1")
+reg_g2a_coef_HC0 = func_coefs(reg_g2a, "G2a", "HC3")
 
 
 
@@ -467,7 +440,7 @@ reg_d1 = svyglm(D1 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp)
                 design=svydesign_A1, 
                 data=data_A1)
 
-reg_d1_coef_HC3 = func_coefs(reg_d1, "D1", "HC0")
+reg_d1_coef_HC3 = func_coefs(reg_d1, "D1", "HC3")
 
 reg_d1 = svyglm(D1 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp) + factor(udgrp) + factor(aldergrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
