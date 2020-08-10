@@ -12,9 +12,9 @@ library(plm)
 library(readr)
 library(sjstats)
 
-data <- read_csv("surveydata.csv") %>% select(-X1)
+data = read_csv("surveydata.csv") %>% select(-X1)
 
-func_coefs <- function(regression, name, method="") {
+func_coefs = function(regression, name, method="") {
   
   options(scipen=999, digits=4) 
   #options(scipen=0, digits=7) #default
@@ -165,8 +165,8 @@ data$C3 = ifelse(data$C3==1, 1, 0)
 data$C4 = ifelse(data$C4==1, 1, 0)
 data$C5 = ifelse(data$C5==1, 1, 0)
 
-data$B3 = ifelse(data$B3 %in% c(1,2),1,0)
-data$B5 = ifelse(data$B5 %in% c(1,2),1,0)
+data$B3 = ifelse(data$B3 %in% c(1),1,0)
+data$B5 = ifelse(data$B5 %in% c(1),1,0)
 data$B7 = ifelse(data$B7 %in% c(1,2),1,0)
 data$B9 = ifelse(data$B9 %in% c(1,2),1,0)
 data$B11 = ifelse(data$B11 %in% c(1,2),1,0)
@@ -204,7 +204,6 @@ data$G3a = ifelse(data$G3a==1, 1, 0)
 data_A1 = data %>% filter(A1 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
 
 # Filtreret for A1=1, og A5=1 (Havde du i 2016 en lønnet hovedbeskæftigelse? ), samt branche 9 og 10
-#data_A1A5 = data %>% filter(A1 == 1 & A5 == 1) %>% filter(Functions != "None") %>% filter(bra10grp != "Offentlig administration, undervisning og sundhed") %>% filter(bra10grp != "Kultur, fritid og anden service") %>% filter(bra10grp != "Landbrug, skovbrug og fiskeri")
 data_A1A5 = data %>% filter(A1 == 1, A5 == 1, Functions != "None", bra10grp_code != 1, bra10grp_code != 9, bra10grp_code != 10)
 
 #Hvorfor er der forskel på de to metoder?
@@ -261,6 +260,7 @@ summary(regb11)
 
 #Nuværende vs 2016:
 
+{
 #Sammenlignet med din hovedbeskæftigelse i 2016: At du løser uforudsete problemer på egen hånd?
 regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
@@ -269,6 +269,8 @@ regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) +
 
 regc1_coef = func_coefs(regc1, "C1")
 regc1_coef_HC3 = func_coefs(regc1, "C1", "HC3")
+
+vif(regc1)
 
 #Sammenlignet med din hovedbeskæftigelse i 2016: Komplekse problemer?
 regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
@@ -302,13 +304,17 @@ regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) +
 regc5_coef = func_coefs(regc5, "C5")
 regc5_coef_HC3 = func_coefs(regc5, "C5", "HC3")
 
+table(data_A1A5$C5)
+
+
 #regoutput_org <- formattable(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef), digits = 4, format = "f") #indstillingerne bliver ikke overført til excel
 regoutput_org = as.data.frame(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef))
 write.xlsx(regoutput_org, "regoutput_org.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 regoutput_org_HC3 = as.data.frame(cbind(regc1_coef_HC3, regc2_coef_HC3, regc3_coef_HC3, regc4_coef_HC3, regc5_coef_HC3))
-write.xlsx(regoutput_org_HC3, "regoutput_org_HC3_1.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+write.xlsx(regoutput_org_HC3, "regoutput_org_HC3_2.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
+}
 # SOCIALE INTERAKTIONER  --------------
 
 #Nuværende:
@@ -341,7 +347,7 @@ summary(rege2)
 }
 
 #Nuværende vs 2016:
-
+{
 #Sammenlignet med din hovedbeskæftigelse i 2016: at rådgive, oplære, instruere eller undervise andre – individuelt eller i grupper?
 reg_e3a = svyglm(E3a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
@@ -381,7 +387,7 @@ reg_e2a_coef_HC3 = func_coefs(reg_e2a, "E2a", "HC3")
 # Excel output
 regoutput_soc_HC3 = as.data.frame(cbind(reg_e3a_coef_HC3, reg_e4a_coef_HC3, reg_e1a_coef_HC3, reg_e2a_coef_HC3))
 write.xlsx(regoutput_soc_HC3, "regoutput_soc_HC3.xlsx", sheetName = "regoutput_soc_HC3", col.names = TRUE, row.names = TRUE)
-
+}
 
 # BRUG AF TEKNOLOGI  --------------
 
