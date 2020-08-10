@@ -270,8 +270,6 @@ regc1 = {svyglm(C1 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) +
 regc1_coef = func_coefs(regc1, "C1")
 regc1_coef_HC3 = func_coefs(regc1, "C1", "HC3")
 
-vif(regc1)
-
 #Sammenlignet med din hovedbeskæftigelse i 2016: Komplekse problemer?
 regc2 = {svyglm(C2 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3, 
                family=gaussian(), 
@@ -424,9 +422,6 @@ reg_g2a = svyglm(G2a ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) 
 reg_g2a_coef = func_coefs(reg_g2a, "G2a")
 reg_g2a_coef_HC0 = func_coefs(reg_g2a, "G2a", "HC3")
 
-
-
-
 # Excel output
 regoutput_tech = as.data.frame(cbind(reg_f1a_coef, reg_f2a_coef, reg_g1a_coef, reg_g2a_coef))
 write.xlsx(regoutput_tech, "regoutput_tech.xlsx", sheetName = "regoutput_tech", col.names = TRUE, row.names = TRUE)
@@ -477,15 +472,10 @@ reg_d4 = svyglm(D4 ~ factor(bra10grp_code) + factor(Functions) + factor(loengrp)
                 data=data_A1)
 
 reg_d4_coef_HC3 = func_coefs(reg_d4, "D4", "HC3")
-r2(reg_d4)
 
-library(sjmisc)
 #Excel output
-
 regoutput_kval_HC3 = as.data.frame(cbind(reg_d1_coef_HC3, reg_d2_coef_HC3, reg_d3_coef_HC3, reg_d4_coef_HC3))
-
 write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_1.xlsx", sheetName = "regoutput_kval_HC3", col.names = TRUE, row.names = TRUE, )
-
 
 #Modeltjek
 
