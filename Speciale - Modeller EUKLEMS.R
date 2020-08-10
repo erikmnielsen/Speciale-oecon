@@ -30,8 +30,7 @@ library(ggplot2)
 library(ggthemes)
 library(dplyr)
 
-
-func_coefs <- function(regression, name, method="") {
+func_coefs <- function(regression, name, method) {
   
   options(scipen=999, digits=4) 
   #options(scipen=0, digits=7) #default
@@ -76,6 +75,14 @@ func_coefs <- function(regression, name, method="") {
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
     
     
+  } else if (method=="arrelano") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="arrelano")[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    #reg_coef = summary(regression)$coefficients[,c(1,4)]
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    
   } else {
     
     siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
@@ -83,6 +90,39 @@ func_coefs <- function(regression, name, method="") {
     #reg_coef = summary(regression)$coefficients[,c(1,4)]
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
   }
+  
+  reg_coef
+  
+}
+
+func_coefs <- function(regression, name, type, method) {
+  
+  options(scipen=999, digits=4) 
+  #options(scipen=0, digits=7) #default
+  
+  if (type != "") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method, type=type)[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type=type)[,c(1,4)], siglvl)
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+  }  else if (method != "") {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method)[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+  } else {
+    
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method)[,4])
+    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+  }
+  
+  
+  
+  
+  #coeftest(zz, vcov.=function(x) vcovHC(x, method="arellano", type="HC1", cluster="group"))
   
   reg_coef
   
@@ -458,9 +498,10 @@ LT_go= read_excel("Data/LT_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 #LU_gop = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO_QI") #ikke komplet, mangler 19+20-21+26-27+28+49-52+53
 #LU_go = read_excel("Data/LU_output_17ii.xlsx", sheet = "GO") #ikke komplet, mangler 19+20-21+26-27+28+49-52+53
 
-LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") #komplet 2000-2015
-LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") #mange huller fra 95-99, komplet 2000-2015
-LV_go = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO") #mange huller fra 95-99, komplet 2000-2015 
+#LV_emp = read_excel("Data/LV_output_17ii.xlsx", sheet = "EMP") #komplet 2000-2015
+#LV_gop = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO_QI") #mange huller fra 95-99, komplet 2000-2015
+#LV_go = read_excel("Data/LV_output_17ii.xlsx", sheet = "GO") #mange huller fra 95-99, komplet 2000-2015 
+#LV giver problemer ift lags, flere resultater bliver "Inf"
 
 PL_emp = read_excel("Data/PL_output_17ii.xlsx", sheet = "EMP") #komplet 2000-2015
 #PL_gop= read_excel("Data/PL_output_17ii.xlsx", sheet = "GO") #GO_QI ikke mulig
@@ -481,16 +522,16 @@ SI_go = read_excel("Data/SI_output_17ii.xlsx", sheet = "GO") #komplet 1995-2015
 
 # Country data  ----------------------------------------------------- 
 
-#faste: DK, US, DE, NL, (SE), AT, CZ, FI, FR, EL, (IT), LV, (SK), (SI)
-#faste komplet: DK, US, DE, NL, AT, CZ, FI, FR, EL, LV
+#faste: DK, US, DE, NL, (SE), AT, CZ, FI, FR, EL, (IT), (SK), (SI)
+#faste komplet: DK, US, DE, NL, AT, CZ, FI, FR, EL
 
-#løbende: DK, US, UK, DE, NL, (SE), AT, BE, CY, CZ, ES, FI, FR, (EE), EL, HU, IE, IT, LT, LV, PL, PT, (SK), SI
-#løbende komplet: DK, US, UK, DE, NL, AT, BE, CY, CZ, ES, FI, FR, EL, HU, IE, IT, LT, LV, PL, PT, SI
+#løbende: DK, US, UK, DE, NL, (SE), AT, BE, CY, CZ, ES, FI, FR, (EE), EL, HU, IE, IT, LT, PL, PT, (SK), SI
+#løbende komplet: DK, US, UK, DE, NL, AT, BE, CY, CZ, ES, FI, FR, EL, HU, IE, IT, LT, PL, PT, SI
 
 PRISER = "løbende"
 PRISER = "faste" 
-KOMPLET = FALSE
 KOMPLET = TRUE
+KOMPLET = FALSE
 
 # nogle af industrierne (eller subkategorierne) findes ikke i alle lande, fx findes 45,46,47 ikke i Frankrig før 1995, selvom overkategorien G findes
 
@@ -506,7 +547,6 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   FI_ep = func_empprod(FI_emp, FI_gop,"FI", "EMP", "GO_QI", "AS")
   FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_QI", "AS")
   EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", "AS")
-  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", "AS")
   
   #PLM
   
@@ -528,14 +568,12 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   FI_tot = func_regpanel(FI_ep, 3)
   FR_ind = func_regpanel(FR_ep, 1)
   FR_tot = func_regpanel(FR_ep, 3)
-  LV_ind = func_regpanel(LV_ep, 1)
-  LV_tot = func_regpanel(LV_ep, 3)
 
-  
+
   #Final Panels for analysis:
-  c_panel = rbind(DK_tot, US_tot, NL_tot, DE_tot, AT_tot, CZ_tot, EL_tot, FI_tot, FR_tot, LV_tot) 
+  c_panel = rbind(DK_tot, US_tot, NL_tot, DE_tot, AT_tot, CZ_tot, EL_tot, FI_tot, FR_tot) 
   #table(index(c_panel), useNA = "ifany")
-  ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, AT_ind, CZ_ind, EL_ind, FI_ind, FR_ind, LV_ind)
+  ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, AT_ind, CZ_ind, EL_ind, FI_ind, FR_ind)
   ci_panel = ci_panel %>% filter(is.finite(emp_logchanges))
   
 } else if (PRISER=="faste" & KOMPLET == FALSE) {
@@ -550,7 +588,6 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   FR_ep = func_empprod(FR_emp, FR_gop,"FR", "EMP", "GO_QI", "AS")
   EL_ep = func_empprod(EL_emp, EL_gop,"EL", "EMP", "GO_QI", "AS")
   IT_ep = func_empprod(IT_emp, IT_gop,"IT", "EMP", "GO_QI", "AS")
-  LV_ep = func_empprod(LV_emp, LV_gop,"LV", "EMP", "GO_QI", "AS")
   SK_ep = func_empprod(SK_emp, SK_gop,"SK", "EMP", "GO_QI", "AS")
   SI_ep = func_empprod(SI_emp, SI_gop,"SI", "EMP", "GO_QI", "AS")
 
@@ -578,17 +615,15 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   FR_tot = func_regpanel(FR_ep, 3)
   IT_ind = func_regpanel(IT_ep, 1)
   IT_tot = func_regpanel(IT_ep, 3)
-  LV_ind = func_regpanel(LV_ep, 1)
-  LV_tot = func_regpanel(LV_ep, 3)
   SK_ind = func_regpanel(SK_ep, 1)
   SK_tot = func_regpanel(SK_ep, 3)
   SI_ind = func_regpanel(SI_ep, 1)
   SI_tot = func_regpanel(SI_ep, 3)
   
   #Final Panels for analysis:
-  c_panel = rbind(DK_tot, US_tot, NL_tot, DE_tot, SE_tot, AT_tot, CZ_tot, EL_tot, FI_tot, FR_tot, IT_tot, LV_tot, SI_tot, SK_tot) 
+  c_panel = rbind(DK_tot, US_tot, NL_tot, DE_tot, SE_tot, AT_tot, CZ_tot, EL_tot, FI_tot, FR_tot, IT_tot, SI_tot, SK_tot) 
   #table(index(c_panel), useNA = "ifany")
-  ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, SE_ind, AT_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind, LV_ind, SI_ind, SK_ind)
+  ci_panel = rbind(DK_ind, US_ind, NL_ind, DE_ind, SE_ind, AT_ind, CZ_ind, EL_ind, FI_ind, FR_ind, IT_ind, SI_ind, SK_ind)
   ci_panel = ci_panel %>% filter(is.finite(emp_logchanges))
    
 } else if (PRISER=="løbende" & KOMPLET == TRUE) {
@@ -608,7 +643,6 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   HU_ep = func_empprod(HU_emp, HU_go,"HU", "EMP", "GO", "AS")
   IT_ep = func_empprod(IT_emp, IT_go,"IT", "EMP", "GO", "AS")
   IE_ep = func_empprod(IE_emp, IE_go,"IE", "EMP", "GO", "AS")
-  LV_ep = func_empprod(LV_emp, LV_go,"LV", "EMP", "GO", "AS")
   LT_ep = func_empprod(LT_emp, LT_go,"LT", "EMP", "GO", "AS")
   PL_ep = func_empprod(PL_emp, PL_go,"PL", "EMP", "GO", "AS")
   PT_ep = func_empprod(PT_emp, PT_go,"PT", "EMP", "GO", "AS")
@@ -647,8 +681,6 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   IE_tot = func_regpanel(IE_ep, 3)
   IT_ind = func_regpanel(IT_ep, 1)
   IT_tot = func_regpanel(IT_ep, 3)
-  LV_ind = func_regpanel(LV_ep, 1)
-  LV_tot = func_regpanel(LV_ep, 3)
   LT_ind = func_regpanel(LT_ep, 1)
   LT_tot = func_regpanel(LT_ep, 3)
   PL_ind = func_regpanel(PL_ep, 1)
@@ -659,9 +691,9 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   SI_tot = func_regpanel(SI_ep, 3)
   
   #Final Panels for analysis:
-  c_panel = rbind(DK_tot, UK_tot, NL_tot, DE_tot, AT_tot, BE_tot, CY_tot, CZ_tot, ES_tot, EL_tot, FI_tot, FR_tot, HU_tot, IE_tot, IT_tot, LV_tot, LT_tot, PL_tot, PT_tot, SI_tot) 
+  c_panel = rbind(DK_tot, UK_tot, NL_tot, DE_tot, AT_tot, BE_tot, CY_tot, CZ_tot, ES_tot, EL_tot, FI_tot, FR_tot, HU_tot, IE_tot, IT_tot, LT_tot, PL_tot, PT_tot, SI_tot) 
   #table(index(c_panel), useNA = "ifany")
-  ci_panel = rbind(DK_ind, UK_ind, NL_ind, DE_ind, AT_ind, BE_ind, CY_ind, CZ_ind, ES_ind, EL_ind, FI_ind, FR_ind, HU_ind, IE_ind, IT_ind, LV_ind, LT_ind, PL_ind, PT_ind, SI_ind)
+  ci_panel = rbind(DK_ind, UK_ind, NL_ind, DE_ind, AT_ind, BE_ind, CY_ind, CZ_ind, ES_ind, EL_ind, FI_ind, FR_ind, HU_ind, IE_ind, IT_ind, LT_ind, PL_ind, PT_ind, SI_ind)
   ci_panel = ci_panel %>% filter(is.finite(emp_logchanges))
   
 } else if (PRISER=="løbende" & KOMPLET == FALSE) {
@@ -683,7 +715,6 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   HU_ep = func_empprod(HU_emp, HU_go,"HU", "EMP", "GO", "AS")
   IT_ep = func_empprod(IT_emp, IT_go,"IT", "EMP", "GO", "AS")
   IE_ep = func_empprod(IE_emp, IE_go,"IE", "EMP", "GO", "AS")
-  LV_ep = func_empprod(LV_emp, LV_go,"LV", "EMP", "GO", "AS")
   LT_ep = func_empprod(LT_emp, LT_go,"LT", "EMP", "GO", "AS")
   PL_ep = func_empprod(PL_emp, PL_go,"PL", "EMP", "GO", "AS")
   PT_ep = func_empprod(PT_emp, PT_go,"PT", "EMP", "GO", "AS")
@@ -728,8 +759,6 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   IE_tot = func_regpanel(IE_ep, 3)
   IT_ind = func_regpanel(IT_ep, 1)
   IT_tot = func_regpanel(IT_ep, 3)
-  LV_ind = func_regpanel(LV_ep, 1)
-  LV_tot = func_regpanel(LV_ep, 3)
   LT_ind = func_regpanel(LT_ep, 1)
   LT_tot = func_regpanel(LT_ep, 3)
   PL_ind = func_regpanel(PL_ep, 1)
@@ -742,9 +771,9 @@ if (PRISER=="faste" & KOMPLET == TRUE) {
   SI_tot = func_regpanel(SI_ep, 3)
   
   #Final Panels for analysis:
-  c_panel = rbind(DK_tot, US_tot, UK_tot, NL_tot, DE_tot, SE_tot, AT_tot, BE_tot, CY_tot, CZ_tot, EE_tot, ES_tot, EL_tot, FI_tot, FR_tot, HU_tot, IE_tot, IT_tot, LV_tot, LT_tot, PL_tot, PT_tot, SI_tot, SK_tot) 
+  c_panel = rbind(DK_tot, US_tot, UK_tot, NL_tot, DE_tot, SE_tot, AT_tot, BE_tot, CY_tot, CZ_tot, EE_tot, ES_tot, EL_tot, FI_tot, FR_tot, HU_tot, IE_tot, IT_tot, LT_tot, PL_tot, PT_tot, SI_tot, SK_tot) 
   #table(index(c_panel), useNA = "ifany")
-  ci_panel = rbind(DK_ind, US_ind, UK_ind, NL_ind, DE_ind, SE_ind, AT_ind, BE_ind, CY_ind, CZ_ind, EE_ind, ES_ind, EL_ind, FI_ind, FR_ind, HU_ind, IE_ind, IT_ind, LV_ind, LT_ind, PL_ind, PT_ind, SI_ind, SK_ind)
+  ci_panel = rbind(DK_ind, US_ind, UK_ind, NL_ind, DE_ind, SE_ind, AT_ind, BE_ind, CY_ind, CZ_ind, EE_ind, ES_ind, EL_ind, FI_ind, FR_ind, HU_ind, IE_ind, IT_ind, LT_ind, PL_ind, PT_ind, SI_ind, SK_ind)
   ci_panel = ci_panel %>% filter(is.finite(emp_logchanges))
 
 }
@@ -775,13 +804,12 @@ lsdv.c_fec2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod
 #summary(lsdv.c_fecy1)
 #coeftest(lsdv.c_fecy1, vcov. = vcovHC, type="HC2") 
 
-lsdv.c_pool1_coef = func_coefs(lsdv.c_pool1, "c_pool1", "HC3")
+lsdv.c_pool1_coef = func_coefs(lsdv.c_pool1, "c_pool1", "HC3") # giver ikke nogen forskel at tilføje method=arrelano
 lsdv.c_fec1_coef = func_coefs(lsdv.c_fec1, "c_fec1", "HC3")
 #lsdv.c_fecy1_coef = func_coefs(lsdv.c_fecy1, "c_fecy1", "HC3")
 lsdv.c_pool2_coef = func_coefs(lsdv.c_pool2, "c_pool2", "HC3")
 lsdv.c_fec2_coef = func_coefs(lsdv.c_fec2, "c_fec2", "HC3")
 #lsdv.c_fecy2_coef = func_coefs(lsdv.c_fecy2, "c_fecy2", "HC3")
-
 
 regoutput_c_panel <- Reduce(function(a,b){
   ans <- merge(a,b,by="row.names",all=T)
@@ -836,47 +864,49 @@ lsdv.ci_feci2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(c
 lsdv.ci_feciy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1, weights = wgt_i_avg)
 lsdv.ci_fecy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year) -1, data=ci_panel_1, weights = wgt_i_avg)
 
-#med vægte og lags - kan ikke køre regressionerne, den siger der er NA/NaN i x variablerne
 
+#med vægte og lags
 ci_panel_1_lags = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, prod_logchanges_lag1, prod_logchanges_lag2, prod_logchanges_lag3, wgt_i_avg)
 
-ci_panel_1_lags = na.omit(ci_panel_1_lags)
+#kan bruges til at finde fejl i datasættet - fx finder den Inf observationer for Letland, LV
+#target = c("DK", "US", "DE", "NL", "AT", "CZ", "FI", "FR","EL","LV")
+#erik = ci_panel_1_lags %>% filter(country %in% target)
 
 lsdv.ci_pool3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3, data=ci_panel_1_lags, weights = wgt_i_avg)
 lsdv.ci_fec3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) -1, data=ci_panel_1_lags, weights = wgt_i_avg )
 lsdv.ci_feci3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) -1, data=ci_panel_1_lags, weights = wgt_i_avg) #autor bruger ikke denne kombi
-lsdv.ci_feciy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1_lags, weights = wgt_i_avg)
+lsdv.ci_feciy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1_lags, weights = wgt_i_avg) #
 lsdv.ci_fecy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year) -1, data=ci_panel_1_lags, weights = wgt_i_avg)
 
 
 #Robuste standard fejl
 
-lsdv.c_pool1_coef = func_coefs(lsdv.ci_pool1, "c_pool1", "HC3") 
-lsdv.c_fec1_coef = func_coefs(lsdv.ci_fec1, "c_fec1", "HC3")
-lsdv.c_feci1_coef = func_coefs(lsdv.ci_feci1, "c_feci1", "HC3")
-lsdv.c_feciy1_coef = func_coefs(lsdv.ci_feciy1, "c_feciy1", "HC3")
-lsdv.c_fecy1_coef = func_coefs(lsdv.ci_fecy1, "c_fecy1", "HC3")
+lsdv.ci_pool1_coef = func_coefs(lsdv.ci_pool1, "ci_pool1", "HC3") 
+lsdv.ci_fec1_coef = func_coefs(lsdv.ci_fec1, "ci_fec1", "HC3")
+lsdv.ci_feci1_coef = func_coefs(lsdv.ci_feci1, "ci_feci1", "HC3")
+lsdv.ci_feciy1_coef = func_coefs(lsdv.ci_feciy1, "ci_feciy1", "HC3")
+lsdv.ci_fecy1_coef = func_coefs(lsdv.ci_fecy1, "ci_fecy1", "HC3")
 
-lsdv.c_pool2_coef = func_coefs(lsdv.ci_pool2, "c_pool2", "HC3") 
-lsdv.c_fec2_coef = func_coefs(lsdv.ci_fec2, "c_fec2", "HC3")
-lsdv.c_feci2_coef = func_coefs(lsdv.ci_feci2, "c_feci2", "HC3")
-lsdv.c_feciy2_coef = func_coefs(lsdv.ci_feciy1, "c_feciy2", "HC3")
-lsdv.c_fecy2_coef = func_coefs(lsdv.ci_fecy1, "c_fecy2", "HC3")
+lsdv.ci_pool2_coef = func_coefs(lsdv.ci_pool2, "ci_pool2", "HC3") 
+lsdv.ci_fec2_coef = func_coefs(lsdv.ci_fec2, "ci_fec2", "HC3")
+lsdv.ci_feci2_coef = func_coefs(lsdv.ci_feci2, "ci_feci2", "HC3")
+lsdv.ci_feciy2_coef = func_coefs(lsdv.ci_feciy2, "ci_feciy2", "HC3")
+lsdv.ci_fecy2_coef = func_coefs(lsdv.ci_fecy2, "ci_fecy2", "HC3")
+list_ci2=list(lsdv.ci_pool2_coef, lsdv.ci_fec2_coef, lsdv.ci_feci2_coef, lsdv.ci_feciy2_coef, lsdv.ci_fecy2_coef)
 
-lsdv.c_pool3_coef = func_coefs(lsdv.ci_pool3, "c_pool3", "HC3") 
-lsdv.c_fec3_coef = func_coefs(lsdv.ci_fec3, "c_fec3", "HC3")
-lsdv.c_feci3_coef = func_coefs(lsdv.ci_feci3, "c_feci3", "HC3")
-lsdv.c_feciy3_coef = func_coefs(lsdv.ci_feciy1, "c_feciy3", "HC3")
-lsdv.c_fecy3_coef = func_coefs(lsdv.ci_fecy1, "c_fecy3", "HC3")
+lsdv.ci_pool3_coef = func_coefs(lsdv.ci_pool3, "ci_pool3", "HC3") 
+lsdv.ci_fec3_coef = func_coefs(lsdv.ci_fec3, "ci_fec3", "HC3")
+lsdv.ci_feci3_coef = func_coefs(lsdv.ci_feci3, "ci_feci3", "HC3")
+lsdv.ci_feciy3_coef = func_coefs(lsdv.ci_feciy3, "ci_feciy3", "HC3")
+lsdv.ci_fecy3_coef = func_coefs(lsdv.ci_fecy3, "ci_fecy3", "HC3")
+list_ci3=list(lsdv.ci_pool3_coef, lsdv.ci_fec3_coef, lsdv.ci_feci3_coef, lsdv.ci_feciy3_coef, lsdv.ci_fecy3_coef)
 
 #export resultater til excel
-#options(digits = 3)
-
 regoutput_ci_panel <- Reduce(function(a,b){
   ans <- merge(a,b,by="row.names",all=T)
   row.names(ans) <- ans[,"Row.names"]
   ans[,!names(ans) %in% "Row.names"]
-}, list(lsdv.c_pool2_coef, lsdv.c_fec2_coef, lsdv.c_feci2_coef, lsdv.c_feciy2_coef, lsdv.c_fecy2_coef))
+}, list_ci3)
 
 write.xlsx(regoutput_ci_panel, "regoutput_ci_panel.xlsx", col.names = TRUE, row.names = TRUE)
 
@@ -898,26 +928,36 @@ summary(FixedEffects_twoway)
 
 ci_panel_2 = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod_logchanges, dLP_CwoI, dLP_CwoI_lag1, dLP_CwoI_lag2, dLP_CwoI_lag3 ,wgt_i_avg)
 
+#regressioner
 lsdv.mm_pool1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3, data=ci_panel_2)
 lsdv.mm_fec1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) -1, data=ci_panel_2) 
 lsdv.mm_feci1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) -1, data=ci_panel_2)
 lsdv.mm_feciy1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_2)
-
-summary(lsdv.mm_pool1)
-summary(lsdv.mm_fec1)
-summary(lsdv.mm_feci1)
-summary(lsdv.mm_feciy1)
 
 #med vægte
 lsdv.mm_pool2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3, data=ci_panel_2, weights = wgt_i_avg)
 lsdv.mm_fec2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) -1, data=ci_panel_2, weights = wgt_i_avg) 
 lsdv.mm_feci2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) -1, data=ci_panel_2, weights = wgt_i_avg)
 lsdv.mm_feciy2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_2, weights = wgt_i_avg)
+lsdv.mm_fecy2 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(country) + factor(year) -1, data=ci_panel_2, weights = wgt_i_avg)
 
-summary(lsdv.mm_pool2)
-summary(lsdv.mm_fec2)
-summary(lsdv.mm_feci2)
-summary(lsdv.mm_feciy2)
+#Robuste standard fejl
+lsdv.mm_pool2_coef = func_coefs(lsdv.mm_pool2, "mm_pool2", "HC3") 
+lsdv.mm_fec2_coef = func_coefs(lsdv.mm_fec2, "mm_fec2", "HC3")
+lsdv.mm_feci2_coef = func_coefs(lsdv.mm_feci2, "mm_feci2", "HC3")
+lsdv.mm_feciy2_coef = func_coefs(lsdv.mm_feciy2, "mm_feciy2", "HC3")
+lsdv.mm_fecy2_coef = func_coefs(lsdv.mm_fecy2, "mm_fecy2", "HC3")
+list_mm2=list(lsdv.mm_pool2_coef, lsdv.mm_fec2_coef, lsdv.mm_feci2_coef, lsdv.mm_feciy2_coef, lsdv.mm_fecy2_coef)
+
+#export resultater til excel
+regoutput_mm_panel <- Reduce(function(a,b){
+  ans <- merge(a,b,by="row.names",all=T)
+  row.names(ans) <- ans[,"Row.names"]
+  ans[,!names(ans) %in% "Row.names"]
+}, list_mm2)
+
+write.xlsx(regoutput_mm_panel, "regoutput_mm_panel.xlsx", col.names = TRUE, row.names = TRUE)
+
 
 # Sector spillover -------------------------------------------------
 
@@ -935,17 +975,15 @@ ci_panel_ss = ci_panel %>% select(year, country, code, desc, branche, branche_de
                                     dLP_BwoI_b4, dLP_BwoI_b4_lag1, dLP_BwoI_b4_lag2, dLP_BwoI_b4_lag3,
                                     dLP_BwoI_b5, dLP_BwoI_b5_lag1, dLP_BwoI_b5_lag2, dLP_BwoI_b5_lag3)
 
-ci_panel_ss = as.data.frame(ci_panel_ss)
-
+#ci_panel_ss = as.data.frame(ci_panel_ss) #hvorfor?
 #is.pconsecutive(ci_panel_ss)
-
-ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
+#ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country) #hvorfor?
 
 #ci_panel_ss$id = ci_panel_ss %>% group_indices(code, country)
 #ci_panel_ss$prod_logchanges = ci_panel_ss$prod_logchanges*ci_panel$wgt
 #ci_panel_ss$emp_logchanges = ci_panel_ss$emp_logchanges*ci_panel$wgt
 
-lsdv.ss_pool = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_pool1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
@@ -953,87 +991,125 @@ lsdv.ss_pool = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + 
                      dLP_BwoI_b5_lag3, data=ci_panel_ss)}
 
-lsdv.ss_fecy = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_fec1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-                     factor(country) + factor(year) -1, data=ci_panel_ss)}
+                     factor(country), data=ci_panel_ss)}
 
-summary(lsdv.ss_pool)
-
-lsdv.ss_feci = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_feci1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                     factor(country) + factor(code) -1, data=ci_panel_ss)}
+                     factor(country) + factor(code), data=ci_panel_ss)}
 
-lsdv.ss_feyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
-                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                     factor(year) + factor(code) -1, data=ci_panel_ss)}
-
-lsdv.ss_fecyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_feciy1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                       dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                       dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                       dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                       dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                       dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                      factor(country) + factor(year) + factor(code) -1, data=ci_panel_ss)}
+                      factor(country) + factor(year) + factor(code), data=ci_panel_ss)}
+
+lsdv.ss_fecy1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+                      factor(country) + factor(year), data=ci_panel_ss)}
+
+lsdv.ss_feyi1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                     factor(year) + factor(code), data=ci_panel_ss)}
 
 
 #med vægte
 
-lsdv.ss_pool = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_pool2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3, data=ci_panel_ss, weights = wgt_i_avg)}
 
-lsdv.ss_fecy = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_fec2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-                     factor(country) + factor(year) -1, data=ci_panel_ss, weights = wgt_i_avg)}
+                     factor(country), data=ci_panel_ss, weights = wgt_i_avg)}
 
-summary(lsdv.ss_pool)
-
-lsdv.ss_feci = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_feci2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                      dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                     factor(country) + factor(code) -1, data=ci_panel_ss, weights = wgt_i_avg)}
+                     factor(country) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)}
 
-lsdv.ss_feyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
-                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                     factor(year) + factor(code) -1, data=ci_panel_ss, weights = wgt_i_avg)}
-
-lsdv.ss_fecyi = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+lsdv.ss_feciy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                       dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                       dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                       dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                       dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
                       dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-                      factor(country) + factor(year) + factor(code) -1, data=ci_panel_ss, weights = wgt_i_avg)}
+                      factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)}
+
+lsdv.ss_fecy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                     factor(country) + factor(year), data=ci_panel_ss, weights = wgt_i_avg)}
+
+lsdv.ss_feyi2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                     dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                     factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)}
 
 
-options(digits = 3)
-options("scipen"=100, "digits"=4)
+#Robuste standard fejl
+lsdv.ss_pool1_coef = func_coefs(lsdv.ss_pool1, "ss_pool1", "HC3") 
+lsdv.ss_fec1_coef = func_coefs(lsdv.ss_fec1, "ss_fec1", "HC3")
+lsdv.ss_feci1_coef = func_coefs(lsdv.ss_feci1, "ss_feci1", "HC3")
+lsdv.ss_feciy1_coef = func_coefs(lsdv.ss_feciy1, "ss_feciy1", "HC3")
+lsdv.ss_fecy1_coef = func_coefs(lsdv.ss_fecy1, "ss_fecy1", "HC3")
+lsdv.ss_feyi1_coef = func_coefs(lsdv.ss_feyi1, "ss_feyi1", "HC3")
+list_ss1=list(lsdv.ss_pool1_coef, lsdv.ss_fec1_coef, lsdv.ss_feci1_coef, lsdv.ss_feciy1_coef, lsdv.ss_fecy1_coef, lsdv.ss_feyi1_coef)
+
+lsdv.ss_pool2_coef = func_coefs(lsdv.ss_pool2, "ss_pool2", "HC3") 
+lsdv.ss_fec2_coef = func_coefs(lsdv.ss_fec2, "ss_fec2", "HC3")
+lsdv.ss_feci2_coef = func_coefs(lsdv.ss_feci2, "ss_feci2", "HC3")
+lsdv.ss_feciy2_coef = func_coefs(lsdv.ss_feciy2, "ss_feciy2", "HC3")
+lsdv.ss_fecy2_coef = func_coefs(lsdv.ss_fecy2, "ss_fecy2", "HC3")
+lsdv.ss_feyi2_coef = func_coefs(lsdv.ss_feyi2, "ss_feyi2", "HC3")
+list_ss2=list(lsdv.ss_pool2_coef, lsdv.ss_fec2_coef, lsdv.ss_feci2_coef, lsdv.ss_feciy2_coef, lsdv.ss_fecy2_coef, lsdv.ss_feyi2_coef)
+
+#export resultater til excel
+regoutput_ss_panel <- Reduce(function(a,b){
+  ans <- merge(a,b,by="row.names",all=T)
+  row.names(ans) <- ans[,"Row.names"]
+  ans[,!names(ans) %in% "Row.names"]
+}, list_ss2)
+
+write.xlsx(regoutput_ss_panel, "regoutput_ss_panel.xlsx", col.names = TRUE, row.names = TRUE)
+
+
+
 
 library(lmtest)
 lsdv.ss_pool_coef = coeftest(lsdv.ss_pool, vcov. = vcovHC, type = "HC1")
