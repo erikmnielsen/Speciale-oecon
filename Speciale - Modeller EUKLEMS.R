@@ -29,6 +29,9 @@ library(plm)
 library(ggplot2)
 library(ggthemes)
 library(dplyr)
+library(gtools)
+library(lmtest)
+library(xlsx)
 
 func_coefs <- function(regression, name, type, method) {
   
@@ -952,13 +955,13 @@ write.xlsx(regoutput_ci_panel, "regoutput_ci_panel.xlsx", col.names = TRUE, row.
 
 
 #test af plm
-FixedEffects_indi <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "individual")
-FixedEffects_time <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "time")
-FixedEffects_twoway <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "twoway")
+#FixedEffects_indi <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "individual")
+#FixedEffects_time <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "time")
+#FixedEffects_twoway <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "twoway")
 
-summary(FixedEffects_indi)
-summary(FixedEffects_time)
-summary(FixedEffects_twoway)
+#summary(FixedEffects_indi)
+#summary(FixedEffects_time)
+#summary(FixedEffects_twoway)
 
 
 
@@ -1148,18 +1151,14 @@ regoutput_ss_panel <- Reduce(function(a,b){
 
 write.xlsx(regoutput_ss_panel, "regoutput_ss_panel.xlsx", col.names = TRUE, row.names = TRUE)
 
-
-
-
-library(lmtest)
-lsdv.ss_pool_coef = coeftest(lsdv.ss_pool, vcov. = vcovHC, type = "HC1")
-lsdv.ss_feci_coef = coeftest(lsdv.ss_feci, vcov. = vcovHC, type = "HC1")
-lsdv.ss_fecy_coef = coeftest(lsdv.ss_fecy, vcov. = vcovHC, type = "HC1")
-lsdv.ss_feyi_coef = coeftest(lsdv.ss_feyi, vcov. = vcovHC, type = "HC1")
-lsdv.ss_fecyi_coef = coeftest(lsdv.ss_feyi, vcov. = vcovHC, type = "HC1")
+#lsdv.ss_pool_coef = coeftest(lsdv.ss_pool, vcov. = vcovHC, type = "HC1")
+#lsdv.ss_feci_coef = coeftest(lsdv.ss_feci, vcov. = vcovHC, type = "HC1")
+#lsdv.ss_fecy_coef = coeftest(lsdv.ss_fecy, vcov. = vcovHC, type = "HC1")
+#lsdv.ss_feyi_coef = coeftest(lsdv.ss_feyi, vcov. = vcovHC, type = "HC1")
+#lsdv.ss_fecyi_coef = coeftest(lsdv.ss_feyi, vcov. = vcovHC, type = "HC1")
 #coeftest(fixed.dum, vcov. = vcovHC, method = "arellano")
 
-write.csv(cbind(lsdv.ss_pool_coef, lsdv.ss_feci_coef, lsdv.ss_fecy_coef, lsdv.ss_feyi_coef), "fixeddum_ci_panel.csv")
+#write.csv(cbind(lsdv.ss_pool_coef, lsdv.ss_feci_coef, lsdv.ss_fecy_coef, lsdv.ss_feyi_coef), "fixeddum_ci_panel.csv")
 
 # Skills..... --------------------------------------------------
 
