@@ -165,8 +165,8 @@ data$C3 = ifelse(data$C3==1, 1, 0)
 data$C4 = ifelse(data$C4==1, 1, 0)
 data$C5 = ifelse(data$C5==1, 1, 0)
 
-data$B3 = ifelse(data$B3 %in% c(1),1,0)
-data$B5 = ifelse(data$B5 %in% c(1),1,0)
+data$B3 = ifelse(data$B3 %in% c(1,2),1,0)
+data$B5 = ifelse(data$B5 %in% c(1,2),1,0)
 data$B7 = ifelse(data$B7 %in% c(1,2),1,0)
 data$B9 = ifelse(data$B9 %in% c(1,2),1,0)
 data$B11 = ifelse(data$B11 %in% c(1,2),1,0)
@@ -223,40 +223,42 @@ regb3 = {svyglm(B3 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + 
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)}
-summary(regb3)
-
-regb3_coef_HC4 = func_coefs(regb3, "B3", "HC4")
+regb3_coef_HC3 = func_coefs(regb3, "B3", "HC3")
 
 #Hvor ofte indebærer din hovedbeskæftigelse: Komplekse opgaver?
 regb5 = {svyglm(B5 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)}
-summary(regb5)
+
+regb5_coef_HC3 = func_coefs(regb5, "B5", "HC3")
 
 #Hvor ofte indebærer din hovedbeskæftigelse: Korte, rutineprægede og gentagne arbejdsopgaver af en varighed på mindre end 10 minutter?
 regb7 = {svyglm(B7 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)}
-summary(regb7)s
-regb7_coef_HC4 = func_coefs(regb7, "B7", "HC3")
+regb7_coef_HC3 = func_coefs(regb7, "B7", "HC3")
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du er i stand til at vælge eller ændre dine arbejdsmetoder?
 regb9 = {svyglm(B9 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                family=gaussian(), 
                design=svydesign_A1, 
                data=data_A1)}
-summary(regb9)
+regb9_coef_HC3 = func_coefs(regb9, "B9", "HC3")
 
 #Hvor ofte indebærer din hovedbeskæftigelse: At du arbejder i en gruppe eller et team, som har fælles opgaver og selv kan planlægge arbejdet?
 regb11 = {svyglm(B11 ~ factor(bra10grp_code) + factor(udgrp) + factor(aldergrp) + factor(loengrp) + Leveremodtageoutput + Startovervågestopperobottter + Advancerettek1 + Advancerettek2 + Advancerettek3,
                 family=gaussian(), 
                 design=svydesign_A1, 
                 data=data_A1)}
-summary(regb11)
+regb11_coef_HC3 = func_coefs(regb11, "B11", "HC3")
 
 }
+
+regoutput_org_HC3 = as.data.frame(cbind(regb3_coef_HC3, regb5_coef_HC3, regb7_coef_HC3, regb9_coef_HC3, regb11_coef_HC3))
+write.xlsx(regoutput_org_HC3, "regoutput_org_HC3_5.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+
 
 #Nuværende vs 2016:
 
@@ -302,15 +304,12 @@ regc5 = {svyglm(C5 ~ factor(bra10grp_code) + factor(Functions) + factor(udgrp) +
 regc5_coef = func_coefs(regc5, "C5")
 regc5_coef_HC3 = func_coefs(regc5, "C5", "HC3")
 
-table(data_A1A5$C5)
-
-
 #regoutput_org <- formattable(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef), digits = 4, format = "f") #indstillingerne bliver ikke overført til excel
 regoutput_org = as.data.frame(cbind(regc1_coef, regc2_coef, regc3_coef, regc4_coef, regc5_coef))
 write.xlsx(regoutput_org, "regoutput_org.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 regoutput_org_HC3 = as.data.frame(cbind(regc1_coef_HC3, regc2_coef_HC3, regc3_coef_HC3, regc4_coef_HC3, regc5_coef_HC3))
-write.xlsx(regoutput_org_HC3, "regoutput_org_HC3_2.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
+write.xlsx(regoutput_org_HC3, "regoutput_org_HC3_3.xlsx", sheetName = "regoutput_org", col.names = TRUE, row.names = TRUE)
 
 }
 # SOCIALE INTERAKTIONER  --------------
@@ -479,7 +478,7 @@ write.xlsx(regoutput_kval_HC3, "regoutput_kval_HC3_1.xlsx", sheetName = "regoutp
 
 #Modeltjek
 
-
+prob.table(table(data_A1A5$Functions, data_A1A5$C1))
 
 #DESKRIPTIVT: Indhold af arbejde  --------------------------------------------------------
 
