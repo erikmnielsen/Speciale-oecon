@@ -30,71 +30,6 @@ library(ggplot2)
 library(ggthemes)
 library(dplyr)
 
-func_coefs <- function(regression, name, method) {
-  
-  options(scipen=999, digits=4) 
-  #options(scipen=0, digits=7) #default
-  
-  if (method=="HC1") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC1")[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type="HC1")[,c(1,4)], siglvl)
-    #regc5_coef = summary(regression)$coefficients[,c(1,4)]
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-    
-  } else if (method=="HC0") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC0")[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    #reg_coef = summary(regression)$coefficients[,c(1,4)]
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-    
-  } else if (method=="HC2") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC2")[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    #reg_coef = summary(regression)$coefficients[,c(1,4)]
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-    
-  } else if (method=="HC3") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC3")[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    #reg_coef = summary(regression)$coefficients[,c(1,4)]
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-    
-  } else if (method=="HC4") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="HC4")[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    #reg_coef = summary(regression)$coefficients[,c(1,4)]
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-    
-  } else if (method=="arrelano") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type="arrelano")[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    #reg_coef = summary(regression)$coefficients[,c(1,4)]
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-    
-  } else {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    #reg_coef = summary(regression)$coefficients[,c(1,4)]
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-  }
-  
-  reg_coef
-  
-}
-
 func_coefs <- function(regression, name, type, method) {
   
   options(scipen=999, digits=4) 
@@ -157,6 +92,58 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
   if (method=="AS") {
+    #AutorSalomons Industrier minus branche 3 :
+    
+    data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","RtS","T","U", "P","Q","R", "S"), 0,1))
+    
+    
+    data$branche <- ifelse(data$code %in% c("B", "DtE", "F"), "b1",
+                           ifelse(data$code %in% c("10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33"), "b2", #kan man ikke bare bruge C, Total Manufacturing?
+                                  #ifelse(data$code %in% c("P","Q","R", "S"), "b3",
+                                  ifelse(data$code %in% c("53", "58t60", "61", "62t63", "K", "MtN"), "b4",
+                                         ifelse(data$code %in% c("45", "46", "47", "49t52", "I", "L"), "b5", 
+                                                "b0"))))
+    
+    data$branche_desc <- ifelse(data$branche=="b1","Mining, utilities, and construction", 
+                                ifelse(data$branche=="b2","Manufacturing", 
+                                       # ifelse(data$branche=="b3","Education and health services", 
+                                       ifelse(data$branche=="b4","High-tech services",
+                                              ifelse(data$branche=="b5","Low-tech services",
+                                                     "Not relevant"
+                                              ))))
+    
+  } else if (method=="B10"){
+    
+    #Brancher, 10:
+    
+    data$sel_industries <-factor(ifelse( data$code %in% c("B", "DtE", "F","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33",
+                                                          "53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L"), 1,0)) #alt pånær A, O, P, Q (skal RtS, T og U også fjernes?) 
+    
+    
+    data$branche <- ifelse(data$code %in% c("B","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33", "DtE"), "b2",
+                                  ifelse(data$code=="F", "b3",
+                                         ifelse(data$code %in% c("45", "46", "47","49t52","53", "I"), "b4",
+                                                ifelse(data$code %in% c("58t60", "61", "62t63"), "b5",
+                                                       ifelse(data$code=="K", "b6",
+                                                              ifelse(data$code=="L", "b7",
+                                                                     ifelse(data$code=="MtN", "b8",
+                                                                            #ifelse(data$code=="A", "b1",
+                                                                            #ifelse(data$code %in% c("O","P","Q"), "b9",
+                                                                            #ifelse(data$code %in% c("R","S","T","U"), "b10",
+                                                                            "b0")))))))
+    
+    data$branche_desc <-  ifelse(data$branche=="b2","Industri, råstofindvinding og forsyningsvirksomhed",
+                                       ifelse(data$branche=="b3","Bygge og anlæg", 
+                                              ifelse(data$branche=="b4","Handel og transport mv.", 
+                                                     ifelse(data$branche=="b5","Information og kommunikation",
+                                                            ifelse(data$branche=="b6", "Finansiering og forsikring",
+                                                                   ifelse(data$branche=="b7","Ejendomshandel og udlejning",
+                                                                          ifelse(data$branche=="b8","Erhvervsservice",
+                                                                                 #ifelse(data$branche=="b1","Landbrug, skovbrug og fiskeri",
+                                                                                 #ifelse(data$branche=="b9","Offentlig administration, undervisning og sundhed",
+                                                                                 #ifelse(data$branche=="b10","Kultur, fritid og anden service",
+                                                                                 "Ikke relevant")))))))
+  } else {
     #AutorSalomons Industrier:
     
     data$sel_industries <-factor(ifelse( data$code %in% c("TOT", "MARKT", "A","C","G","H","J","OtU","O","RtS","T","U"), 0,1))
@@ -177,37 +164,6 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
                                                             "Not relevant"
                                                      )))))
     
-  } else {
-    
-    #Brancher, 10:
-    
-    data$sel_industries <-factor(ifelse( data$code %in% c("A","B", "DtE", "F","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33",
-                                                          "53","58t60", "61", "62t63", "K", "MtN","45", "46", "47", "49t52", "I", "L"), 1,0)) #alt pånær O, P, Q (skal RtS, T og U også fjernes?) 
-    
-    
-    data$branche <- ifelse(data$code=="A", "b1",
-                           ifelse(data$code %in% c("B","10t12", "13t15", "16t18", "19", "20t21", "22t23","24t25", "26t27", "28", "29t30","31t33", "DtE"), "b2",
-                                  ifelse(data$code=="F", "b3",
-                                         ifelse(data$code %in% c("45", "46", "47","49t52","53", "I"), "b4",
-                                                ifelse(data$code %in% c("58t60", "61", "62t63"), "b5",
-                                                       ifelse(data$code=="K", "b6",
-                                                              ifelse(data$code=="L", "b7",
-                                                                     ifelse(data$code=="MtN", "b8",
-                                                                            #  ifelse(data$code %in% c("O","P","Q"), "b9",
-                                                                            #ifelse(data$code %in% c("R","S","T","U"), "b10",
-                                                                            "b0"))))))))
-    
-    data$branche_desc <- ifelse(data$branche=="b1","Landbrug, skovbrug og fiskeri",
-                                ifelse(data$branche=="b2","Industri, råstofindvinding og forsyningsvirksomhed",
-                                       ifelse(data$branche=="b3","Bygge og anlæg", 
-                                              ifelse(data$branche=="b4","Handel og transport mv.", 
-                                                     ifelse(data$branche=="b5","Information og kommunikation",
-                                                            ifelse(data$branche=="b6", "Finansiering og forsikring",
-                                                                   ifelse(data$branche=="b7","Ejendomshandel og udlejning",
-                                                                          ifelse(data$branche=="b8","Erhvervsservice",
-                                                                                 #           ifelse(data$branche=="b9","Offentlig administration, undervisning og sundhed",
-                                                                                 #     ifelse(data$branche=="b10","Kultur, fritid og anden service",
-                                                                                 "Ikke relevant"))))))))
   }
   
   
@@ -225,26 +181,42 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
   
   #udregning af lande total, hvis visse brancher udelades (fx landbrug, offentlig sektor) 
-  b <- data2 %>% filter(code=="b1")
-  b_2 <- data2 %>% filter(code=="b2")
-  b_3 <- data2 %>% filter(code=="b3")
-  b_4 <- data2 %>% filter(code=="b4")
-  b_5 <- data2 %>% filter(code=="b5")
-  
-  if (method!="AS") {
+ 
+  if (method=="B10") {
+    #b <- data2 %>% filter(code=="b1")
+    b_2 <- data2 %>% filter(code=="b2")
+    b_4 <- data2 %>% filter(code=="b4")
+    b_5 <- data2 %>% filter(code=="b5")
     b_6 <- data2 %>% filter(code=="b6")
     b_7 <- data2 %>% filter(code=="b7")
     b_8 <- data2 %>% filter(code=="b8")
     #b_9 <- data2 %>% filter(code=="b9")
     #b_10 <- data2 %>% filter(code=="b10")
     
-    b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP #+ b_10$EMP + b_9$EMP 
-    b$GO = b$GO + b_2$GO + b_3$GO + b_4$GO + b_5$GO + b_6$GO + b_7$GO + b_8$GO #+ b_10$GO + b_9$GO 
+    b$EMP =  b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP + b_6$EMP + b_7$EMP + b_8$EMP #+ b$EMP + b_10$EMP + b_9$EMP 
+    b$GO = b_2$GO + b_3$GO + b_4$GO + b_5$GO + b_6$GO + b_7$GO + b_8$GO #+ b$EMP + b_10$GO + b_9$GO 
     b$desc = "TOTAL INDUSTRIES-MunkNielsen"
     b$code = "TOT_MN"
     b$branche = "TOT"
     
-  } else {
+  } else if (method=="AS") {
+    b <- data2 %>% filter(code=="b1")
+    b_2 <- data2 %>% filter(code=="b2")
+    b_4 <- data2 %>% filter(code=="b4")
+    b_5 <- data2 %>% filter(code=="b5")
+    
+    b$EMP = b$EMP + b_2$EMP + b_4$EMP + b_5$EMP
+    b$GO = b$GO + b_2$GO + b_4$GO + b_5$GO
+    b$desc = "TOTAL INDUSTRIES-AutorSalomons"
+    b$code = "TOT_AS"
+    b$branche = "TOT" #lettere at de begge hedder "TOT" i brancher når der skal filtreres
+    
+    } else {
+      b <- data2 %>% filter(code=="b1")
+      b_2 <- data2 %>% filter(code=="b2")
+      b_3 <- data2 %>% filter(code=="b3")
+      b_4 <- data2 %>% filter(code=="b4")
+      b_5 <- data2 %>% filter(code=="b5")
     
     b$EMP = b$EMP + b_2$EMP + b_3$EMP + b_4$EMP + b_5$EMP
     b$GO = b$GO + b_2$GO + b_3$GO + b_4$GO + b_5$GO
@@ -272,7 +244,9 @@ func_empprod <- function(dataset_1, dataset_2, country, measure_1="EMP", measure
   
 }
 
-#dataset_1 = DK_ep
+func_EUK
+
+#dataset_1=DK_ep
 
 func_regpanel <- function(dataset_1, type) {
   
@@ -294,25 +268,47 @@ func_regpanel <- function(dataset_1, type) {
     b = b %>% select(year, branche, EMP_b, GO_b)
     ind = merge(ind, b, by=c("year", "branche"), all.x = TRUE) 
     
-    b1 = b %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, EMP_b1,GO_b1)
-    b2 = b %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
-    b3 = b %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
-    b4 = b %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
-    b5 = b %>% filter(branche=="b5") %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(EMP_b5, GO_b5)
-    
     test = b %>% count(branche) %>% nrow
     
-    if (test==8) {
+    if (test==4) {
       
-      #b6 = b %>% filter(branche=="b6") %>% mutate(prod_logchanges_b6=prod_logchanges_b) %>% select(prod_logchanges_b6)
-      #b7 = b %>% filter(branche=="b7") %>% mutate(prod_logchanges_b7=prod_logchanges_b) %>% select(prod_logchanges_b7)
-      #b8 = b %>% filter(branche=="b8") %>% mutate(prod_logchanges_b8=prod_logchanges_b) %>% select(prod_logchanges_b8)
-      b = cbind(b1,b2,b3,b4,b5,b6,b7,b8)
+      #uden branche 3
+      b1 = b %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, EMP_b1,GO_b1)
+      b2 = b %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
+      b4 = b %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
+      b5 = b %>% filter(branche=="b5") %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(EMP_b5, GO_b5)
       
-    } else {
+      b = cbind(b1,b2,b4,b5)
+      
+    } else if (test==5) {
+      
+      b1 = b %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, EMP_b1,GO_b1)
+      b2 = b %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
+      b3 = b %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
+      b4 = b %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
+      b5 = b %>% filter(branche=="b5") %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(EMP_b5, GO_b5)
       
       b = cbind(b1,b2,b3,b4,b5)
-    }
+    
+      
+    } else if (test==7){
+        
+      b2 = b %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
+      b3 = b %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
+      b4 = b %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
+      b5 = b %>% filter(branche=="b5") %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(EMP_b5, GO_b5)
+      b6 = b %>% filter(branche=="b6") %>% mutate(EMP_b6=EMP_b) %>% mutate(GO_b6=GO_b) %>% select(EMP_b6, GO_b6)
+      b7 = b %>% filter(branche=="b7") %>% mutate(EMP_b7=EMP_b) %>% mutate(GO_b7=GO_b) %>% select(EMP_b7, GO_b7)
+      b8 = b %>% filter(branche=="b8") %>% mutate(EMP_b8=EMP_b) %>% mutate(GO_b8=GO_b) %>% select(EMP_b8, GO_b8)
+      
+      b = cbind(b2,b3,b4,b5,b6,b7,b8)
+      
+      
+    } else {
+        
+      print("Error: forkert antal brancher")
+      
+      }
     
     ind = merge(ind, b, by=c("year"), all.x = TRUE)
     ind = merge(ind, tot, by=c("year"), all.x = TRUE)
@@ -321,12 +317,12 @@ func_regpanel <- function(dataset_1, type) {
     ind$wgt_b = ind$EMP_b/ind$EMP_tot
     
     #gennemsnit på tværs af år for den enkelte industri
-    test = ind %>% group_by(country, code) %>% summarize(EMP_test=sum(EMP))
-    test_2 = ind %>% group_by(country) %>% summarize(EMP_test_2=sum(EMP))
-    test = merge(test, test_2, by=c("country"), all.x = TRUE)
-    test$wgt_i_avg = test$EMP_test/test$EMP_test_2
-    test = test %>% select(code, wgt_i_avg)
-    ind = merge(ind, test, by=c("code"), all.x = TRUE)
+    gns = ind %>% group_by(country, code) %>% summarize(EMP_gns=sum(EMP))
+    gns_2 = ind %>% group_by(country) %>% summarize(EMP_gns_2=sum(EMP))
+    gns = merge(gns, gns_2, by=c("country"), all.x = TRUE)
+    gns$wgt_i_avg = gns$EMP_gns/gns$EMP_gns_2
+    gns = gns %>% select(code, wgt_i_avg)
+    ind = merge(ind, gns, by=c("code"), all.x = TRUE)
     
 
     #ind$prod_logchanges_wgt_lag1 = lag(ind$prod_logchanges_wgt, k = 1, shift = "time")
@@ -349,10 +345,14 @@ func_regpanel <- function(dataset_1, type) {
     ind$dLP_CwoI_lag2 = lag(ind$dLP_CwoI, k = 2, shift = "time")
     ind$dLP_CwoI_lag3 = lag(ind$dLP_CwoI, k = 3, shift = "time")
     
+
+    #Beta2 og beta1 variable og lags, sektor spillover 
+    
+    if (test==4) {
+    
     #Beta2 variable og lags, sektor spillover - obs hvis faste priser kan totaler fra euklems ikke bruges
     ind$dLP_BwoI_b1 = ifelse(ind$branche=="b1", diff(log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b1/ind$EMP_b1), lag = 1, shift = "time")*100)
     ind$dLP_BwoI_b2 = ifelse(ind$branche=="b2", diff(log((ind$GO_b2-ind$GO)/(ind$EMP_b2-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b2/ind$EMP_b2), lag = 1, shift = "time")*100)
-    ind$dLP_BwoI_b3 = ifelse(ind$branche=="b3", diff(log((ind$GO_b3-ind$GO)/(ind$EMP_b3-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b3/ind$EMP_b3), lag = 1, shift = "time")*100)
     ind$dLP_BwoI_b4 = ifelse(ind$branche=="b4", diff(log((ind$GO_b4-ind$GO)/(ind$EMP_b4-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b4/ind$EMP_b4), lag = 1, shift = "time")*100)
     ind$dLP_BwoI_b5 = ifelse(ind$branche=="b5", diff(log((ind$GO_b5-ind$GO)/(ind$EMP_b5-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b5/ind$EMP_b5), lag = 1, shift = "time")*100)
     
@@ -364,10 +364,6 @@ func_regpanel <- function(dataset_1, type) {
     ind$dLP_BwoI_b2_lag2 = lag(ind$dLP_BwoI_b2, k = 2, shift = "time")
     ind$dLP_BwoI_b2_lag3 = lag(ind$dLP_BwoI_b2, k = 3, shift = "time")
     
-    ind$dLP_BwoI_b3_lag1 = lag(ind$dLP_BwoI_b3, k = 1, shift = "time")
-    ind$dLP_BwoI_b3_lag2 = lag(ind$dLP_BwoI_b3, k = 2, shift = "time")
-    ind$dLP_BwoI_b3_lag3 = lag(ind$dLP_BwoI_b3, k = 3, shift = "time")
-    
     ind$dLP_BwoI_b4_lag1 = lag(ind$dLP_BwoI_b4, k = 1, shift = "time")
     ind$dLP_BwoI_b4_lag2 = lag(ind$dLP_BwoI_b4, k = 2, shift = "time")
     ind$dLP_BwoI_b4_lag3 = lag(ind$dLP_BwoI_b4, k = 3, shift = "time")
@@ -376,20 +372,64 @@ func_regpanel <- function(dataset_1, type) {
     ind$dLP_BwoI_b5_lag2 = lag(ind$dLP_BwoI_b5, k = 2, shift = "time")
     ind$dLP_BwoI_b5_lag3 = lag(ind$dLP_BwoI_b5, k = 3, shift = "time")
     
-    #beta1 variable, sectoral spillover:
-    
     ind = na.omit(ind)
     
+    #beta1 variable, sectoral spillover:
     ind$dLP_I_b1 = ifelse(ind$branche=="b1", ind$prod_logchanges, 0)
     ind$dLP_I_b1_dum = ifelse(ind$dLP_I_b1==0, 0, 1)
     ind$dLP_I_b2 = ifelse(ind$branche=="b2", ind$prod_logchanges, 0)
     ind$dLP_I_b2_dum = ifelse(ind$dLP_I_b2==0, 0, 1)
-    ind$dLP_I_b3 = ifelse(ind$branche=="b3", ind$prod_logchanges, 0)
-    ind$dLP_I_b3_dum = ifelse(ind$dLP_I_b3==0, 0, 1)
     ind$dLP_I_b4 = ifelse(ind$branche=="b4", ind$prod_logchanges, 0)
     ind$dLP_I_b4_dum = ifelse(ind$dLP_I_b4==0, 0, 1)
     ind$dLP_I_b5 = ifelse(ind$branche=="b5", ind$prod_logchanges, 0)
     ind$dLP_I_b5_dum = ifelse(ind$dLP_I_b5==0, 0, 1)
+    
+    } else if (test==5) {
+      
+      ind$dLP_BwoI_b1 = ifelse(ind$branche=="b1", diff(log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b1/ind$EMP_b1), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b2 = ifelse(ind$branche=="b2", diff(log((ind$GO_b2-ind$GO)/(ind$EMP_b2-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b2/ind$EMP_b2), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b3 = ifelse(ind$branche=="b3", diff(log((ind$GO_b3-ind$GO)/(ind$EMP_b3-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b3/ind$EMP_b3), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b4 = ifelse(ind$branche=="b4", diff(log((ind$GO_b4-ind$GO)/(ind$EMP_b4-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b4/ind$EMP_b4), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b5 = ifelse(ind$branche=="b5", diff(log((ind$GO_b5-ind$GO)/(ind$EMP_b5-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b5/ind$EMP_b5), lag = 1, shift = "time")*100)
+      
+      ind$dLP_BwoI_b1_lag1 = lag(ind$dLP_BwoI_b1, k = 1, shift = "time")
+      ind$dLP_BwoI_b1_lag2 = lag(ind$dLP_BwoI_b1, k = 2, shift = "time")
+      ind$dLP_BwoI_b1_lag3 = lag(ind$dLP_BwoI_b1, k = 3, shift = "time")
+      
+      ind$dLP_BwoI_b2_lag1 = lag(ind$dLP_BwoI_b2, k = 1, shift = "time")
+      ind$dLP_BwoI_b2_lag2 = lag(ind$dLP_BwoI_b2, k = 2, shift = "time")
+      ind$dLP_BwoI_b2_lag3 = lag(ind$dLP_BwoI_b2, k = 3, shift = "time")
+      
+      ind$dLP_BwoI_b3_lag1 = lag(ind$dLP_BwoI_b3, k = 1, shift = "time")
+      ind$dLP_BwoI_b3_lag2 = lag(ind$dLP_BwoI_b3, k = 2, shift = "time")
+      ind$dLP_BwoI_b3_lag3 = lag(ind$dLP_BwoI_b3, k = 3, shift = "time")
+      
+      ind$dLP_BwoI_b4_lag1 = lag(ind$dLP_BwoI_b4, k = 1, shift = "time")
+      ind$dLP_BwoI_b4_lag2 = lag(ind$dLP_BwoI_b4, k = 2, shift = "time")
+      ind$dLP_BwoI_b4_lag3 = lag(ind$dLP_BwoI_b4, k = 3, shift = "time")
+      
+      ind$dLP_BwoI_b5_lag1 = lag(ind$dLP_BwoI_b5, k = 1, shift = "time")
+      ind$dLP_BwoI_b5_lag2 = lag(ind$dLP_BwoI_b5, k = 2, shift = "time")
+      ind$dLP_BwoI_b5_lag3 = lag(ind$dLP_BwoI_b5, k = 3, shift = "time")
+      
+      ind = na.omit(ind)
+      
+      ind$dLP_I_b1 = ifelse(ind$branche=="b1", ind$prod_logchanges, 0)
+      ind$dLP_I_b1_dum = ifelse(ind$dLP_I_b1==0, 0, 1)
+      ind$dLP_I_b2 = ifelse(ind$branche=="b2", ind$prod_logchanges, 0)
+      ind$dLP_I_b2_dum = ifelse(ind$dLP_I_b2==0, 0, 1)
+      ind$dLP_I_b3 = ifelse(ind$branche=="b3", ind$prod_logchanges, 0)
+      ind$dLP_I_b3_dum = ifelse(ind$dLP_I_b3==0, 0, 1)
+      ind$dLP_I_b4 = ifelse(ind$branche=="b4", ind$prod_logchanges, 0)
+      ind$dLP_I_b4_dum = ifelse(ind$dLP_I_b4==0, 0, 1)
+      ind$dLP_I_b5 = ifelse(ind$branche=="b5", ind$prod_logchanges, 0)
+      ind$dLP_I_b5_dum = ifelse(ind$dLP_I_b5==0, 0, 1)
+      
+    } else {
+      
+      print("Error: forkert antal brancher")
+    }
+    
     
     ind
     
@@ -409,8 +449,8 @@ func_regpanel <- function(dataset_1, type) {
   
 }
 
+#Indlæs filer 2017 -----
 
-#Indlæs filer -----
 
 #faste: DK, (US), DE, NL, (SE), AT, CZ, FI, FR, EL, (IT), LV, (SK), (SI)
 #faste komplet: DK, DE, NL, AT, CZ, FI, FR, EL, LV
@@ -794,10 +834,10 @@ c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges_lag2, k = 1, shift = 
 c_panel = na.omit(c_panel)
 
 lsdv.c_pool1 = lm(emp_logchanges ~ prod_logchanges, data=c_panel)
-lsdv.c_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country) -1, data=c_panel) 
+lsdv.c_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country), data=c_panel) 
 #lsdv.c_fecy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year) -1, data=c_panel) 
 lsdv.c_pool2 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3, data=c_panel)
-lsdv.c_fec2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) - 1, data=c_panel)
+lsdv.c_fec2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country), data=c_panel)
 #lsdv.c_fecy2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year) -1, data=c_panel)
 
 #HC2 og 3 giver NA på std errors hvis regressionen har både land og år dummies
@@ -852,17 +892,17 @@ ci_panel_1 = ci_panel %>% select(year, country, code, desc, emp_logchanges, prod
 #OBS AS bruger ikke lags i denne pga insignifikans
 
 lsdv.ci_pool1 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1)
-lsdv.ci_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country) -1, data=ci_panel_1) 
-lsdv.ci_feci1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) -1, data=ci_panel_1) #autor bruger ikke denne kombi
-lsdv.ci_feciy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1)
-lsdv.ci_fecy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year) -1, data=ci_panel_1)
+lsdv.ci_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country), data=ci_panel_1) 
+lsdv.ci_feci1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code), data=ci_panel_1) #autor bruger ikke denne kombi
+lsdv.ci_feciy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=ci_panel_1)
+lsdv.ci_fecy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year), data=ci_panel_1)
 
 #med vægte
 lsdv.ci_pool2 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1, weights = wgt_i_avg)
-lsdv.ci_fec2 = lm(emp_logchanges ~ prod_logchanges + factor(country) -1, data=ci_panel_1, weights = wgt_i_avg) 
-lsdv.ci_feci2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) -1, data=ci_panel_1, weights = wgt_i_avg) #autor bruger ikke denne kombi
-lsdv.ci_feciy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1, weights = wgt_i_avg)
-lsdv.ci_fecy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year) -1, data=ci_panel_1, weights = wgt_i_avg)
+lsdv.ci_fec2 = lm(emp_logchanges ~ prod_logchanges + factor(country), data=ci_panel_1, weights = wgt_i_avg) 
+lsdv.ci_feci2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code), data=ci_panel_1, weights = wgt_i_avg) #autor bruger ikke denne kombi
+lsdv.ci_feciy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=ci_panel_1, weights = wgt_i_avg)
+lsdv.ci_fecy2 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year), data=ci_panel_1, weights = wgt_i_avg)
 
 
 #med vægte og lags
@@ -873,10 +913,10 @@ ci_panel_1_lags = ci_panel %>% select(year, country, code, desc, emp_logchanges,
 #erik = ci_panel_1_lags %>% filter(country %in% target)
 
 lsdv.ci_pool3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3, data=ci_panel_1_lags, weights = wgt_i_avg)
-lsdv.ci_fec3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) -1, data=ci_panel_1_lags, weights = wgt_i_avg )
-lsdv.ci_feci3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) -1, data=ci_panel_1_lags, weights = wgt_i_avg) #autor bruger ikke denne kombi
-lsdv.ci_feciy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year) -1, data=ci_panel_1_lags, weights = wgt_i_avg) #
-lsdv.ci_fecy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year) -1, data=ci_panel_1_lags, weights = wgt_i_avg)
+lsdv.ci_fec3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country), data=ci_panel_1_lags, weights = wgt_i_avg )
+lsdv.ci_feci3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code), data=ci_panel_1_lags, weights = wgt_i_avg) #autor bruger ikke denne kombi
+lsdv.ci_feciy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=ci_panel_1_lags, weights = wgt_i_avg) #
+lsdv.ci_fecy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year), data=ci_panel_1_lags, weights = wgt_i_avg)
 
 
 #Robuste standard fejl
