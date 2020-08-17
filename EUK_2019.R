@@ -110,14 +110,59 @@ func_empprod <- function(method, type) {
   data = merge(data, test, by=c("country", "year"), all.x = TRUE)
   data = data %>% filter(n>=28)
 
+  
+  #populationsvariabel
+  
+  WKGPOP = read_csv("Data/DP_LIVE_17082020135004159.csv")
+  POP = read_csv("Data/DP_LIVE_17082020142655432.csv")
+  
+  POP = data.frame(LOCATION = POP$LOCATION, TIME = POP$TIME, POP = POP$Value)
+  POP = POP %>% select(LOCATION, TIME, POP)
+  WKGPOP = merge(WKGPOP, POP, by=c("LOCATION", "TIME" ), all.x = TRUE)
+  
+  pop_var =  data.frame(country = ifelse(WKGPOP$LOCATION=="AUS", "AT",
+                                        ifelse(WKGPOP$LOCATION=="BEL", "BE",
+                                               ifelse(WKGPOP$LOCATION=="CZE", "CZ",
+                                                      ifelse(WKGPOP$LOCATION=="DEU", "DE",
+                                                             ifelse(WKGPOP$LOCATION=="DNK", "DK",
+                                                                    ifelse(WKGPOP$LOCATION=="EST", "EE",
+                                                                           ifelse(WKGPOP$LOCATION=="GRC", "EL",
+                                                                                  ifelse(WKGPOP$LOCATION=="FIN", "FI",
+                                                                                         ifelse(WKGPOP$LOCATION=="FRA", "FR",
+                                        ifelse(WKGPOP$LOCATION=="HRV", "HR",
+                                               ifelse(WKGPOP$LOCATION=="HUN", "HU",
+                                                      ifelse(WKGPOP$LOCATION=="ITA", "IT",
+                                                             ifelse(WKGPOP$LOCATION=="JPN", "JP",
+                                                                    ifelse(WKGPOP$LOCATION=="LVA", "LV",
+                                                                           ifelse(WKGPOP$LOCATION=="NLD", "NL",
+                                                                                  ifelse(WKGPOP$LOCATION=="POL", "PL",
+                                                                                         ifelse(WKGPOP$LOCATION=="PRT", "PT",
+                                        ifelse(WKGPOP$LOCATION=="ROU", "RO",
+                                               ifelse(WKGPOP$LOCATION=="SWE", "SE",
+                                                      ifelse(WKGPOP$LOCATION=="SVN", "SI",
+                                                             ifelse(WKGPOP$LOCATION=="SVK", "SK",
+                                                                    ifelse(WKGPOP$LOCATION=="USA", "US",
+                                                                           NA)))))))))))))))))))))),
+                       year = WKGPOP$TIME,
+                       wkgpop = (WKGPOP$Value/100) * WKGPOP$POP,
+                       pop = WKGPOP$POP,
+                       wkgpop_share = WKGPOP$Value
+                       )
+  
+pop_var = na.omit(pop_var)
+
+  
   if (type=="industrier") {
   
   #Kodning af variable:
   data$id_ci = data %>% group_indices(country, code) 
+  data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
+  
   pdata = pdata.frame(data, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
-
   pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
   pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
+  pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
+  pdata$wkgpop_logchanges = diff(log(pdata$pop), lag = 1, shift = "time")*100
 
   
   } else if (type=="lande"){
@@ -125,9 +170,13 @@ func_empprod <- function(method, type) {
     data <- data %>% group_by(country, year) %>% summarize(EMP=sum(EMP) , GO=sum(GO))
     data <- data %>% ungroup()
     
+    data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
+    
     pdata = pdata.frame(data, index = c("country", "year")) 
     pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
     pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
+    pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
+    pdata$wkgpop_logchanges = diff(log(pdata$pop), lag = 1, shift = "time")*100
     
   } else {print("Error: forkert antal brancher")}
 
@@ -292,8 +341,19 @@ func_regpanel <- function(dataset_1, method, type) {
 
 # Deskriptiv --------------------------------------------------
 
+min <- as.Date("1996-1-1")
+max <- NA
+
 test_c = func_empprod("MN_4","lande")
 test_i = func_empprod("MN_4","industrier")
+
+test_c = na.omit(test_c)
+
+c_panel_avg = test_c %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
+
+#sapply(test_c, class)
+#test_c$year <- format(as.Date(test_c$year, "%Y"), format="%Y")
+test_c$year <- as.Date(test_c$year, "%Y")
 
 u_industries = test_i %>% select(code) %>% unique()
 n_industries = test_i %>% group_by(country, year) %>% count()
@@ -301,9 +361,145 @@ n_industries_miss = n_industries %>% filter(n!=32)
 
 n_countries = test_c %>% group_by(country) %>% count()
 
-
-
 test = data %>% group_by(country, year) %>% count() #der skal være 32 industrier for hvert år i hvert land
+
+
+# DESCRIPTIVE - Sectoral employment and productivty
+{
+  
+  DK_tot = test_c %>% filter(country=="DK")
+  DE_tot = test_c %>% filter(country=="DE")
+  US_tot = test_c %>% filter(country=="US")
+  NL_tot = test_c %>% filter(country=="NL")
+  
+  #Branchebeskæftigelse
+  {ggplot(data=DK_b, aes(x=year, y=EMP, group=desc, colour=desc)) + 
+      geom_point() + 
+      geom_line() +
+      xlab("Time") + ylab("Number of persons engaged in work (thousands)") +
+      ggtitle("Employment by Sector") +
+      guides(colour=guide_legend(title="Branche")) +
+      theme_economist() +
+      theme(legend.position="right") +
+      #scale_x_date(date_labels = "%Y") +
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+      scale_x_date(limits = c(min, max))
+    #theme(axis.text.x = element_text(angle = 90, hjust = 1))
+    #scale_color_economist()
+  } #DK
+  
+  #Produktivitet- og beskæftigelsesvækst
+  
+  { ggplot(data = DK_tot) + 
+      geom_line(aes(x = year, y = emp_logchanges, color = "emp_logchanges", group=country),) +
+      geom_line(aes(x = year, y = prod_logchanges, color = "prod_logchanges", group=country),) +
+      scale_color_manual(name = "Colors", values = c("emp_logchanges" = "blue", "prod_logchanges" = "red")) +
+      xlab("Time") + ylab("") +
+      ggtitle("Produktivitet- og beskæftigelsesvækst i DK") +
+      guides(colour=guide_legend(title="")) +
+      theme_economist() +
+      theme(legend.position="right") + 
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
+    
+    #In order to get a legend, you have to map something to color within aes. 
+    #You can then use scale_color_manual to define the colors for the mapped character values. 
+  } 
+  
+  {ggplot(data = DE_tot) + 
+      geom_line(aes(x = year, y = emp_logchanges, color = "emp_logchanges", group=country),) +
+      geom_line(aes(x = year, y = prod_logchanges, color = "prod_logchanges", group=country),) +
+      scale_color_manual(name = "Colors", values = c("emp_logchanges" = "blue", "prod_logchanges" = "red")) +
+      xlab("Time") + ylab("") +
+      ggtitle("Produktivitet- og beskæftigelsesvækst i DE") +
+      guides(colour=guide_legend(title="")) +
+      theme_economist() +
+      theme(legend.position="right") + 
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
+  } 
+  
+  {ggplot(data = US_tot) + 
+      geom_line(aes(x = year, y = emp_logchanges, color = "emp_logchanges", group=country),) +
+      geom_line(aes(x = year, y = prod_logchanges, color = "prod_logchanges", group=country),) +
+      scale_color_manual(name = "Colors", values = c("emp_logchanges" = "blue", "prod_logchanges" = "red")) +
+      xlab("Time") + ylab("") +
+      ggtitle("Produktivitet- og beskæftigelsesvækst i US") +
+      guides(colour=guide_legend(title="")) +
+      theme_economist() +
+      theme(legend.position="right") + 
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
+  } 
+  
+  {ggplot(data = NL_tot) + 
+      geom_line(aes(x = year, y = emp_logchanges, color = "emp_logchanges", group=country),) +
+      geom_line(aes(x = year, y = prod_logchanges, color = "prod_logchanges", group=country),) +
+      scale_color_manual(name = "Colors", values = c("emp_logchanges" = "blue", "prod_logchanges" = "red")) +
+      xlab("Time") + ylab("") +
+      ggtitle("Produktivitet- og beskæftigelsesvækst i NL") +
+      guides(colour=guide_legend(title="")) +
+      theme_economist() +
+      theme(legend.position="right") + 
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
+  } 
+  
+  
+
+  
+
+  
+  
+  #Beskæftigelsesvækst fordelt på brancher
+  {ggplot(data=DK_b, aes(x=year, y=emp_logchanges, group=desc, colour=desc)) +
+      geom_point() + 
+      geom_line() +
+      xlab("Time") + ylab("") +
+      ggtitle("Beskæftigelsesvækst fordelt på brancher") +
+      guides(colour=guide_legend(title="Sector")) +
+      theme_economist() +
+      theme(legend.position="right") +
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+      scale_x_date(limits = c(min, max))
+  } #DK
+  
+  #Kumulativ produktivitetsvækst fordelt på brancher
+  {ggplot(data=DK_b, aes(x=year, y=prod_logCGR, group=desc, colour=desc)) + 
+      geom_point() + 
+      geom_line() +
+      xlab("Time") + ylab("100 * kumulativ log ændring") +
+      ggtitle("Kumulativ produktivitetsvækst") +
+      guides(colour=guide_legend(title="Sector")) +
+      theme_economist() +
+      theme(legend.position="right") +
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+      scale_x_date(limits = c(min, max))
+  } #DK
+  {ggplot(data=UK_b, aes(x=year, y=prod_CGR, group=desc, colour=desc)) + 
+      geom_point() + 
+      geom_line() +
+      xlab("Time") + ylab(")") +
+      ggtitle("Kumulativ produktivitetsvækst UK") +
+      guides(colour=guide_legend(title="Sector")) +
+      theme_economist() +
+      theme(legend.position="right")
+    #scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+    #scale_x_date(limits = c(min, max))
+  } #UK
+  
+  #Kumulativ ændring i beskæftigelse fordelt på brancher
+  {ggplot(data=DK_b, aes(x=year, y=cumsum_EMP, group=desc, colour=desc)) + 
+      geom_point() + 
+      geom_line() +
+      xlab("Time") + ylab("") +
+      ggtitle("Kumulativ ændring i beskæftigelse") +
+      guides(colour=guide_legend(title="Sector")) +
+      theme_economist() +
+      theme(legend.position="right") +
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+      scale_x_date(limits = c(min, max))
+  } #DK
+  
+}
+
+
 
 
 
@@ -320,6 +516,7 @@ c_panel$prod_logchanges_lag1 = lag(c_panel$prod_logchanges, k = 1, shift = "time
 c_panel$prod_logchanges_lag2 = lag(c_panel$prod_logchanges_lag1, k = 1, shift = "time")
 c_panel$prod_logchanges_lag3 = lag(c_panel$prod_logchanges_lag2, k = 1, shift = "time")
 c_panel = na.omit(c_panel)
+
 
 lsdv.c_pool1 = lm(emp_logchanges ~ prod_logchanges, data=c_panel)
 lsdv.c_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country), data=c_panel) 
@@ -374,7 +571,9 @@ write.xlsx(regoutput_c_panel, "regoutput_c_panel.xlsx", col.names = TRUE, row.na
 
 ci_panel = func_empprod("MN_4","industrier")
 ci_panel_1 = func_regpanel(ci_panel, "MN_4", 1) #uden lags
+ci_panel_1 = na.omit(ci_panel_1)
 ci_panel_1_lags = func_regpanel(ci_panel, "MN_4", 2) #med lags
+ci_panel_1_lags = na.omit(ci_panel_1_lags)
 
 lsdv.ci_pool1 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1)
 lsdv.ci_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country), data=ci_panel_1) 

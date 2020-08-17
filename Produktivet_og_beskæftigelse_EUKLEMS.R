@@ -906,7 +906,7 @@ if (type==1) {
 
 # Descriptive -------------------------------------------------------------
 
-min <- as.Date("1975-1-1")
+min <- as.Date("1995-1-1")
 max <- NA
 
 # DESCRIPTIVE - Labour share of national income
