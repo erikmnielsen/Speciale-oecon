@@ -51,7 +51,7 @@ func_coefs <- function(regression, name, type, method) {
 func_empprod <- function(method, type) {
   
   #EUK_growthaccounts <- readRDS("~/OneDrive - Aalborg Universitet/10. SEMESTER (SPECIALE)/Speciale-oecon/Statistical_Growth-Accounts.rds")
-  EUK_nationalaccounts <- readRDS("~/OneDrive - Aalborg Universitet/10. SEMESTER (SPECIALE)/Speciale-oecon/Statistical_National-Accounts.rds")
+  EUK_nationalaccounts <- readRDS("Data/Statistical_National-Accounts.rds")
   
   if (method=="MN_4") {
     
