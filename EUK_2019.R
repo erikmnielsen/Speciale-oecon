@@ -161,54 +161,35 @@ func_empprod <- function(method, type) {
   
 pop_var = na.omit(pop_var)
 
-  
+  # forberedelse af datasættet - land eller industriniveau
   if (type=="industrier") {
   
-  #Kodning af variable:
   data$id_ci = data %>% group_indices(country, code) 
   data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
-  
   pdata = pdata.frame(data, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
+  
   pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
   pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
   pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
   pdata$pop_logchanges = diff(log(pdata$pop), lag = 1, shift = "time")*100
-
   
   } else if (type=="lande"){
     
     data <- data %>% group_by(country, year) %>% summarize(EMP=sum(EMP) , GO=sum(GO))
     data <- data %>% ungroup()
-    
     data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
-    
     pdata = pdata.frame(data, index = c("country", "year")) 
+    
     pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
     pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
     pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
     pdata$pop_logchanges = diff(log(pdata$pop), lag = 1, shift = "time")*100
-    
+
   } else {print("Error: forkert antal brancher")}
 
+#Kodning af variable:
 
-pdata = pdata %>% group_by(code) %>% mutate(prod_CGR_logchanges =  order_by(year,cumprod(1+prod_logdiff[-1])*100)) #metode 1
-pdata = pdata %>% group_by(code) %>% mutate(prod_logCGR = order_by(year, CGR(prod_logdiff[-1])*100)) #metode 2
-
-pdata = pdata %>% group_by(code) %>% mutate(prod_CGR= order_by(year, CGR(prod_changes2[-1])*100))
-#df = pdata %>% group_by(code) %>% mutate(cumsum = cumsum())
-
-pdata <- pdata %>% select(year, country, code, desc, sel_industries, branche, branche_desc, EMP, emp_logchanges, GO, prod, prod_logchanges,prod_changes, prod_CGR, prod_logCGR, prod_CGR_logchanges) %>% 
-  filter(code!="b0",code!="s0")
-
-pdata = pdata.frame(pdata, index = c("code", "year"))
-
-pdata$prod_logCGR <- lag(pdata$prod_logCGR, k=1, shift="time")
-pdata$prod_CGR <- lag(pdata$prod_CGR, k=1, shift="time")
-
-
-
-
-  pdata
+pdata
 }
 
 #method = "MN_4" eller "AS_5"
@@ -366,6 +347,8 @@ func_regpanel <- function(dataset_1, method, type) {
     ind
 }
 
+c_panel = func_empprod("MN_4","lande")
+ci_panel = func_empprod("MN_4","industrier")
 
 # Deskriptiv --------------------------------------------------
 
@@ -373,15 +356,52 @@ func_regpanel <- function(dataset_1, method, type) {
 min <- as.Date("1996-1-1")
 max <- NA
 
+#lande og industrier
 test_c = func_empprod("MN_4","lande")
 test_i = func_empprod("MN_4","industrier")
 test_c = na.omit(test_c)
+test_i = na.omit(test_i)
+
+
+#c_tot <- test_c %>% group_by(year) %>% summarize(EMP_c=sum(EMP), GO_c=sum(GO))
+c_tot = test_c %>% group_by(year) %>% summarise_at(vars(EMP, GO), list(mean = mean))
+c_tot$id = "tot"
+c_tot = pdata.frame(c_tot, index = c("id", "year")) 
+
+#c_tot$emp_logchanges = diff(log(c_tot$EMP_c), lag = 1, shift = "time")*100
+#c_tot$prod_logchanges = diff(log(c_tot$GO_c/c_tot$EMP_c), lag = 1, shift = "time")*100
+
+c_tot$emp_logchanges = diff(log(c_tot$EMP_mean), lag = 1, shift = "time")*100
+c_tot$prod_logchanges = diff(log(c_tot$GO_mean/c_tot$EMP_mean), lag = 1, shift = "time")*100 # problemt ved gns på denne måde er at landene ikk er vægtet
+c_tot_filter = c_tot %>% filter(year %in% c(2000:2015))
+
 c_panel_avg = test_c %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
 
-#sapply(test_c, class)
-#test_c$year <- format(as.Date(test_c$year, "%Y"), format="%Y")
+#brancher
+b_tot <- test_i %>% group_by(country, year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
+b_tot = b_tot %>% ungroup()
+b_tot$id_ci = b_tot %>% group_indices(country, branche) 
+
+b_tot = pdata.frame(b_tot, index = c("id_ci", "year")) 
+b_tot$emp_logchanges = diff(log(b_tot$EMP_b), lag = 1, shift = "time")*100
+b_tot$prod_logchanges = diff(log(b_tot$GO_b/b_tot$EMP_b), lag = 1, shift = "time")*100
+b_tot$prod_logchanges2 = diff(log(b_tot$GO_b/b_tot$EMP_b), lag = 1, shift = "time")
+
+b_tot = b_tot %>% group_by(branche) %>% mutate(prod_logCGR = order_by(year, CGR(prod_logchanges2[-1])*100)) %>% select(-prod_logchanges2) #metode 2
+b_tot = pdata.frame(b_tot, index = c("id_ci", "year")) 
+b_tot$prod_logCGR <- lag(b_tot$prod_logCGR, k= 1, shift="time")
+
+i_panel_avg = test_i %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
+
+
+#datoformat
 test_c$year <- as.Date(test_c$year, "%Y")
+c_tot$year <- as.Date(c_tot$year, "%Y")
+c_tot_filter$year <- as.Date(c_tot_filter$year, "%Y")
 c_panel_avg$year <- as.Date(c_panel_avg$year, "%Y")
+
+test_i$year <- as.Date(test_i$year, "%Y")
+i_panel_avg$year <- as.Date(i_panel_avg$year, "%Y")
 
 
 #Undersøgelse af hvilke lande og industrier der indgår
@@ -394,7 +414,6 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
 
 # DESCRIPTIVE - Sectoral employment and productivty
 
-  
   DK_tot = test_c %>% filter(country=="DK")
   DE_tot = test_c %>% filter(country=="DE")
   US_tot = test_c %>% filter(country=="US")
@@ -464,6 +483,18 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
       theme(legend.position="right") + 
       scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
   } 
+  
+  {ggplot(data = c_tot_filter) + 
+      geom_line(aes(x = year, y = emp_logchanges, color = "emp_logchanges"),) +
+      geom_line(aes(x = year, y = prod_logchanges, color = "prod_logchanges"),) +
+      scale_color_manual(name = "Colors", values = c("emp_logchanges" = "blue", "prod_logchanges" = "red")) +
+      xlab("Time") + ylab("") +
+      ggtitle("Produktivitet- og beskæftigelsesvækst, gns på tværs af lande") +
+      guides(colour=guide_legend(title="")) +
+      theme_economist() +
+      theme(legend.position="right") + 
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
+  } 
 
 }
   
@@ -471,6 +502,9 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
 {
 
   #Kumulativ produktivitetsvækst fordelt på brancher
+  
+  DK_tot = test_c %>% filter(country=="DK")
+  
   {ggplot(data=DK_b, aes(x=year, y=prod_logCGR, group=desc, colour=desc)) + 
       geom_point() + 
       geom_line() +
@@ -516,8 +550,6 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
 
 
 # Country panel  -----------------------------------------------------
-
-c_panel = func_empprod("MN_4","lande")
 
 #c_panel = as.data.frame(c_panel)
 #c_panel = pdata.frame(c_panel, index = c("country", "year"))
@@ -586,8 +618,6 @@ write.xlsx(regoutput_c_panel, "regoutput_c_panel.xlsx", col.names = TRUE, row.na
 
 #AS: Industry-by-country fixed effects are already implicitly taken out by first-differencing in the stacked firstdifference model.
 #OBS AS bruger ikke lags i denne pga insignifikans
-
-ci_panel = func_empprod("MN_4","industrier")
 ci_panel_1 = func_regpanel(ci_panel, "MN_4", 1) #uden lags
 ci_panel_1 = na.omit(ci_panel_1)
 ci_panel_1_lags = func_regpanel(ci_panel, "MN_4", 2) #med lags
