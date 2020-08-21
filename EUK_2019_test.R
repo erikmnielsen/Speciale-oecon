@@ -15,12 +15,6 @@ library(ggthemes)
 library(dplyr)
 library(gtools)
 
-CGR = function(x){
-  sapply(1:length(x), function(y){
-    prod(1+x[1:y]) - 1
-  })
-}
-
 func_coefs <- function(regression, name, type, method) {
   
   options(scipen=999, digits=4) 
@@ -80,18 +74,18 @@ func_empprod <- function(method, type) {
                                               ifelse(data$branche=="b4","Low-tech services",
                                                      "Not relevant"
                                               ))))
-  
+    
   } else if (method=="AS_5") {
     #AutorSalomons Industrier:
     
     data = EUK_nationalaccounts %>% filter(var %in% c("EMP","GO_Q"), !indnr %in% c("Agg", "*Agg", "1", "39","40")) #svarer til A,T,U
-  
+    
     data$branche <- ifelse(data$indnr %in% c(2,16,17,18), "b1", #C,D,E,F
                            ifelse(data$indnr %in% c(3,4,5,6,7,8,9,10,11,12,13,14,15), "b2", #hele C
                                   ifelse(data$indnr %in% c(35,36,37,38), "b3", #("P","Q","R", "S")
-                                  ifelse(data$indnr %in% c(26,28,29,30,31, 33), "b4", #("53", "58t60", "61", "62t63", "K", "MtN")
-                                         ifelse(data$indnr %in% c(19,20,21,22,23,24,25,27,32), "b5", #("45", "46", "47", "49t52", "I", "L")
-                                                "b0")))))
+                                         ifelse(data$indnr %in% c(26,28,29,30,31, 33), "b4", #("53", "58t60", "61", "62t63", "K", "MtN")
+                                                ifelse(data$indnr %in% c(19,20,21,22,23,24,25,27,32), "b5", #("45", "46", "47", "49t52", "I", "L")
+                                                       "b0")))))
     
     data$branche_desc <- ifelse(data$branche=="b1","Mining, utilities, and construction", 
                                 ifelse(data$branche=="b2","Manufacturing", 
@@ -117,10 +111,10 @@ func_empprod <- function(method, type) {
   test2 = test %>% filter(n!=32)
   data = merge(data, test, by=c("country", "year"), all.x = TRUE)
   data = data %>% filter(n>=28)
-
+  
   
   #populationsvariabel
-  {
+  
   WKGPOP = read_csv("Data/DP_LIVE_17082020135004159.csv")
   POP = read_csv("Data/DP_LIVE_17082020142655432.csv")
   
@@ -129,52 +123,50 @@ func_empprod <- function(method, type) {
   WKGPOP = merge(WKGPOP, POP, by=c("LOCATION", "TIME" ), all.x = TRUE)
   
   pop_var =  data.frame(country = ifelse(WKGPOP$LOCATION=="AUS", "AT",
-                                        ifelse(WKGPOP$LOCATION=="BEL", "BE",
-                                               ifelse(WKGPOP$LOCATION=="CZE", "CZ",
-                                                      ifelse(WKGPOP$LOCATION=="DEU", "DE",
-                                                             ifelse(WKGPOP$LOCATION=="DNK", "DK",
-                                                                    ifelse(WKGPOP$LOCATION=="EST", "EE",
-                                                                           ifelse(WKGPOP$LOCATION=="GRC", "EL",
-                                                                                  ifelse(WKGPOP$LOCATION=="FIN", "FI",
-                                                                                         ifelse(WKGPOP$LOCATION=="FRA", "FR",
-                                        ifelse(WKGPOP$LOCATION=="HRV", "HR",
-                                               ifelse(WKGPOP$LOCATION=="HUN", "HU",
-                                                      ifelse(WKGPOP$LOCATION=="ITA", "IT",
-                                                             ifelse(WKGPOP$LOCATION=="JPN", "JP",
-                                                                    ifelse(WKGPOP$LOCATION=="LVA", "LV",
-                                                                           ifelse(WKGPOP$LOCATION=="NLD", "NL",
-                                                                                  ifelse(WKGPOP$LOCATION=="POL", "PL",
-                                                                                         ifelse(WKGPOP$LOCATION=="PRT", "PT",
-                                        ifelse(WKGPOP$LOCATION=="ROU", "RO",
-                                               ifelse(WKGPOP$LOCATION=="SWE", "SE",
-                                                      ifelse(WKGPOP$LOCATION=="SVN", "SI",
-                                                             ifelse(WKGPOP$LOCATION=="SVK", "SK",
-                                                                    ifelse(WKGPOP$LOCATION=="USA", "US",
-                                                                           NA)))))))))))))))))))))),
-                       year = WKGPOP$TIME,
-                       wkgpop = (WKGPOP$Value/100) * WKGPOP$POP,
-                       pop = WKGPOP$POP,
-                       wkgpop_share = WKGPOP$Value
-                       )
+                                         ifelse(WKGPOP$LOCATION=="BEL", "BE",
+                                                ifelse(WKGPOP$LOCATION=="CZE", "CZ",
+                                                       ifelse(WKGPOP$LOCATION=="DEU", "DE",
+                                                              ifelse(WKGPOP$LOCATION=="DNK", "DK",
+                                                                     ifelse(WKGPOP$LOCATION=="EST", "EE",
+                                                                            ifelse(WKGPOP$LOCATION=="GRC", "EL",
+                                                                                   ifelse(WKGPOP$LOCATION=="FIN", "FI",
+                                                                                          ifelse(WKGPOP$LOCATION=="FRA", "FR",
+                                                                                                 ifelse(WKGPOP$LOCATION=="HRV", "HR",
+                                                                                                        ifelse(WKGPOP$LOCATION=="HUN", "HU",
+                                                                                                               ifelse(WKGPOP$LOCATION=="ITA", "IT",
+                                                                                                                      ifelse(WKGPOP$LOCATION=="JPN", "JP",
+                                                                                                                             ifelse(WKGPOP$LOCATION=="LVA", "LV",
+                                                                                                                                    ifelse(WKGPOP$LOCATION=="NLD", "NL",
+                                                                                                                                           ifelse(WKGPOP$LOCATION=="POL", "PL",
+                                                                                                                                                  ifelse(WKGPOP$LOCATION=="PRT", "PT",
+                                                                                                                                                         ifelse(WKGPOP$LOCATION=="ROU", "RO",
+                                                                                                                                                                ifelse(WKGPOP$LOCATION=="SWE", "SE",
+                                                                                                                                                                       ifelse(WKGPOP$LOCATION=="SVN", "SI",
+                                                                                                                                                                              ifelse(WKGPOP$LOCATION=="SVK", "SK",
+                                                                                                                                                                                     ifelse(WKGPOP$LOCATION=="USA", "US",
+                                                                                                                                                                                            NA)))))))))))))))))))))),
+                        year = WKGPOP$TIME,
+                        wkgpop = (WKGPOP$Value/100) * WKGPOP$POP,
+                        pop = WKGPOP$POP,
+                        wkgpop_share = WKGPOP$Value
+  )
   
-  }
+  pop_var = na.omit(pop_var)
   
-pop_var = na.omit(pop_var)
-
   
   if (type=="industrier") {
-  
-  #Kodning af variable:
-  data$id_ci = data %>% group_indices(country, code) 
-  data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
-  
-  pdata = pdata.frame(data, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
-  pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
-  pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
-  pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
-  pdata$pop_logchanges = diff(log(pdata$pop), lag = 1, shift = "time")*100
-
-  
+    
+    #Kodning af variable:
+    data$id_ci = data %>% group_indices(country, code) 
+    data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
+    
+    pdata = pdata.frame(data, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
+    pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
+    pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
+    pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
+    pdata$pop_logchanges = diff(log(pdata$pop), lag = 1, shift = "time")*100
+    
+    
   } else if (type=="lande"){
     
     data <- data %>% group_by(country, year) %>% summarize(EMP=sum(EMP) , GO=sum(GO))
@@ -189,25 +181,7 @@ pop_var = na.omit(pop_var)
     pdata$pop_logchanges = diff(log(pdata$pop), lag = 1, shift = "time")*100
     
   } else {print("Error: forkert antal brancher")}
-
-
-pdata = pdata %>% group_by(code) %>% mutate(prod_CGR_logchanges =  order_by(year,cumprod(1+prod_logdiff[-1])*100)) #metode 1
-pdata = pdata %>% group_by(code) %>% mutate(prod_logCGR = order_by(year, CGR(prod_logdiff[-1])*100)) #metode 2
-
-pdata = pdata %>% group_by(code) %>% mutate(prod_CGR= order_by(year, CGR(prod_changes2[-1])*100))
-#df = pdata %>% group_by(code) %>% mutate(cumsum = cumsum())
-
-pdata <- pdata %>% select(year, country, code, desc, sel_industries, branche, branche_desc, EMP, emp_logchanges, GO, prod, prod_logchanges,prod_changes, prod_CGR, prod_logCGR, prod_CGR_logchanges) %>% 
-  filter(code!="b0",code!="s0")
-
-pdata = pdata.frame(pdata, index = c("code", "year"))
-
-pdata$prod_logCGR <- lag(pdata$prod_logCGR, k=1, shift="time")
-pdata$prod_CGR <- lag(pdata$prod_CGR, k=1, shift="time")
-
-
-
-
+  
   pdata
 }
 
@@ -215,54 +189,54 @@ pdata$prod_CGR <- lag(pdata$prod_CGR, k=1, shift="time")
 #type = "1" (uden lags) eller "2" (med lags)
 func_regpanel <- function(dataset_1, method, type) {
   
-    #angivelse af branche/industri totaler - der bør ikke være nogle branche = b0
-    b_tot <- dataset_1 %>% group_by(country, year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
-    ind = merge(dataset_1, b_tot, by=c("country", "year", "branche"), all.x = TRUE) 
+  #angivelse af branche/industri totaler - der bør ikke være nogle branche = b0
+  b_tot <- dataset_1 %>% group_by(country, year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
+  ind = merge(dataset_1, b_tot, by=c("country", "year", "branche"), all.x = TRUE) 
+  
+  if (method=="MN_4") {
     
-    if (method=="MN_4") {
-      
-      #uden branche 3
-      b1 = b_tot %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(country, year, EMP_b1,GO_b1)
-      b2 = b_tot %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
-      b3 = b_tot %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
-      b4 = b_tot %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
-      
-      b = cbind(b1,b2,b3,b4)
-      b = b %>% select(-country1,-country2, -country3,-year1,-year2,-year3)
-      
-    } else if (method=="AS_5") {
-      
-      b1 = b %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, EMP_b1,GO_b1)
-      b2 = b %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
-      b3 = b %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
-      b4 = b %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
-      b5 = b %>% filter(branche=="b5") %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(EMP_b5, GO_b5)
-      
-      b = cbind(b1,b2,b3,b4,b5)
-      
-    } else {print("Error: forkert antal brancher") }
+    #uden branche 3
+    b1 = b_tot %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(country, year, EMP_b1,GO_b1)
+    b2 = b_tot %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
+    b3 = b_tot %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
+    b4 = b_tot %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
     
-    ind = merge(ind, b, by=c("country","year"), all.x = TRUE)
-
-    #gennemsnit på tværs af år for den enkelte industri
-    gns = ind %>% group_by(country, code) %>% summarize(EMP_gns=sum(EMP))
-    gns_2 = ind %>% group_by(country) %>% summarize(EMP_gns_2=sum(EMP))
-    gns = merge(gns, gns_2, by=c("country"), all.x = TRUE)
-    gns$wgt_i_avg = gns$EMP_gns/gns$EMP_gns_2
-    gns = gns %>% select(country, code, wgt_i_avg)
+    b = cbind(b1,b2,b3,b4)
+    b = b %>% select(-country1,-country2, -country3,-year1,-year2,-year3)
     
-    ind = merge(ind, gns, by=c("country","code"), all.x = TRUE)
+  } else if (method=="AS_5") {
     
-    if (type==1) {
-      
+    b1 = b %>% filter(branche=="b1") %>% mutate(EMP_b1=EMP_b) %>% mutate(GO_b1=GO_b) %>% select(year, EMP_b1,GO_b1)
+    b2 = b %>% filter(branche=="b2") %>% mutate(EMP_b2=EMP_b) %>% mutate(GO_b2=GO_b) %>% select(EMP_b2, GO_b2)
+    b3 = b %>% filter(branche=="b3") %>% mutate(EMP_b3=EMP_b) %>% mutate(GO_b3=GO_b) %>% select(EMP_b3, GO_b3)
+    b4 = b %>% filter(branche=="b4") %>% mutate(EMP_b4=EMP_b) %>% mutate(GO_b4=GO_b) %>% select(EMP_b4, GO_b4)
+    b5 = b %>% filter(branche=="b5") %>% mutate(EMP_b5=EMP_b) %>% mutate(GO_b5=GO_b) %>% select(EMP_b5, GO_b5)
+    
+    b = cbind(b1,b2,b3,b4,b5)
+    
+  } else {print("Error: forkert antal brancher") }
+  
+  ind = merge(ind, b, by=c("country","year"), all.x = TRUE)
+  
+  #gennemsnit på tværs af år for den enkelte industri
+  gns = ind %>% group_by(country, code) %>% summarize(EMP_gns=sum(EMP))
+  gns_2 = ind %>% group_by(country) %>% summarize(EMP_gns_2=sum(EMP))
+  gns = merge(gns, gns_2, by=c("country"), all.x = TRUE)
+  gns$wgt_i_avg = gns$EMP_gns/gns$EMP_gns_2
+  gns = gns %>% select(country, code, wgt_i_avg)
+  
+  ind = merge(ind, gns, by=c("country","code"), all.x = TRUE)
+  
+  if (type==1) {
+    
     ind = pdata.frame(ind, index = c("id_ci", "year"))
     ind = na.omit(ind)
     
     
-    } else if (type==2) {
+  } else if (type==2) {
     
     ind = pdata.frame(ind, index = c("id_ci", "year"))
-      
+    
     ind$prod_logchanges_lag1 = lag(ind$prod_logchanges, k = 1, shift = "time")
     ind$prod_logchanges_lag2 = lag(ind$prod_logchanges, k = 2, shift = "time")
     ind$prod_logchanges_lag3 = lag(ind$prod_logchanges, k = 3, shift = "time")
@@ -284,10 +258,10 @@ func_regpanel <- function(dataset_1, method, type) {
     if (method=="MN_4") {
       
       #Beta2 variable og lags, sektor spillover - obs hvis faste priser kan totaler fra euklems ikke bruges
-      ind$dLP_BwoI_b1 = ifelse(ind$branche=="b1", diff(log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b1/ind$EMP_b1), lag = 1, shift = "time")*100)
-      ind$dLP_BwoI_b2 = ifelse(ind$branche=="b2", diff(log((ind$GO_b2-ind$GO)/(ind$EMP_b2-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b2/ind$EMP_b2), lag = 1, shift = "time")*100)
-      ind$dLP_BwoI_b3 = ifelse(ind$branche=="b3", diff(log((ind$GO_b3-ind$GO)/(ind$EMP_b3-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b3/ind$EMP_b3), lag = 1, shift = "time")*100)
-      ind$dLP_BwoI_b4 = ifelse(ind$branche=="b4", diff(log((ind$GO_b4-ind$GO)/(ind$EMP_b4-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b4/ind$EMP_b4), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b1 = ifelse(ind$branche=="b1", 0, diff(log(ind$GO_b1/ind$EMP_b1), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b2 = ifelse(ind$branche=="b2", 0, diff(log(ind$GO_b2/ind$EMP_b2), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b3 = ifelse(ind$branche=="b3", 0, diff(log(ind$GO_b3/ind$EMP_b3), lag = 1, shift = "time")*100)
+      ind$dLP_BwoI_b4 = ifelse(ind$branche=="b4", 0, diff(log(ind$GO_b4/ind$EMP_b4), lag = 1, shift = "time")*100)
       
       ind$dLP_BwoI_b1_lag1 = lag(ind$dLP_BwoI_b1, k = 1, shift = "time")
       ind$dLP_BwoI_b1_lag2 = lag(ind$dLP_BwoI_b1, k = 2, shift = "time")
@@ -310,14 +284,27 @@ func_regpanel <- function(dataset_1, method, type) {
       #beta1 variable, sectoral spillover:
       
       ind$dLP_I_b1 = ifelse(ind$branche=="b1", ind$prod_logchanges, 0)
-      #ind$dLP_I_b1_dum = ifelse(ind$dLP_I_b1==0, 0, 1)
       ind$dLP_I_b2 = ifelse(ind$branche=="b2", ind$prod_logchanges, 0)
-      #ind$dLP_I_b2_dum = ifelse(ind$dLP_I_b2==0, 0, 1)
       ind$dLP_I_b3 = ifelse(ind$branche=="b3", ind$prod_logchanges, 0)
-      #ind$dLP_I_b3_dum = ifelse(ind$dLP_I_b3==0, 0, 1)
       ind$dLP_I_b4 = ifelse(ind$branche=="b4", ind$prod_logchanges, 0)
-      #ind$dLP_I_b4_dum = ifelse(ind$dLP_I_b4==0, 0, 1)
       
+      ind$dLP_I_b1_lag1 = lag(ind$dLP_I_b1, k = 1, shift = "time")
+      ind$dLP_I_b1_lag2 = lag(ind$dLP_I_b1, k = 2, shift = "time")
+      ind$dLP_I_b1_lag3 = lag(ind$dLP_I_b1, k = 3, shift = "time")
+      
+      ind$dLP_I_b2_lag1 = lag(ind$dLP_I_b2, k = 1, shift = "time")
+      ind$dLP_I_b2_lag2 = lag(ind$dLP_I_b2, k = 2, shift = "time")
+      ind$dLP_I_b2_lag3 = lag(ind$dLP_I_b2, k = 3, shift = "time")
+      
+      ind$dLP_I_b3_lag1 = lag(ind$dLP_I_b3, k = 1, shift = "time")
+      ind$dLP_I_b3_lag2 = lag(ind$dLP_I_b3, k = 2, shift = "time")
+      ind$dLP_I_b3_lag3 = lag(ind$dLP_I_b3, k = 3, shift = "time")
+      
+      ind$dLP_I_b4_lag1 = lag(ind$dLP_I_b4, k = 1, shift = "time")
+      ind$dLP_I_b4_lag2 = lag(ind$dLP_I_b4, k = 2, shift = "time")
+      ind$dLP_I_b4_lag3 = lag(ind$dLP_I_b4, k = 3, shift = "time")
+      
+
     } else if (method=="AS_5") {
       
       ind$dLP_BwoI_b1 = ifelse(ind$branche=="b1", diff(log((ind$GO_b1-ind$GO)/(ind$EMP_b1-ind$EMP)), lag = 1, shift = "time")*100, diff(log(ind$GO_b1/ind$EMP_b1), lag = 1, shift = "time")*100)
@@ -361,11 +348,13 @@ func_regpanel <- function(dataset_1, method, type) {
       
     } else {print("Error: forkert antal brancher") }
     
-    } else {print("Error: 'type' ikke opgivet") }
-    
-    ind
+  } else {print("Error: 'type' ikke opgivet") }
+  
+  ind
 }
 
+c_panel = func_empprod("MN_4","lande")
+ci_panel = func_empprod("MN_4","industrier")
 
 # Deskriptiv --------------------------------------------------
 
@@ -393,15 +382,16 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
 
 
 # DESCRIPTIVE - Sectoral employment and productivty
-
+{
   
   DK_tot = test_c %>% filter(country=="DK")
   DE_tot = test_c %>% filter(country=="DE")
   US_tot = test_c %>% filter(country=="US")
   NL_tot = test_c %>% filter(country=="NL")
   
-#Produktivitet- og beskæftigelsesvækst - LANDE
-{
+  
+  #Produktivitet- og beskæftigelsesvækst
+  
   { ggplot(data = DK_tot) + 
       geom_line(aes(x = year, y = emp_logchanges, color = "emp_logchanges", group=country),) +
       geom_line(aes(x = year, y = prod_logchanges, color = "prod_logchanges", group=country),) +
@@ -464,12 +454,9 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
       theme(legend.position="right") + 
       scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
   } 
-
-}
   
-#Produktivitet- og beskæftigelsesvækst - BRANCHER
-{
-
+  
+  
   #Kumulativ produktivitetsvækst fordelt på brancher
   {ggplot(data=DK_b, aes(x=year, y=prod_logCGR, group=desc, colour=desc)) + 
       geom_point() + 
@@ -516,8 +503,6 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
 
 
 # Country panel  -----------------------------------------------------
-
-c_panel = func_empprod("MN_4","lande")
 
 #c_panel = as.data.frame(c_panel)
 #c_panel = pdata.frame(c_panel, index = c("country", "year"))
@@ -657,6 +642,7 @@ summary(FixedEffects_twoway)
 # Sammensætning af mikro og makroelasticiteter --------------------------------------------------
 
 ci_panel_2 = func_regpanel(ci_panel, "MN_4", 2)
+ci_panel_2 = na.omit(ci_panel_2)
 
 #regressioner
 lsdv.mm_pool1 = lm(emp_logchanges ~ prod_logchanges + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3, data=ci_panel_2)
@@ -695,16 +681,17 @@ lsdv.mm_fecy3_coef = func_coefs(lsdv.mm_fecy3, "mm_fecy3", "HC3")
 lsdv.mm_feciy3_coef = func_coefs(lsdv.mm_feciy3, "mm_feciy3", "HC3")
 lsdv.mm_feciy3_pop_coef = func_coefs(lsdv.mm_feciy3_pop, "mm_feciy3_pop", "HC3")
 
-list_mm2=list(lsdv.mm_pool2_coef, lsdv.mm_fec2_coef, lsdv.mm_fecy2_coef, lsdv.mm_feciy2_coef, lsdv.mm_feciy2_pop_coef)
+list_mm3=list(lsdv.mm_pool3_coef, lsdv.mm_fec3_coef, lsdv.mm_fecy3_coef, lsdv.mm_feciy3_coef, lsdv.mm_feciy3_pop_coef)
 
 #export resultater til excel
 regoutput_mm_panel <- Reduce(function(a,b){
   ans <- merge(a,b,by="row.names",all=T)
   row.names(ans) <- ans[,"Row.names"]
   ans[,!names(ans) %in% "Row.names"]
-}, list_mm2)
+}, list_mm3)
 
-write.xlsx(regoutput_mm_panel, "regoutput_mm_panel.xlsx", col.names = TRUE, row.names = TRUE)
+regoutput_mm_panel$vars = row.names(regoutput_mm_panel)
+write_xlsx(regoutput_mm_panel, "regoutput_mm_panel.xlsx", col_names = TRUE)
 
 
 # Sector spillover -------------------------------------------------
@@ -716,113 +703,129 @@ write.xlsx(regoutput_mm_panel, "regoutput_mm_panel.xlsx", col.names = TRUE, row.
 # hvorfor bruger AS ikke year-industry fixed effects
 
 ci_panel_ss = func_regpanel(ci_panel, "MN_4", 2)
+#ci_panel_ss = na.omit(ci_panel_ss)
 
 
 #uden vægte
 {
-lsdv.ss_pool1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
-                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3, 
-                    data=ci_panel_ss)} #dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
-
-lsdv.ss_fec1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
-                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                     factor(country), data=ci_panel_ss)} #dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-
-lsdv.ss_fecy1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
-                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                      factor(country) + factor(year), data=ci_panel_ss)} #dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-
-lsdv.ss_feciy1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+  lsdv.ss_pool1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3, 
+                      data=ci_panel_ss)} #dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
+  
+  lsdv.ss_fec1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                       factor(country) + factor(year) + factor(code), data=ci_panel_ss)} # dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                       factor(country), data=ci_panel_ss)} #dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+  
+  lsdv.ss_fecy1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                        factor(country) + factor(year), data=ci_panel_ss)} #dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+  
+  lsdv.ss_feciy1 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + dLP_I_b5 +
+                         dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                         dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                         dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                         dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                         factor(country) + factor(year) + factor(code), data=ci_panel_ss)} # dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
 }
 
 #med vægte
 {
-lsdv.ss_pool2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 +
-                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3, 
-                    data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
-
-lsdv.ss_fec2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
-                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                     factor(country), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-
-lsdv.ss_fecy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
-                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                      factor(country) + factor(year), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-
-lsdv.ss_feciy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
+  lsdv.ss_pool2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 +
+                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3, 
+                      data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
+  
+  lsdv.ss_fec2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                       factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-
-lsdv.ss_feciy2_pop = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
-                       dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                       dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                       dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                       dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 + wkgpop_logchanges +
-                       factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                       factor(country), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+  
+  lsdv.ss_fecy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
+                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                        factor(country) + factor(year), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+  
+  lsdv.ss_feciy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
+                         dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                         dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                         dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                         dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                         factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+  
+  lsdv.ss_feciy2_pop = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
+                             dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                             dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                             dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                             dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 + wkgpop_logchanges +
+                             factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
 }
 
 #med vægte og lags
 {
-lsdv.ss_pool2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 +
-                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3, 
-                    data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
-
-lsdv.ss_fec2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
-                     dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                     dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                     dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                     dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                     factor(country), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-
-lsdv.ss_fecy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
-                      dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                      dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                      dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                      dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                      factor(country) + factor(year), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
-
-lsdv.ss_feciy2 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
+  lsdv.ss_pool3 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b1_lag1 + dLP_I_b1_lag2 + dLP_I_b1_lag3 +
+                        dLP_I_b2 + dLP_I_b2_lag1 + dLP_I_b2_lag2 + dLP_I_b2_lag3 +
+                        dLP_I_b3 + dLP_I_b3_lag1 + dLP_I_b3_lag2 + dLP_I_b3_lag3 +
+                        dLP_I_b4 + dLP_I_b4_lag1 + dLP_I_b4_lag2 + dLP_I_b4_lag3 +
+                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3, 
+                      data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3
+  
+  lsdv.ss_fec3 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b1_lag1 + dLP_I_b1_lag2 + dLP_I_b1_lag3 +
+                       dLP_I_b2 + dLP_I_b2_lag1 + dLP_I_b2_lag2 + dLP_I_b2_lag3 +
+                       dLP_I_b3 + dLP_I_b3_lag1 + dLP_I_b3_lag2 + dLP_I_b3_lag3 +
+                       dLP_I_b4 + dLP_I_b4_lag1 + dLP_I_b4_lag2 + dLP_I_b4_lag3 +
                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
-                       factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
-
-lsdv.ss_feciy2_pop = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b2 + dLP_I_b3 + dLP_I_b4 + 
-                           dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
-                           dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
-                           dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
-                           dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 + wkgpop_logchanges +
-                           factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+                       factor(country), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+  
+  lsdv.ss_fecy3 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b1_lag1 + dLP_I_b1_lag2 + dLP_I_b1_lag3 +
+                        dLP_I_b2 + dLP_I_b2_lag1 + dLP_I_b2_lag2 + dLP_I_b2_lag3 +
+                        dLP_I_b3 + dLP_I_b3_lag1 + dLP_I_b3_lag2 + dLP_I_b3_lag3 +
+                        dLP_I_b4 + dLP_I_b4_lag1 + dLP_I_b4_lag2 + dLP_I_b4_lag3 +
+                        dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                        dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                        dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                        dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                        factor(country) + factor(year), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 + 
+  
+  lsdv.ss_feciy3 = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b1_lag1 + dLP_I_b1_lag2 + dLP_I_b1_lag3 +
+                         dLP_I_b2 + dLP_I_b2_lag1 + dLP_I_b2_lag2 + dLP_I_b2_lag3 +
+                         dLP_I_b3 + dLP_I_b3_lag1 + dLP_I_b3_lag2 + dLP_I_b3_lag3 +
+                         dLP_I_b4 + dLP_I_b4_lag1 + dLP_I_b4_lag2 + dLP_I_b4_lag3 +
+                         dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                         dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                         dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                         dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 +
+                         factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
+  
+  lsdv.ss_feciy3_pop = {lm(emp_logchanges ~ dLP_I_b1 + dLP_I_b1_lag1 + dLP_I_b1_lag2 + dLP_I_b1_lag3 +
+                             dLP_I_b2 + dLP_I_b2_lag1 + dLP_I_b2_lag2 + dLP_I_b2_lag3 +
+                             dLP_I_b3 + dLP_I_b3_lag1 + dLP_I_b3_lag2 + dLP_I_b3_lag3 +
+                             dLP_I_b4 + dLP_I_b4_lag1 + dLP_I_b4_lag2 + dLP_I_b4_lag3 +
+                             dLP_BwoI_b1 + dLP_BwoI_b1_lag1 + dLP_BwoI_b1_lag2 + dLP_BwoI_b1_lag3 +
+                             dLP_BwoI_b2 + dLP_BwoI_b2_lag1 + dLP_BwoI_b2_lag2 + dLP_BwoI_b2_lag3 +
+                             dLP_BwoI_b3 + dLP_BwoI_b3_lag1 + dLP_BwoI_b3_lag2 + dLP_BwoI_b3_lag3 +
+                             dLP_BwoI_b4 + dLP_BwoI_b4_lag1 + dLP_BwoI_b4_lag2 + dLP_BwoI_b4_lag3 + wkgpop_logchanges +
+                             factor(country) + factor(year) + factor(code), data=ci_panel_ss, weights = wgt_i_avg)} #dLP_I_b5 + dLP_BwoI_b5 + dLP_BwoI_b5_lag1 + dLP_BwoI_b5_lag2 + dLP_BwoI_b5_lag3 +
 }
 
 
@@ -843,6 +846,16 @@ lsdv.ss_feciy2_pop_coef = func_coefs(lsdv.ss_feciy2_pop, "ss_feciy2_pop", "HC3")
 
 list_ss2=list(lsdv.ss_pool2_coef, lsdv.ss_fec2_coef, lsdv.ss_fecy2_coef, lsdv.ss_feciy2_coef, lsdv.ss_feciy2_pop_coef)
 
+lsdv.ss_pool3_coef = func_coefs(lsdv.ss_pool3, "ss_pool3", "HC3") 
+lsdv.ss_fec3_coef = func_coefs(lsdv.ss_fec3, "ss_fec3", "HC3")
+lsdv.ss_fecy3_coef = func_coefs(lsdv.ss_fecy3, "ss_fecy3", "HC3")
+lsdv.ss_feciy3_coef = func_coefs(lsdv.ss_feciy3, "ss_feciy3", "HC3")
+lsdv.ss_feciy3_pop_coef = func_coefs(lsdv.ss_feciy3_pop, "ss_feciy3_pop", "HC3")
+
+list_ss3=list(lsdv.ss_pool3_coef, lsdv.ss_fec3_coef, lsdv.ss_fecy3_coef, lsdv.ss_feciy3_coef, lsdv.ss_feciy3_pop_coef)
+
+
+
 #export resultater til excel
 regoutput_ss_panel <- Reduce(function(a,b){
   ans <- merge(a,b,by="row.names",all=T)
@@ -850,9 +863,9 @@ regoutput_ss_panel <- Reduce(function(a,b){
   ans[,!names(ans) %in% "Row.names"]
 }, list_ss2)
 
-write.xlsx(regoutput_ss_panel, "regoutput_ss_panel.xlsx", col.names = TRUE, row.names = TRUE)
+regoutput_ss_panel$vars = row.names(regoutput_ss_panel)
 
-
+write_xlsx(regoutput_ss_panel, "regoutput_ss_panel.xlsx", col_names = TRUE)
 
 
 library(lmtest)
