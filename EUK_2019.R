@@ -68,7 +68,7 @@ func_empprod <- function(method, type) {
     data = EUK_nationalaccounts %>% filter(var %in% c("EMP","GO_Q"), !indnr %in% c("Agg", "*Agg", "1", "34","35", "36","37","38","39","40")) #svarer til A, O, P, Q, R, S, T,U
     
     
-    data$branche <- ifelse(data$indnr %in% c(2,16,17,18), "b1", #C,D,E,F
+    data$branche <- ifelse(data$indnr %in% c(2,16,17,18), "b1", #D,E,F
                            ifelse(data$indnr %in% c(3,4,5,6,7,8,9,10,11,12,13,14,15), "b2", #hele C
                                   ifelse(data$indnr %in% c(26,28,29,30,31, 33), "b3", #("53", "58t60", "61", "62t63", "K", "MtN")
                                          ifelse(data$indnr %in% c(19,20,21,22,23,24,25,27,32), "b4", #("45", "46", "47", "49t52", "I", "L")
@@ -353,14 +353,11 @@ ci_panel = func_empprod("MN_4","industrier")
 # Deskriptiv --------------------------------------------------
 
 #Forberedelse:
-min <- as.Date("1996-1-1")
-max <- NA
 
 #lande og industrier
 test_c = func_empprod("MN_4","lande")
 test_i = func_empprod("MN_4","industrier")
 test_c = na.omit(test_c)
-test_i = na.omit(test_i)
 
 
 #c_tot <- test_c %>% group_by(year) %>% summarize(EMP_c=sum(EMP), GO_c=sum(GO))
@@ -378,31 +375,40 @@ c_tot_filter = c_tot %>% filter(year %in% c(2000:2015))
 c_panel_avg = test_c %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
 
 #brancher
-b_tot <- test_i %>% group_by(country, year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
+b_tot <- test_i %>% group_by(country,year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
 b_tot = b_tot %>% ungroup()
 b_tot$id_ci = b_tot %>% group_indices(country, branche) 
+
+sumEMP <- b_tot %>% group_by(country, year) %>% summarize(sum_EMP=sum(EMP_b))
+b_tot = merge(b_tot, sumEMP, by=c("country","year"), all.x = TRUE)
+b_tot$share_EMP = (b_tot$EMP_b/b_tot$sum_EMP)*100
+b_tot = pdata.frame(b_tot, index = c("id_ci", "year"))
+b_tot$share_EMP_ppchange = diff(b_tot$share_EMP, lag = 1, shift = "time")
+b_tot$share_EMP_ppchange = ifelse(is.na(b_tot$share_EMP_ppchange)==T,0,b_tot$share_EMP_ppchange)
+b_tot = b_tot %>% group_by(country, branche) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
 
 b_tot = pdata.frame(b_tot, index = c("id_ci", "year")) 
 b_tot$emp_logchanges = diff(log(b_tot$EMP_b), lag = 1, shift = "time")*100
 b_tot$prod_logchanges = diff(log(b_tot$GO_b/b_tot$EMP_b), lag = 1, shift = "time")*100
 b_tot$prod_logchanges2 = diff(log(b_tot$GO_b/b_tot$EMP_b), lag = 1, shift = "time")
-
-b_tot = b_tot %>% group_by(branche) %>% mutate(prod_logCGR = order_by(year, CGR(prod_logchanges2[-1])*100)) %>% select(-prod_logchanges2) #metode 2
+b_tot = b_tot %>% group_by(country, branche) %>% mutate(prod_logCGR = order_by(year, CGR(prod_logchanges2[-1])*100)) %>% select(-prod_logchanges2) #metode 2
 b_tot = pdata.frame(b_tot, index = c("id_ci", "year")) 
 b_tot$prod_logCGR <- lag(b_tot$prod_logCGR, k= 1, shift="time")
+b_tot$prod_logCGR <- ifelse(is.na(b_tot$prod_logCGR)==T,0,b_tot$prod_logCGR)
 
-i_panel_avg = test_i %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
+b_tot_avg = b_tot %>% group_by(branche, year) %>% summarise_at(vars(prod_logCGR, cumsum_EMP), list(mean = mean))
 
 
 #datoformat
-test_c$year <- as.Date(test_c$year, "%Y")
-c_tot$year <- as.Date(c_tot$year, "%Y")
-c_tot_filter$year <- as.Date(c_tot_filter$year, "%Y")
-c_panel_avg$year <- as.Date(c_panel_avg$year, "%Y")
+min <- as.Date("1995-1-1")
+max <- NA
 
-test_i$year <- as.Date(test_i$year, "%Y")
-i_panel_avg$year <- as.Date(i_panel_avg$year, "%Y")
-
+test_c$year <- as.Date(ISOdate(test_c$year, 1, 1))
+c_tot$year <- as.Date(ISOdate(c_tot$year, 1, 1))
+c_tot_filter$year <- as.Date(ISOdate(c_tot_filter$year, 1, 1))
+c_panel_avg$year <- as.Date(ISOdate(c_panel_avg$year, 1, 1))
+b_tot$year = as.Date(ISOdate(b_tot$year, 1, 1))
+b_tot_avg$year = as.Date(ISOdate(b_tot_avg$year, 1, 1))
 
 #Undersøgelse af hvilke lande og industrier der indgår
 u_industries = test_i %>% select(code) %>% unique()
@@ -501,45 +507,59 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
 #Produktivitet- og beskæftigelsesvækst - BRANCHER
 {
 
+  DK_b = b_tot %>% filter(country=="DK")
+  
   #Kumulativ produktivitetsvækst fordelt på brancher
   
-  DK_tot = test_c %>% filter(country=="DK")
-  
-  {ggplot(data=DK_b, aes(x=year, y=prod_logCGR, group=desc, colour=desc)) + 
+  {ggplot(data=DK_b, aes(x=year, y=prod_logCGR, group=branche, colour=branche)) + 
       geom_point() + 
       geom_line() +
       xlab("Time") + ylab("100 * kumulativ log ændring") +
-      ggtitle("Kumulativ produktivitetsvækst") +
-      guides(colour=guide_legend(title="Sector")) +
+      ggtitle("Kumulativ produktivitetsvækst, Danmark") +
+      guides(colour=guide_legend(title="Branche")) +
       theme_economist() +
       theme(legend.position="right") +
       scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
       scale_x_date(limits = c(min, max))
   } #DK
-  {ggplot(data=UK_b, aes(x=year, y=prod_CGR, group=desc, colour=desc)) + 
+  
+  
+  {ggplot(data=b_tot_avg, aes(x=year, y=prod_logCGR_mean, group=branche, colour=branche)) + 
       geom_point() + 
       geom_line() +
-      xlab("Time") + ylab(")") +
-      ggtitle("Kumulativ produktivitetsvækst UK") +
-      guides(colour=guide_legend(title="Sector")) +
+      xlab("Time") + ylab("100 * kumulativ log ændring") +
+      ggtitle("Kumulativ produktivitetsvækst, på tværs af lande") +
+      guides(colour=guide_legend(title="Branche")) +
       theme_economist() +
-      theme(legend.position="right")
-    #scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
-    #scale_x_date(limits = c(min, max))
-  } #UK
+      theme(legend.position="right") +
+     scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+     scale_x_date(limits = c(min, max))
+  } 
   
   #Kumulativ ændring i beskæftigelse fordelt på brancher
-  {ggplot(data=DK_b, aes(x=year, y=cumsum_EMP, group=desc, colour=desc)) + 
+  {ggplot(data=DK_b, aes(x=year, y=cumsum_EMP, group=branche, colour=branche)) + 
       geom_point() + 
       geom_line() +
-      xlab("Time") + ylab("") +
-      ggtitle("Kumulativ ændring i beskæftigelse") +
-      guides(colour=guide_legend(title="Sector")) +
+      xlab("Time") + ylab("Ændring i andel (procent points)") +
+      ggtitle("Kumulativ ændring i beskæftigelse, Danmark") +
+      guides(colour=guide_legend(title="Branche")) +
       theme_economist() +
       theme(legend.position="right") +
       scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
       scale_x_date(limits = c(min, max))
   } #DK
+  
+  {ggplot(data=b_tot_avg, aes(x=year, y=cumsum_EMP_mean, group=branche, colour=branche)) + 
+      geom_point() + 
+      geom_line() +
+      xlab("Time") + ylab("Ændring i andel (procent points)") +
+      ggtitle("Kumulativ ændring i beskæftigelse, på tværs af lande") +
+      guides(colour=guide_legend(title="Branche")) +
+      theme_economist() +
+      theme(legend.position="right") +
+      scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+      scale_x_date(limits = c(min, max))
+  } 
   
 }
 
