@@ -767,6 +767,36 @@ write.xlsx(regoutput_mm_panel, "regoutput_mm_panel.xlsx", col.names = TRUE, row.
 
 ci_panel_ss = func_regpanel(ci_panel, "MN_4", 2)
 
+DK_inteff = ci_panel_ss %>%  filter(country=="DK") %>% group_by(code) %>% mutate(baseyearEMP = EMP[year == 1999]) %>% select(country, year, code, branche, EMP, EMP_b, EMP_c, GO, prod_logchanges, baseyearEMP)
+
+DK_inteff_b1 = DK_inteff %>%  filter(branche=="b1")
+DK_inteff_b1 = DK_inteff_b1 %>%  mutate(emp_change = prod_logchanges * (exp(-0.202)-1))
+DK_inteff_b1 = DK_inteff_b1 %>%  mutate(emp_basechange = emp_change * baseyearEMP)
+test = DK_inteff_b1 %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange)) 
+
+DK_inteff_b2 = DK_inteff %>%  filter(branche=="b2")
+DK_inteff_b2 = DK_inteff_b2 %>%  mutate(emp_change =  ifelse(year==1999,0, prod_logchanges * (exp(-0.264)-1)))
+DK_inteff_b2 = DK_inteff_b2 %>% group_by(code) %>%  mutate(cumsum_EMP = cumsum(emp_change))
+DK_inteff_b2 = DK_inteff_b2 %>% mutate(emp_basechange = baseyearEMP*(cumsum_EMP/100))
+test2 = DK_inteff_b2 %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange)) 
+
+
+
+DK_inteff = DK_inteff %>% mutate(emp_change =  ifelse(year==1999,0, prod_logchanges * (exp(-0.264)-1))) #skal lige modificeres en smule --> coefficienter og base year
+DK_inteff = DK_inteff %>% group_by(code) %>%  mutate(cumsum_EMP = cumsum(emp_change))
+DK_inteff = DK_inteff %>% mutate(emp_basechange = baseyearEMP*(cumsum_EMP/100))
+
+test3 = DK_inteff %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange), EMP_c_base = 1674)
+test3 = test3 %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100)
+
+test4 = test3 %>% group_by(year) %>% summarise(sumEMPchange=sum(sumEMPchange),  EMP_c_base = 1674)
+test4 = test4 %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100, branche="all")
+test4 = test4 %>% select(branche, year, sumEMPchange, EMP_c_base, emp_basechange_pct)
+
+test3 = as.data.frame(test3)
+test4 = as.data.frame(test4)
+
+DK_inteff = rbind(test3,test4)
 
 #uden vægte
 {
