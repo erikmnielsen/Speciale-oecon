@@ -767,36 +767,110 @@ write.xlsx(regoutput_mm_panel, "regoutput_mm_panel.xlsx", col.names = TRUE, row.
 
 ci_panel_ss = func_regpanel(ci_panel, "MN_4", 2)
 
-DK_inteff = ci_panel_ss %>%  filter(country=="DK") %>% group_by(code) %>% mutate(baseyearEMP = EMP[year == 1999]) %>% select(country, year, code, branche, EMP, EMP_b, EMP_c, GO, prod_logchanges, baseyearEMP)
+DK_effects = ci_panel_ss %>%  filter(country=="DK") %>% group_by(code) %>% mutate(baseyearEMP = EMP[year == 1999]) %>% select(country, year, code, branche, EMP, EMP_b, EMP_c, GO, prod_logchanges, baseyearEMP, 
+                                                                                                                               dLP_BwoI_b1 , dLP_BwoI_b1_lag1 , dLP_BwoI_b1_lag2 , dLP_BwoI_b1_lag3 ,
+                                                                                                                                dLP_BwoI_b2 , dLP_BwoI_b2_lag1 , dLP_BwoI_b2_lag2 , dLP_BwoI_b2_lag3 ,
+                                                                                                                                dLP_BwoI_b3 , dLP_BwoI_b3_lag1 , dLP_BwoI_b3_lag2 , dLP_BwoI_b3_lag3 ,
+                                                                                                                                dLP_BwoI_b4 , dLP_BwoI_b4_lag1 , dLP_BwoI_b4_lag2 , dLP_BwoI_b4_lag3)
+                                                                                                                              
+#Predicted cumulative percentage employment change from own-industry productivity growth} originating in five sectors
 
-DK_inteff_b1 = DK_inteff %>%  filter(branche=="b1")
-DK_inteff_b1 = DK_inteff_b1 %>%  mutate(emp_change = prod_logchanges * (exp(-0.202)-1))
-DK_inteff_b1 = DK_inteff_b1 %>%  mutate(emp_basechange = emp_change * baseyearEMP)
-test = DK_inteff_b1 %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange)) 
+#The percentage annual employment change from the internal effect is given by the annual productivity growth in each industry multiplied by its sector-specific coefficient 
+#(denoted by the indicator function 1(i ∈ s) for the corresponding sector). This annual percentage change is applied to base-year employment levels, where 1992, close to the 
+#midpoint of the sample period, serves as the base year.
 
-DK_inteff_b2 = DK_inteff %>%  filter(branche=="b2")
-DK_inteff_b2 = DK_inteff_b2 %>%  mutate(emp_change =  ifelse(year==1999,0, prod_logchanges * (exp(-0.264)-1)))
-DK_inteff_b2 = DK_inteff_b2 %>% group_by(code) %>%  mutate(cumsum_EMP = cumsum(emp_change))
-DK_inteff_b2 = DK_inteff_b2 %>% mutate(emp_basechange = baseyearEMP*(cumsum_EMP/100))
-test2 = DK_inteff_b2 %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange)) 
-
-
-
-DK_inteff = DK_inteff %>% mutate(emp_change =  ifelse(year==1999,0, prod_logchanges * (exp(-0.264)-1))) #skal lige modificeres en smule --> coefficienter og base year
+DK_inteff = DK_effects %>% mutate(emp_change =  ifelse(year==1999,0, 
+                                                       ifelse(branche=="b1", prod_logchanges * (exp(-0.204)-1),
+                                                              ifelse(branche=="b2", prod_logchanges * (exp(-0.264)-1),
+                                                                     ifelse(branche=="b3", prod_logchanges * (exp(-0.416)-1),
+                                                                            ifelse(branche=="b4", prod_logchanges * (exp(-0.422)-1), NA)))))) #skal lige modificeres en smule --> coefficienter og base year
+             
+                                            
 DK_inteff = DK_inteff %>% group_by(code) %>%  mutate(cumsum_EMP = cumsum(emp_change))
 DK_inteff = DK_inteff %>% mutate(emp_basechange = baseyearEMP*(cumsum_EMP/100))
 
-test3 = DK_inteff %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange), EMP_c_base = 1674)
-test3 = test3 %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100)
+DK_inteff = DK_inteff %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange), EMP_c_base = 1674)
+DK_inteff = as.data.frame(DK_inteff) %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100)
 
-test4 = test3 %>% group_by(year) %>% summarise(sumEMPchange=sum(sumEMPchange),  EMP_c_base = 1674)
-test4 = test4 %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100, branche="all")
-test4 = test4 %>% select(branche, year, sumEMPchange, EMP_c_base, emp_basechange_pct)
+DK_inteff_all = DK_inteff %>% group_by(year) %>% summarise(sumEMPchange=sum(sumEMPchange),  EMP_c_base = 1674)
+DK_inteff_all = DK_inteff_all %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100, branche="all")
+DK_inteff_all = DK_inteff_all %>% select(branche, year, sumEMPchange, EMP_c_base, emp_basechange_pct)
+DK_inteff = rbind(DK_inteff,DK_inteff_all)
 
-test3 = as.data.frame(test3)
-test4 = as.data.frame(test4)
+#Predicted cumulative percentage employment change from spillovers of productivity growth originating in five sectors
 
-DK_inteff = rbind(test3,test4)
+#Meanwhile, the percentage annual employment change resulting from the external productivity effect is given by the sum of productivity change in each sector s in the current 
+#and past three years–leaving out the industry’s own productivity growth– multiplied by the respective sector-specific coefficients and their lags. This quantity is
+#in turn multiplied by total country-level employment in the base year , since these external effects operate on the entire economy. 
+
+DK_exeff = DK_effects %>% filter(year==2000)
+
+DK_exeff = DK_effects %>% mutate(emp_change = ifelse(year==1999,0, 
+                                                      ifelse(branche=="b1", ((dLP_BwoI_b1 * (exp(0.027)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1))),
+                                                             ifelse(branche=="b2", ((dLP_BwoI_b2 * (exp(-0.056)-1)) + (dLP_BwoI_b2_lag1 * (exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1))),
+                                                                    ifelse(branche=="b3", ((dLP_BwoI_b3 * (exp(0.079)-1))  + (dLP_BwoI_b3_lag1 * (exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1))),
+                                                                           ifelse(branche=="b4", ((dLP_BwoI_b4 * (exp(0.130)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1))), 
+                                                                                                  NA))))))
+
+DK_exeff = DK_effects %>% mutate(emp_change = ifelse(year==1999,0, (dLP_BwoI_b1 * (exp(0.027)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1)) + 
+                                                       (dLP_BwoI_b2 * (exp(-0.056)-1)) + (dLP_BwoI_b2_lag1 * (exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1)) + 
+                                                       (dLP_BwoI_b3 * (exp(0.079)-1))  + (dLP_BwoI_b3_lag1 * (exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) + 
+                                                       (dLP_BwoI_b4 * (exp(0.130)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1))))
+                                   
+DK_exeff = DK_effects %>% mutate(emp_change_b1 = ifelse(year==1999,0, (dLP_BwoI_b1 * (exp(0.027)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1))),
+                                 emp_change_b2 = ifelse(year==1999,0, (dLP_BwoI_b2 * (exp(-0.056)-1)) + (dLP_BwoI_b2_lag1 * (exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1))),
+                                 emp_change_b3 = ifelse(year==1999,0, (dLP_BwoI_b3 * (exp(0.079)-1)) + (dLP_BwoI_b3_lag1 * (exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) ),
+                                 emp_change_b4 = ifelse(year==1999,0, (dLP_BwoI_b4 * (exp(0.130)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1))))
+
+DK_exeff = DK_effects %>% mutate(emp_change_b1 = ifelse(year==1999,0, (dLP_BwoI_b1 * (exp(0.007)-1))),
+                                 emp_change_b2 = ifelse(year==1999,0, (dLP_BwoI_b2 * (exp(0.054)-1))),
+                                 emp_change_b3 = ifelse(year==1999,0, (dLP_BwoI_b3 * (exp(0.071)-1))),
+                                 emp_change_b4 = ifelse(year==1999,0, (dLP_BwoI_b4 * (exp(0.167)-1))))
+
+#test = DK_exeff %>% filter(year==2000)
+                                                            
+DK_exeff = DK_exeff %>% group_by(code) %>%  mutate(cumsum_EMP_b1 = cumsum(emp_change_b1), 
+                                                   cumsum_EMP_b2 = cumsum(emp_change_b2), 
+                                                   cumsum_EMP_b3 = cumsum(emp_change_b3), 
+                                                   cumsum_EMP_b4 = cumsum(emp_change_b4), EMP_c_base = 1674, )
+
+#test = DK_exeff %>% group_by(branche, year) %>% summarise(test=sum(emp_change))
+#test = test %>% group_by(branche) %>%  mutate(cumsum_EMP = cumsum(test), EMP_c_base = 1674)
+#test = test %>% mutate(emp_basechange = EMP_c_base*(cumsum_EMP/100))
+
+#DK_exeff = DK_exeff %>% mutate(emp_basechange = baseyearEMP*(cumsum_EMP/100))
+#DK_exeff = DK_exeff %>% mutate(emp_basechange = EMP_c_base*(cumsum_EMP/100))
+
+DK_exeff = DK_exeff %>% mutate(emp_basechange_b1 = baseyearEMP * (cumsum_EMP_b1/100),
+                                emp_basechange_b2 = baseyearEMP * (cumsum_EMP_b2/100), 
+                                emp_basechange_b3 = baseyearEMP * (cumsum_EMP_b3/100), 
+                                emp_basechange_b4 = baseyearEMP * (cumsum_EMP_b4/100))
+
+DK_exeff = DK_exeff %>% group_by(year) %>% summarise(sumEMPchange_b1=sum(emp_basechange_b1),
+                                                 sumEMPchange_b2=sum(emp_basechange_b2),
+                                                 sumEMPchange_b3=sum(emp_basechange_b3),
+                                                 sumEMPchange_b4=sum(emp_basechange_b4),
+                                                 sumEMPchange_all=sum(emp_basechange_b1 + emp_basechange_b2 + emp_basechange_b3 + emp_basechange_b4), EMP_c_base = 1674)
+
+test = as.data.frame(DK_exeff) %>% mutate(emp_basechange_pct_1 = (sumEMPchange_b1/EMP_c_base)*100,
+                                          emp_basechange_pct_2 = (sumEMPchange_b2/EMP_c_base)*100,
+                                          emp_basechange_pct_3 = (sumEMPchange_b3/EMP_c_base)*100,
+                                          emp_basechange_pct_4 = (sumEMPchange_b4/EMP_c_base)*100,
+                                          emp_basechange_pct_all = (sumEMPchange_all/EMP_c_base)*100)
+
+
+DK_exeff = DK_exeff %>% group_by(code) %>%  mutate(cumsum_EMP = cumsum(emp_change))
+DK_exeff = DK_exeff %>% mutate(emp_basechange = baseyearEMP *(cumsum_EMP/100))
+
+DK_exeff = DK_exeff %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange), EMP_c_base= 1674)
+DK_exeff = as.data.frame(DK_exeff) %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100)
+
+DK_exeff_all = DK_exeff %>% group_by(year) %>% summarise(sumEMPchange=sum(sumEMPchange), EMP_c_base = 1674)
+DK_exeff_all = DK_exeff_all %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100, branche="all")
+DK_exeff_all = DK_exeff_all %>% select(branche, year, sumEMPchange, EMP_c_base, emp_basechange_pct)
+DK_exeff = rbind(DK_exeff,DK_exeff_all)
+
+
 
 #uden vægte
 {
