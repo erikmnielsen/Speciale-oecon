@@ -14,6 +14,10 @@ library(ggplot2)
 library(ggthemes)
 library(dplyr)
 library(gtools)
+library(lmtest)
+library(plm)
+library(olsrr)
+#library(sandwich)
 
 CGR = function(x){
   sapply(1:length(x), function(y){
@@ -21,34 +25,35 @@ CGR = function(x){
   })
 }
 
-func_coefs <- function(regression, name, type, method) {
+func_coefs <- function(regression, name, type) {
   
   options(scipen=999, digits=4) 
   #options(scipen=0, digits=7) #default
   
   if (type != "") {
     
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method, type=type)[,4])
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type=type)[,4])
     reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type=type)[,c(1,4)], siglvl)
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-  }  else if (method != "") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method)[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
     
   } else {
     
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method)[,4])
+    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
     reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
   }
   
+  reg_coef
   
+}
   
+func_coefs <- function(regression, name, type) {
   
-  #coeftest(zz, vcov.=function(x) vcovHC(x, method="arellano", type="HC1", cluster="group"))
+  options(scipen=999, digits=4) 
+  
+  siglvl = stars.pval(coeftest(regression, vcovHAC)[,4])
+  reg_coef = cbind(coeftest(regression, vcovHAC)[,c(1,4)], siglvl)
+  colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
   
   reg_coef
   
@@ -168,6 +173,8 @@ pop_var = na.omit(pop_var)
   data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
   pdata = pdata.frame(data, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
   
+  pdata$emp_log = log(pdata$EMP)
+  pdata$prod_log = log(pdata$GO/pdata$EMP)
   pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
   pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
   pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
@@ -180,6 +187,8 @@ pop_var = na.omit(pop_var)
     data = merge(data, pop_var, by=c("country", "year"), all.x = TRUE)
     pdata = pdata.frame(data, index = c("country", "year")) 
     
+    pdata$emp_log = log(pdata$EMP)
+    pdata$prod_log = log(pdata$GO/pdata$EMP)
     pdata$emp_logchanges = diff(log(pdata$EMP), lag = 1, shift = "time")*100
     pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
     pdata$wkgpop_logchanges = diff(log(pdata$wkgpop), lag = 1, shift = "time")*100
@@ -576,6 +585,9 @@ test = data %>% group_by(country, year) %>% count() #der skal være 32 industrie
 #c_panel = pdata.frame(c_panel, index = c("country", "year"))
 
 c_panel_lags = c_panel
+  c_panel_lags$prod_log_lag1 = lag(c_panel_lags$prod_log, k = 1, shift = "time")
+  c_panel_lags$prod_log_lag2 = lag(c_panel_lags$prod_log_lag1, k = 1, shift = "time")
+  c_panel_lags$prod_log_lag3 = lag(c_panel_lags$prod_log_lag2, k = 1, shift = "time")
 c_panel_lags$prod_logchanges_lag1 = lag(c_panel_lags$prod_logchanges, k = 1, shift = "time")
 c_panel_lags$prod_logchanges_lag2 = lag(c_panel_lags$prod_logchanges_lag1, k = 1, shift = "time")
 c_panel_lags$prod_logchanges_lag3 = lag(c_panel_lags$prod_logchanges_lag2, k = 1, shift = "time")
@@ -585,54 +597,245 @@ c_panel = na.omit(c_panel)
 
 #Uden lags
 lsdv.c_pool1 = lm(emp_logchanges ~ prod_logchanges, data=c_panel)
+#lsdv.c_fey1 = lm(emp_logchanges ~ prod_logchanges + factor(year), data=c_panel)
 lsdv.c_fec1 = lm(emp_logchanges ~ prod_logchanges + factor(country), data=c_panel) 
-#lsdv.c_fecy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year) -1, data=c_panel) #HC2 og 3 giver NA på std errors hvis regressionen har både land og år dummies
+#lsdv.c_fecy1 = lm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year) 
+
+# når year tilføjes bliver estimaterne negative
 
 #Med lags
 lsdv.c_pool2 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3, data=c_panel_lags)
 lsdv.c_fec2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country), data=c_panel_lags)
-#lsdv.c_fecy2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year) -1, data=c_panel)
-lsdv.c_fec2_pop  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + wkgpop_logchanges + factor(country), data=c_panel_lags)
+#lsdv.c_fecy2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(year), data=c_panel_lags)
+lsdv.c_fec2_pop  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + wkgpop_logchanges, data=c_panel_lags)
 
-
+#Robuste standard fejl
 lsdv.c_pool1_coef = func_coefs(lsdv.c_pool1, "c_pool1", "HC3") # giver ikke nogen forskel at tilføje method=arrelano
+#lsdv.c_fey1_coef = func_coefs(lsdv.c_fey1, "c_fey1", "HC3")
 lsdv.c_fec1_coef = func_coefs(lsdv.c_fec1, "c_fec1", "HC3")
 #lsdv.c_fecy1_coef = func_coefs(lsdv.c_fecy1, "c_fecy1", "HC3")
 lsdv.c_pool2_coef = func_coefs(lsdv.c_pool2, "c_pool2", "HC3")
+#lsdv.c_fey2_coef = func_coefs(lsdv.c_fey2, "c_fey2", "HC3")
 lsdv.c_fec2_coef = func_coefs(lsdv.c_fec2, "c_fec2", "HC3")
 #lsdv.c_fecy2_coef = func_coefs(lsdv.c_fecy2, "c_fecy2", "HC3")
 lsdv.c_fec2_pop_coef = func_coefs(lsdv.c_fec2_pop, "c_fec2_pop", "HC3")
 
+
 regoutput_c_panel <- Reduce(function(a,b){
-  ans <- merge(a,b,by="row.names",all=T)
+  ans <- merge(a,b,by="row.names", all=T)
   row.names(ans) <- ans[,"Row.names"]
   ans[,!names(ans) %in% "Row.names"]
 }, list(lsdv.c_pool1_coef, lsdv.c_fec1_coef, lsdv.c_pool2_coef, lsdv.c_fec2_coef, lsdv.c_fec2_pop_coef))
 
-write.xlsx(regoutput_c_panel, "regoutput_c_panel.xlsx", col.names = TRUE, row.names = TRUE)
+regoutput_c_panel$vars = row.names(regoutput_c_panel)
+write_xlsx(regoutput_c_panel, "regoutput_c_panel.xlsx", col_names = TRUE)
 
 
 #Tester resultater ved brug af plm istedet: 
 {
-  model_linear1 = emp_logchanges ~ prod_logchanges 
+
+  C0_fd = plm(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "fd")
+  coeftest(C0_fd, vcov. = vcovHC, type = "HC3")
+  coeftest(lsdv.c_pool1, vcov. = vcovHC, type = "HC3") #til sammenligning
+  coeftest(lsdv.c_pool1, vcovHC) #til sammenligning
   
-  C0_pool = plm(model_linear1, data = c_panel, index = c("country", "year"), model = "pooling")
-  C0_fd = plm(model_linear1, data = c_panel, index = c("country", "year"), model = "fd")
-  C0_fe = plm(model_linear1, data = c_panel, index = c("country", "year"), model = "within")
-  summary(C0_pool)
-  summary(C0_fd)
-  summary(C0_fe)
+  coeftest(lsdv.c_pool1, vcov = vcovHC(lsdv.c_pool1, type="HC3"))
+  coeftest(lsdv.c_pool1, vcov = vcovHAC(lsdv.c_pool1))
+  coeftest(lsdv.c_pool1, vcovHAC)
+  coeftest(lsdv.c_pool1, vcov. = vcovHC, method="arellano")
   
-  C2_pool = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "pooling")
-  C2_fd = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "fd")
-  C2_fe = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within", effect = "individual")
-  C2_fe_tw = plm(model_linear2, data = c_panel, index = c("country", "year"), model = "within", effect = "twoway")
-  summary(C2_pool)
-  summary(C2_fd)
-  summary(C2_fe)
-  summary(C2_fe_tw)
+  
+  C1_fd = plm(emp_log ~ prod_log + prod_log_lag1 + prod_log_lag2 + prod_log_lag3, data = c_panel_lags, index = c("country", "year"), model = "fd")
+  coeftest(C1_fd, vcov. = vcovHC, type = "HC3")
+  coeftest(lsdv.c_pool2, vcov. = vcovHC, type="HC3") #til sammenligning
   
 }
+
+
+######## Modeltests
+{
+  #### Poolability test
+  interaktion_year = lm(emp_logchanges ~ prod_logchanges*factor(year), data=c_panel)
+  interaktion_country = lm(emp_logchanges ~ prod_logchanges*factor(country), data=c_panel)
+  anova(lsdv.c_fey1, interaktion_year) # chow test, tester om der er signifikante forskelle - inspireret af woolridge
+  anova(lsdv.c_fec1, interaktion_country)
+  
+  pooltest(emp_log ~ prod_log, data =  c_panel, index = c("country", "year"), model = "within")
+  
+  plm_model <- plm(emp_log ~ prod_log, index = c("country", "year"), data= c_panel, model= "within") # 1. Run a normal OLS model with fixed effects (model="within")
+  pvcm_model <- pvcm(emp_log ~ prod_log, index = c("country", "year"), data= c_panel, model= "within") # 2. Run a variable coefficients model with fixed effects (model="within")
+  pooltest(plm_model, pvcm_model) # 3. Run the poolability test
+  
+  #The null hypothesis is that the dataset is poolable (i.e. individuals have the same slope coefficients), 
+  #so if p<0.05 you reject the null and you need a variable coefficients model.
+  
+  
+  #### Test for uobserverede effekter
+  
+  pooled_c <- plm(emp_log ~ prod_log, data =  c_panel, index = c("country", "year"), model = "pooling")
+  fd_c <- plm(emp_logchanges ~ prod_logchanges, data =  c_panel, index = c("country", "year"), model = "pooling")
+  fd_c <- plm(emp_logchanges ~ prod_logchanges + factor(year), data =  c_panel, index = c("country", "year"), model = "pooling")
+  fd_c <- plm(emp_logchanges ~ prod_logchanges + factor(country), data =  c_panel, index = c("country", "year"), model = "pooling")
+  fd_c <- plm(emp_logchanges ~ prod_logchanges + factor(country) + factor(year), data =  c_panel, index = c("country", "year"), model = "pooling")
+  plmtest(pooled_c, effect = "twoways", type = "ghm")
+  plmtest(pooled_c, effect = "twoways")
+  plmtest(pooled_c, effect = "individual")
+  plmtest(pooled_c, effect = "time")
+  plmtest(fd_c, effect = "twoways")
+  plmtest(fd_c, effect = "individual")
+  plmtest(fd_c, effect = "time")
+  
+  
+  #### Test af heteroskedacity 
+  
+  plot(lsdv.c_pool1$fitted.values, lsdv.c_pool1$residuals)
+  plot(lsdv.c_fecy1$fitted.values, lsdv.c_fecy1$residuals)
+  plot(lsdv.c_pool2$fitted.values, lsdv.c_pool2$residuals) #ikke "markante" tegn på heteroskedacitet
+  plot(lsdv.c_fecy2$fitted.values, lsdv.c_fecy2$residuals) #ikke "markante" tegn på heteroskedacitet
+  
+  #Breusch Pagan Test for Heteroskedasticity, H0: the variance is constant, Ha: the variance is not constant 
+  ols_test_breusch_pagan(lsdv.c_pool1) #Ha
+  ols_test_breusch_pagan(lsdv.c_fecy1) #Ha
+  ols_test_breusch_pagan(lsdv.c_pool2) #Ha
+  ols_test_breusch_pagan(lsdv.c_fecy2) #Ha
+  
+  #### cTest for seriel korrelation
+  bgtest(lsdv.c_pool1)
+  bgtest(lsdv.c_pool2)
+  pbgtest(fd_c, order=1)
+  
+  #As Woolridge observes, if the idiosyncratic errors in the model in levels are uncorrelated (which we label hypothesis "fe"), 
+  #then the errors of the model in first differences (FD) must be serially correlated with -0.5. If on the contrary the levels 
+  #model's errors are a random walk, then there must be no serial correlation in the FD errors (hypothesis "fd"). Both the fixed 
+  #effects (FE) and the first--differenced (FD) estimators remain consistent under either assumption, but the relative efficiency 
+  #changes: FE is more efficient under "fe", FD under "fd".
+  
+  pwfdtest(emp_log ~ prod_log, data =  c_panel, index = c("country", "year"), h0 = "fd") # h0 = c("fd", "fe")
+  pwfdtest(emp_log ~ prod_log + prod_log_lag1 + prod_log_lag2 + prod_log_lag3, data=c_panel_lags, index = c("country", "year"), h0 = "fd") #giver meget ens resultat at tilføje lags
+ 
+  pwfdtest(emp_log ~ prod_log, data =  c_panel, index = c("country", "year"), h0 = "fe") # det ser ud til at der både er seriel korrelation i den originale level-model samt FD model
+  
+  #### Test for cross sectional dependency
+  
+  pcdtest(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model="within")
+  pcdtest(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model=NULL)
+  pcdtest(emp_logchanges ~ prod_logchanges, data = c_panel, index = c("country", "year"), model=NULL)
+  
+  pcdtest(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "fd") #fd kan ikke lade sig gøre
+  
+  pcdtest(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "within") 
+  pcdtest(emp_log ~ prod_log + prod_log_lag1 + prod_log_lag2 + prod_log_lag3, data=c_panel_lags, index = c("country", "year"), model = "within")
+  
+  
+  #feasible GLS
+  zz <- pggls(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "within")
+  zz <- pggls(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "fd")
+  zz <- pggls(emp_log ~ prod_log + factor(country), data = c_panel, index = c("country", "year"), model = "fd")
+  zz <- pggls(emp_log ~ prod_log + prod_log_lag1 + prod_log_lag2 + prod_log_lag3, data=c_panel_lags, index = c("country", "year"), model = "fd")
+  zz <- pggls(emp_log ~ prod_log + prod_log_lag1 + prod_log_lag2 + prod_log_lag3 , data=c_panel_lags, index = c("country", "year"), model = "fd")
+  
+  summary(zz)
+  
+  
+  #std error robust of XSD
+  zz <- plm(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "fd")
+  zz <- lm(emp_logchanges ~ prod_logchanges, data = c_panel)
+  zz <- lm(emp_logchanges ~ prod_logchanges + factor(country), data = c_panel)
+  
+  coeftest(zz, vcov. = vcovHC, type="HC3")
+  coeftest(zz, vcov. = vcovHC, type="HC3", cluster=c("time"))
+  
+  coeftest(zz, vcov=vcovSCC)
+  coeftest(zz, vcov=function(x) vcovHC(x, cluster="time"))
+  coeftest(zz, vcov=function(x) vcovHC(x, cluster="group"))
+  
+  vcovSCC(zz, "HC3", inner = "cluster", cluster = "group")
+  vcovSCC(zz, "HC3", inner = "cluster", cluster = "time") #giver meget anderledes signifikans for FD
+  vcovSCC(zz, "HC3", inner = "white")
+  vcovSCC(zz, "HC3", inner = "diagavg") 
+  vcovg
+  
+  vcovSCC(
+    x,
+    type = c("HC0", "sss", "HC1", "HC2", "HC3", "HC4"),
+    cluster = "time",
+    maxlag = NULL,
+    inner = c("cluster", "white", "diagavg"),
+    wj = function(j, maxlag) 1 - j/(maxlag + 1),
+    ...
+  )
+  
+  # PMG
+  mgmod = pmg(emp_logchanges ~ prod_logchanges, data = c_panel)
+  dmgmod = pmg(emp_logchanges ~ prod_logchanges, data = c_panel, index = c("country", "year"), model = "dmg")
+  ccemgmod = pmg(emp_logchanges ~ prod_logchanges, data = c_panel, index = c("country", "year"), model = "cmg")
+  mgmod = pmg(emp_log ~ prod_log, data = c_panel)
+  dmgmod = pmg(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "dmg")
+  ccemgmod = pmg(emp_log ~ prod_log, data = c_panel, index = c("country", "year"), model = "cmg")
+  summary(mgmod)
+  summary(dmgmod)
+  summary(ccemgmod)
+  
+  pmg(
+    formula,
+    data,
+    subset,
+    na.action,
+    model = c("mg", "cmg", "dmg"),
+    index = NULL,
+    trend = FALSE,
+    ...
+  )
+  
+  #Eksempler
+  mgmod <- pmg(log(gsp) ~ log(pcap) + log(pc) + log(emp) + unemp, data = Produc) ## Mean Groups estimator
+  dmgmod <- pmg(log(gsp) ~ log(pcap) + log(pc) + log(emp) + unemp, data = Produc, model = "dmg") ## demeaned Mean Groups
+  ccemgmod <- pmg(log(gsp) ~ log(pcap) + log(pc) + log(emp) + unemp, data = Produc, model = "cmg") ## Common Correlated Effects Mean Groups
+  
+  
+  #PCCE
+  pcce_mg = pcce(emp_logchanges ~ prod_logchanges, data = c_panel, index = c("country", "year"), model = "mg")
+  pcce_p = pcce(emp_logchanges ~ prod_logchanges, data = c_panel, index = c("country", "year"), model = "p")
+  summary(pcce_mg)
+  summary(pcce_p)
+  
+  pcce(
+    formula,
+    data,
+    subset,
+    na.action,
+    model = c("mg", "p"),
+    index = NULL,
+    trend = FALSE,
+    ...
+  )
+  
+  #clustering til at fjerne XSD
+  {
+    
+    library(multiwayvcov) # Link: https://stats.stackexchange.com/questions/10017/standard-error-clustering-in-r-either-manually-or-in-plm
+    library(lmtest)
+    library(sandwich)
+    
+    coeftest(lsdv.c_pool1, vcov. = vcovHC, type="HC3")
+    coeftest(lsdv.c_pool1, vcov = vcovHC(lsdv.c_pool1, type="HC3"))
+    coeftest(lsdv.c_pool1, vcov = vcovHAC(lsdv.c_pool1))
+    coeftest(lsdv.c_pool1, vcov. = vcovHC, method="arellano")
+    
+    vcov_country <- cluster.vcov(lsdv.c_pool1, c_panel$country) # Cluster by country
+    coeftest(lsdv.c_pool1, vcov_country)
+    
+    vcov_industry <- cluster.vcov(lsdv.c_pool1, c_panel$code) # Cluster by industry
+    coeftest(lsdv.c_pool1, vcov_industry)
+    
+    vcov_year <- cluster.vcov(lsdv.c_pool1, c_panel$year) # Cluster by year
+    coeftest(lsdv.c_pool1, vcov_year)
+    
+    vcov_both <- cluster.vcov(lsdv.c_pool1, cbind(c_panel$country, c_panel$year)) # Double cluster by country and year
+    coeftest(lsdv.c_pool1, vcov_both)
+  }
+}
+
 
 
 # Country industry panel --------------------------------------------------
@@ -643,7 +846,6 @@ ci_panel_1 = func_regpanel(ci_panel, "MN_4", 1) #uden lags
 ci_panel_1 = na.omit(ci_panel_1)
 ci_panel_1_lags = func_regpanel(ci_panel, "MN_4", 2) #med lags
 ci_panel_1_lags = na.omit(ci_panel_1_lags)
-
 
 #med vægte
 lsdv.ci_pool2 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1, weights = wgt_i_avg)
@@ -666,9 +868,10 @@ lsdv.ci_fecy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + pro
 lsdv.ci_feciy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=ci_panel_1_lags, weights = wgt_i_avg) #
 lsdv.ci_feciy3_pop = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + wkgpop_logchanges + factor(country) + factor(code) + factor(year), data=ci_panel_1_lags, weights = wgt_i_avg)
 
+coeftest(lsdv.ci_pool3, vcovHAC(lsdv.ci_pool3))
+coeftest(lsdv.ci_pool3, vcov. = vcovHC, type="HC3")
 
 #Robuste standard fejl
-
 lsdv.ci_pool2_coef = func_coefs(lsdv.ci_pool2, "ci_pool2", "HC3") 
 lsdv.ci_fec2_coef = func_coefs(lsdv.ci_fec2, "ci_fec2", "HC3")
 lsdv.ci_fecy2_coef = func_coefs(lsdv.ci_fecy2, "ci_fecy2", "HC3")
@@ -692,18 +895,71 @@ regoutput_ci_panel <- Reduce(function(a,b){
   ans[,!names(ans) %in% "Row.names"]
 }, list_ci3)
 
-write.xlsx(regoutput_ci_panel, "regoutput_ci_panel.xlsx", col.names = TRUE, row.names = TRUE)
+regoutput_ci_panel$vars = row.names(regoutput_ci_panel)
+write_xlsx(regoutput_ci_panel, "regoutput_ci_panel.xlsx", col_names = TRUE)
 
 
-#test af plm
-FixedEffects_indi <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "individual")
-FixedEffects_time <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "time")
-FixedEffects_twoway <- plm(model_linear1, data = dk, index = c("code", "year"), weight=wgt, model = "within", effect = "twoway")
 
-summary(FixedEffects_indi)
-summary(FixedEffects_time)
-summary(FixedEffects_twoway)
+#split sample test - Danmark
+{
+  ci_panel_1_DK = ci_panel_1 %>% filter(country=="DK")
+  ci_panel_1_lags_DK = ci_panel_1_lags %>% filter(country=="DK")  
+  
+  #med vægte
+  lsdv.ci_pool_DK = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1_DK, weights = wgt_i_avg)
+  lsdv.ci_fey_DK = lm(emp_logchanges ~ prod_logchanges + factor(year), data=ci_panel_1_DK, weights = wgt_i_avg)
+  lsdv.ci_fei_DK = lm(emp_logchanges ~ prod_logchanges + factor(code), data=ci_panel_1_DK, weights = wgt_i_avg)
+  lsdv.ci_feyi_DK = lm(emp_logchanges ~ prod_logchanges + factor(year) + factor(code), data=ci_panel_1_DK, weights = wgt_i_avg)
+  
+  #med vægte og lags 
+  lsdv.ci_pool_DK = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3, data=ci_panel_1_lags_DK, weights = wgt_i_avg)
+  lsdv.ci_fey_DK = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(year), data=ci_panel_1_lags_DK, weights = wgt_i_avg)
+  lsdv.ci_fei_DK = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(code), data=ci_panel_1_lags_DK, weights = wgt_i_avg)
+  lsdv.ci_feyi_DK = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(year) + factor(code), data=ci_panel_1_lags_DK, weights = wgt_i_avg)
+  
+  #Robuste standard fejl
+  lsdv.ci_pool_DK_coef = func_coefs(lsdv.ci_pool_DK, "ci_pool_DK", "HC3") 
+  lsdv.ci_fey_DK_coef = func_coefs(lsdv.ci_fey_DK, "ci_fey_DK", "HC3")
+  lsdv.ci_fei_DK_coef = func_coefs(lsdv.ci_fei_DK, "ci_fei_DK", "HC3")
+  lsdv.ci_feyi_DK_coef = func_coefs(lsdv.ci_feyi_DK, "ci_feyi_DK", "HC3")
 
+  list_ci_DK = list(lsdv.ci_pool_DK_coef, lsdv.ci_fey_DK_coef, lsdv.ci_fei_DK_coef,  lsdv.ci_feyi_DK_coef)
+  
+  #export resultater til excel
+  regoutput_ci_DKpanel <- Reduce(function(a,b){
+    ans <- merge(a,b,by="row.names",all=T)
+    row.names(ans) <- ans[,"Row.names"]
+    ans[,!names(ans) %in% "Row.names"]
+  }, list_ci_DK)
+  
+  regoutput_ci_DKpanel$vars = row.names(regoutput_ci_DKpanel)
+  write_xlsx(regoutput_ci_DKpanel, "regoutput_ci_DKpanel.xlsx", col_names = TRUE)
+}
+
+#clustering til at fjerne XSD
+{
+  
+  library(multiwayvcov) # Link: https://stats.stackexchange.com/questions/10017/standard-error-clustering-in-r-either-manually-or-in-plm
+  library(lmtest)
+  library(sandwich)
+  
+  coeftest(lsdv.ci_pool3, vcov. = vcovHC, type="HC3")
+  coeftest(lsdv.ci_pool3, vcov = vcovHC(lsdv.ci_pool3, type="HC3"))
+  coeftest(lsdv.ci_pool3, vcov = vcovHAC(lsdv.ci_pool3))
+  coeftest(lsdv.ci_pool3, vcov. = vcovHC, method="arellano")
+  
+  vcov_country <- cluster.vcov(lsdv.ci_pool3, ci_panel_1_lags$country) # Cluster by country
+  coeftest(lsdv.ci_pool3, vcov_country)
+  
+  vcov_industry <- cluster.vcov(lsdv.ci_pool3, ci_panel_1_lags$code) # Cluster by industry
+  coeftest(lsdv.ci_pool3, vcov_industry)
+  
+  vcov_year <- cluster.vcov(lsdv.ci_pool3, ci_panel_1_lags$year) # Cluster by year
+  coeftest(lsdv.ci_pool3, vcov_year)
+  
+  vcov_both <- cluster.vcov(lsdv.ci_pool3, cbind(ci_panel_1_lags$country, ci_panel_1_lags$year)) # Double cluster by country and year
+  coeftest(lsdv.ci_pool3, vcov_both)
+}
 
 # Sammensætning af mikro og makroelasticiteter --------------------------------------------------
 
@@ -757,10 +1013,62 @@ regoutput_mm_panel <- Reduce(function(a,b){
 
 write.xlsx(regoutput_mm_panel, "regoutput_mm_panel.xlsx", col.names = TRUE, row.names = TRUE)
 
+#split sample test - Danmark
+{
+  
+  ci_panel_2_DK = ci_panel_2 %>% filter(country=="DK")
+  
+  #med vægte og lags
+  lsdv.mm_pool_DK = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3, data=ci_panel_2_DK, weights = wgt_i_avg)
+  lsdv.mm_fey_DK = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(year) , data=ci_panel_2_DK, weights = wgt_i_avg) 
+  lsdv.mm_fei_DK  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(code), data=ci_panel_2_DK, weights = wgt_i_avg)
+  lsdv.mm_feyi_DK = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + factor(code) + factor(year), data=ci_panel_2_DK, weights = wgt_i_avg)
+  lsdv.mm_feyi_DK_pop = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + dLP_CwoI + dLP_CwoI_lag1 + dLP_CwoI_lag2 + dLP_CwoI_lag3 + wkgpop_logchanges + factor(code) + factor(year), data=ci_panel_2_DK, weights = wgt_i_avg)
+  
+  #Robuste standard fejl
+  lsdv.mm_pool_DK_coef = func_coefs(lsdv.mm_pool_DK, "mm_pool_DK", "HC3") 
+  lsdv.mm_fey_DK_coef = func_coefs(lsdv.mm_fey_DK, "mm_fey_DK", "HC3")
+  lsdv.mm_fei_DK_coef = func_coefs(lsdv.mm_fei_DK, "mm_fei_DK", "HC3")
+  lsdv.mm_feyi_DK_coef = func_coefs(lsdv.mm_feyi_DK, "mm_feyi_DK", "HC3")
+  lsdv.mm_feyi_DK_pop_coef = func_coefs(lsdv.mm_feyi_DK_pop, "mm_feyi_DK_pop", "HC3")
+  
+  list_mm_DK = list(lsdv.mm_pool_DK_coef, lsdv.mm_fey_DK_coef, lsdv.mm_fei_DK_coef, lsdv.mm_feyi_DK_coef, lsdv.mm_feyi_DK_pop_coef)
+  
+  #export resultater til excel
+  regoutput_mm_DKpanel <- Reduce(function(a,b){
+    ans <- merge(a,b,by="row.names",all=T)
+    row.names(ans) <- ans[,"Row.names"]
+    ans[,!names(ans) %in% "Row.names"]
+  }, list_mm_DK)
+  
+  regoutput_mm_DKpanel$vars = row.names(regoutput_mm_DKpanel)
+  write_xlsx(regoutput_mm_DKpanel, "regoutput_mm_DKpanel.xlsx", col_names = TRUE)
+}
+
+#clustering til at fjerne XSD
+{
+
+library(multiwayvcov) # Link: https://stats.stackexchange.com/questions/10017/standard-error-clustering-in-r-either-manually-or-in-plm
+library(lmtest)
+
+coeftest(lsdv.mm_pool3, vcov. = vcovHC, type="HC3")
+  
+vcov_country <- cluster.vcov(lsdv.mm_pool3, ci_panel_2$country) # Cluster by country
+coeftest(lsdv.mm_pool3, vcov_country)
+
+vcov_industry <- cluster.vcov(lsdv.mm_pool3, ci_panel_2$code) # Cluster by industry
+coeftest(lsdv.mm_pool3, vcov_industry)
+
+vcov_year <- cluster.vcov(lsdv.mm_pool3, ci_panel_2$year) # Cluster by year
+coeftest(lsdv.mm_pool3, vcov_year)
+
+vcov_both <- cluster.vcov(lsdv.mm_pool3, cbind(ci_panel_2$country, ci_panel_2$year)) # Double cluster by country and year
+coeftest(lsdv.mm_pool3, vcov_both)
+}
 
 # Sector spillover -------------------------------------------------
 
-# How to deal with NA in a panel data regression? Link: https://stackoverflow.com/questions/14427781/how-to-deal-with-na-in-a-panel-data-regression------
+# How to deal with NA in a panel data regression? Link: https://stackoverflow.com/questions/14427781/how-to-deal-with-na-in-a-panel-data-regression
 
 #Skal det vægtes? Og hvad skal vægtes?
 
@@ -1092,6 +1400,8 @@ regoutput_ss_panel <- Reduce(function(a,b){
   row.names(ans) <- ans[,"Row.names"]
   ans[,!names(ans) %in% "Row.names"]
 }, list_ss2)
+
+regoutput_ss_panel$vars = row.names(regoutput_ss_panel)
 
 write.xlsx(regoutput_ss_panel, "regoutput_ss_panel.xlsx", col.names = TRUE, row.names = TRUE)
 
