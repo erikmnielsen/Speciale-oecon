@@ -30,20 +30,39 @@ func_coefs <- function(regression, name, type) {
   options(scipen=999, digits=4) 
   #options(scipen=0, digits=7) #default
   
-  if (type != "") {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, type=type)[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type=type)[,c(1,4)], siglvl)
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-    
-  } else {
-    
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC)[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
-  }
+  if (type=="Country"){
   
+  coef = coeftest(regression, vcovPL(regression, cluster = ~ country, kernel = "Bartlett"))
+  
+    siglvl = stars.pval(coef[,4])
+    reg_coef = cbind(coef[,c(1,4)], siglvl)
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+
   reg_coef
+  
+  } else if (type=="Year"){
+    
+    coef = coeftest(regression, vcovPL(regression, cluster = ~ year, kernel = "Bartlett"))
+    
+    siglvl = stars.pval(coef[,4])
+    reg_coef = cbind(coef[,c(1,4)], siglvl)
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    reg_coef
+    
+    
+  }else {
+    
+    coef = coeftest(regression, vcovPL(regression, kernel = "Bartlett"))
+    
+    siglvl = stars.pval(coef[,4])
+    reg_coef = cbind(coef[,c(1,4)], siglvl)
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    reg_coef
+    
+    
+  }
   
 }
   
@@ -51,8 +70,10 @@ func_coefs <- function(regression, name, type) {
   
   options(scipen=999, digits=4) 
   
-  siglvl = stars.pval(coeftest(regression, vcovHAC)[,4])
-  reg_coef = cbind(coeftest(regression, vcovHAC)[,c(1,4)], siglvl)
+  coef = coeftest(regression, vcovPL(regression, kernel = "Bartlett"))
+  
+  siglvl = stars.pval(coef[,4])
+  reg_coef = cbind(coef[,c(1,4)], siglvl)
   colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
   
   reg_coef
@@ -610,15 +631,15 @@ lsdv.c_fec2  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod
 lsdv.c_fec2_pop  = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + wkgpop_logchanges, data=c_panel_lags)
 
 #Robuste standard fejl
-lsdv.c_pool1_coef = func_coefs(lsdv.c_pool1, "c_pool1", "HC3") # giver ikke nogen forskel at tilføje method=arrelano
-#lsdv.c_fey1_coef = func_coefs(lsdv.c_fey1, "c_fey1", "HC3")
-lsdv.c_fec1_coef = func_coefs(lsdv.c_fec1, "c_fec1", "HC3")
-#lsdv.c_fecy1_coef = func_coefs(lsdv.c_fecy1, "c_fecy1", "HC3")
-lsdv.c_pool2_coef = func_coefs(lsdv.c_pool2, "c_pool2", "HC3")
-#lsdv.c_fey2_coef = func_coefs(lsdv.c_fey2, "c_fey2", "HC3")
-lsdv.c_fec2_coef = func_coefs(lsdv.c_fec2, "c_fec2", "HC3")
-#lsdv.c_fecy2_coef = func_coefs(lsdv.c_fecy2, "c_fecy2", "HC3")
-lsdv.c_fec2_pop_coef = func_coefs(lsdv.c_fec2_pop, "c_fec2_pop", "HC3")
+lsdv.c_pool1_coef = func_coefs(lsdv.c_pool1, "c_pool1", "Year") # giver ikke nogen forskel at tilføje method=arrelano
+#lsdv.c_fey1_coef = func_coefs(lsdv.c_fey1, "c_fey1")
+lsdv.c_fec1_coef = func_coefs(lsdv.c_fec1, "c_fec1", "Year")
+#lsdv.c_fecy1_coef = func_coefs(lsdv.c_fecy1, "c_fecy1")
+lsdv.c_pool2_coef = func_coefs(lsdv.c_pool2, "c_pool2", "Year")
+#lsdv.c_fey2_coef = func_coefs(lsdv.c_fey2, "c_fey2")
+lsdv.c_fec2_coef = func_coefs(lsdv.c_fec2, "c_fec2", "Year")
+#lsdv.c_fecy2_coef = func_coefs(lsdv.c_fecy2, "c_fecy2")
+lsdv.c_fec2_pop_coef = func_coefs(lsdv.c_fec2_pop, "c_fec2_pop", "Year")
 
 
 regoutput_c_panel <- Reduce(function(a,b){
@@ -847,6 +868,8 @@ ci_panel_1 = na.omit(ci_panel_1)
 ci_panel_1_lags = func_regpanel(ci_panel, "MN_4", 2) #med lags
 ci_panel_1_lags = na.omit(ci_panel_1_lags)
 
+ci_panel_1_lags = as.data.frame(ci_panel_1_lags)
+
 #med vægte
 lsdv.ci_pool2 = lm(emp_logchanges ~ prod_logchanges, data=ci_panel_1, weights = wgt_i_avg)
 lsdv.ci_fec2 = lm(emp_logchanges ~ prod_logchanges + factor(country), data=ci_panel_1, weights = wgt_i_avg) 
@@ -869,7 +892,11 @@ lsdv.ci_feciy3 = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + pr
 lsdv.ci_feciy3_pop = lm(emp_logchanges ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + wkgpop_logchanges + factor(country) + factor(code) + factor(year), data=ci_panel_1_lags, weights = wgt_i_avg)
 
 coeftest(lsdv.ci_pool3, vcovHAC(lsdv.ci_pool3))
-coeftest(lsdv.ci_pool3, vcov. = vcovHC, type="HC3")
+coeftest(lsdv.ci_fec3, vcovPL(lsdv.ci_fec3))
+coeftest(lsdv.ci_fec3, vcovPL(lsdv.ci_fec3, cluster = ~ year, kernel = "Bartlett"))
+coeftest(lsdv.ci_fec3, vcovPL(lsdv.ci_fec3, cluster = ~ country + year, kernel = "Bartlett"))
+coeftest(lsdv.ci_fec3, vcovPL(lsdv.ci_fec3, cluster = ~ code , kernel = "Bartlett"))
+coeftest(lsdv.ci_fec3, vcov. = vcovHC, type="HC3")
 
 #Robuste standard fejl
 lsdv.ci_pool2_coef = func_coefs(lsdv.ci_pool2, "ci_pool2", "HC3") 
@@ -880,11 +907,11 @@ lsdv.ci_feciy2_pop_coef = func_coefs(lsdv.ci_feciy2_pop, "ci_feciy2_pop", "HC3")
 
 list_ci2=list(lsdv.ci_pool2_coef, lsdv.ci_fec2_coef, lsdv.ci_fecy2_coef,  lsdv.ci_feciy2_coef, lsdv.ci_feciy2_pop_coef)
 
-lsdv.ci_pool3_coef = func_coefs(lsdv.ci_pool3, "ci_pool3", "HC3") 
-lsdv.ci_fec3_coef = func_coefs(lsdv.ci_fec3, "ci_fec3", "HC3")
-lsdv.ci_fecy3_coef = func_coefs(lsdv.ci_fecy3, "ci_fecy3", "HC3")
-lsdv.ci_feciy3_coef = func_coefs(lsdv.ci_feciy3, "ci_feciy3", "HC3")
-lsdv.ci_feciy3_pop_coef = func_coefs(lsdv.ci_feciy3_pop, "ci_feciy3_pop", "HC3")
+lsdv.ci_pool3_coef = func_coefs(lsdv.ci_pool3, "ci_pool3") 
+lsdv.ci_fec3_coef = func_coefs(lsdv.ci_fec3, "ci_fec3")
+lsdv.ci_fecy3_coef = func_coefs(lsdv.ci_fecy3, "ci_fecy3")
+lsdv.ci_feciy3_coef = func_coefs(lsdv.ci_feciy3, "ci_feciy3")
+lsdv.ci_feciy3_pop_coef = func_coefs(lsdv.ci_feciy3_pop, "ci_feciy3_pop")
 
 list_ci3=list(lsdv.ci_pool3_coef, lsdv.ci_fec3_coef, lsdv.ci_fecy3_coef,  lsdv.ci_feciy3_coef, lsdv.ci_feciy3_pop_coef)
 
