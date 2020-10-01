@@ -279,7 +279,6 @@ func_regpanel <- function(dataset_1, method, type) {
       ind$dLP_BwoI_b4_lag2 = lag(ind$dLP_BwoI_b4, k = 2, shift = "time")
       ind$dLP_BwoI_b4_lag3 = lag(ind$dLP_BwoI_b4, k = 3, shift = "time")
       
-      ind = na.omit(ind)
       
       #beta1 variable, sectoral spillover:
       
@@ -303,6 +302,8 @@ func_regpanel <- function(dataset_1, method, type) {
       ind$dLP_I_b4_lag1 = lag(ind$dLP_I_b4, k = 1, shift = "time")
       ind$dLP_I_b4_lag2 = lag(ind$dLP_I_b4, k = 2, shift = "time")
       ind$dLP_I_b4_lag3 = lag(ind$dLP_I_b4, k = 3, shift = "time")
+      
+      ind = na.omit(ind)
       
 
     } else if (method=="AS_5") {
