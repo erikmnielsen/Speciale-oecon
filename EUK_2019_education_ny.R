@@ -15,6 +15,7 @@ library(ggthemes)
 library(dplyr)
 library(gtools)
 library(lmtest)
+library(sandwich)
 
 CGR = function(x){
   sapply(1:length(x), function(y){
@@ -22,62 +23,85 @@ CGR = function(x){
   })
 }
 
-func_coefs <- function(regression, name, type, method) {
+func_coefs <- function(regression, name, type) {
   
   options(scipen=999, digits=4) 
   #options(scipen=0, digits=7) #default
   
-  if (type != "") {
+  if (type=="Country"){
     
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method, type=type)[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC, type=type)[,c(1,4)], siglvl)
+    coef = coeftest(regression, vcovPL(regression, cluster = ~ country, kernel = "Bartlett"))
+    
+    siglvl = stars.pval(coef[,4])
+    reg_coef = cbind(coef[,c(1,4)], siglvl)
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
     
-  }  else if (method != "") {
+    reg_coef
     
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method)[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
+  } else if (type=="Year"){
+    
+    coef = coeftest(regression, vcovPL(regression, cluster = ~ year, kernel = "Bartlett"))
+    
+    siglvl = stars.pval(coef[,4])
+    reg_coef = cbind(coef[,c(1,4)], siglvl)
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    reg_coef
+    
+    
+  }else if (type=="None"){
+    
+    coef = coeftest(regression, vcovPL(regression, cluster = NULL, kernel = "Bartlett"))
+    
+    siglvl = stars.pval(coef[,4])
+    reg_coef = cbind(coef[,c(1,4)], siglvl)
+    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    
+    reg_coef
+    
     
   } else {
     
-    siglvl = stars.pval(coeftest(regression, vcov. = vcovHC, method=method)[,4])
-    reg_coef = cbind(coeftest(regression, vcov. = vcovHC)[,c(1,4)], siglvl)
-    colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
+    NA
   }
   
-  
-  
-  
-  #coeftest(zz, vcov.=function(x) vcovHC(x, method="arellano", type="HC1", cluster="group"))
-  
-  reg_coef
-  
 }
-
-func_empprod <- function(method, type) {
   
-  #EUK_growthaccounts <- readRDS("~/OneDrive - Aalborg Universitet/10. SEMESTER (SPECIALE)/Speciale-oecon/Statistical_Growth-Accounts.rds")
+func_empprod <- function(type) {
+  
+  ### Data for produktivitet og beskæftigelse
   EUK_nationalaccounts <- readRDS("Data/Statistical_National-Accounts.rds")
-  EUK_nationalaccountslabour <- read_csv("education_csv.csv") %>% select(-X1)
-
-    
-    #AutorSalomons Industrier minus branche 3 :
-    
   data = EUK_nationalaccounts %>% filter(code %in% c("B","C","D","E","F","G","H","I","J","K","L","M_N"))
-  data_educ = EUK_nationalaccountslabour
+  
 
   data_emp = data %>% filter(var=="EMP") %>% mutate(EMP=value) %>% select(-var, -value)
   data_go = data %>% filter(var=="GO_Q") %>% mutate(GO=value) %>% select(country, code, year, GO)
   data = merge(data_emp, data_go, by=c("country","code", "year"), all.x = TRUE)
+  data = na.omit(data) #sletter rækker hvor enten GO eller EMP tal mangler
+  
+  #filtrering af lande/år
+  test = data %>% group_by(country, year) %>% count() #492 obs
+  data = merge(data, test, by=c("country", "year"), all.x = TRUE)
+  data = data %>% filter(country %in% c("AT", "BE", "CZ", "DE", "DK", "EE","EL", "FI",
+                                        "FR", "HR", "HU", "IT", "JP", "LV", "NL", "PL",
+                                        "PT", "RO", "SE", "SI", "SK", "US" ), n>=12)
+  
+  
+  ### Data for uddannelsesgrupper og andele af beskæftigelsen
+  EUK_nationalaccountslabour <- read_csv("education_csv.csv") %>% select(-X1)
+  data_educ = EUK_nationalaccountslabour
   data_educ$country = data_educ$Country
   data_educ$code = data_educ$Code
   data_educ$year = data_educ$variable
   data_educ = data_educ %>% select(country, code, year, Education, value)
+  
+  
+  ### Datasæt merges sammen 
   data = merge(data, data_educ, by=c("country","code", "year"), all.x = TRUE)
   data = na.omit(data) #sletter rækker hvor enten GO eller EMP tal mangler
   data = data %>% select(country, code, year, EMP, GO, Education, value)
   
+  # Vægte
   gns = data %>% group_by(country, code) %>% summarize(EMP_gns=sum(EMP))
   gns_2 = data %>% group_by(country) %>% summarize(EMP_gns_2=sum(EMP))
   gns = merge(gns, gns_2, by=c("country"), all.x = TRUE)
@@ -85,85 +109,62 @@ func_empprod <- function(method, type) {
   gns = gns %>% select(country, code, wgt_i_avg)
   data = merge(data, gns, by=c("country","code"), all.x = TRUE)
   
-  if (type==1) {
-    
-    data_type1 = data %>% filter(Education==1)
-    data_type1$id_ci = data_type1 %>% group_indices(country, code)
-    pdata = pdata.frame(data_type1, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
-    
-    pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
-    pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
-    pdata = na.omit(pdata)
-    data = pdata
   
-  } else if (type==2) {
-    
-    data_type2 = data %>% filter(Education==2)
-    data_type2$id_ci = data_type2 %>% group_indices(country, code)
-    pdata = pdata.frame(data_type2, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
-    
-    pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
-    pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
-    pdata = na.omit(pdata)
-    
-  } else if (type==3) {
-      
-    data_type3 = data %>% filter(Education==3)
-    data_type3$id_ci = data_type3 %>% group_indices(country, code)
-    pdata = pdata.frame(data_type3, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
-    
-    pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
-    pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
-    pdata = na.omit(pdata)
-    
-  } else {print("Error: forkert antal brancher")}
+  ### Paneldata laves udfra education type
+  data_type = data %>% filter(Education==type)
+  data_type$id_ci = data_type %>% group_indices(country, code)
+  pdata = pdata.frame(data_type, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
   
-  #Kodning af variable:
-
+  pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
+  pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
+  
+  pdata = na.omit(pdata)
+  
+  #skal der bruges lags?
+  pdata$prod_logchanges_lag1 = lag(pdata$prod_logchanges, k = 1, shift = "time")
+  pdata$prod_logchanges_lag2 = lag(pdata$prod_logchanges, k = 2, shift = "time")
+  pdata$prod_logchanges_lag3 = lag(pdata$prod_logchanges, k = 3, shift = "time")
+  
+  pdata
   
 }
 
-c_panel_1 = func_empprod(,1)
-na.omit(c_panel_1)
-lsdv.c_pool1 = lm(educshare_changes ~ prod_logchanges, data=c_panel_1, weights = wgt_i_avg)
-lsdv.1 = func_coefs(lsdv.c_pool1, "c_pool1", "HC3")
+# uden lags
+panel_lowskill = func_empprod(1)
+lowskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=panel_lowskill, weights = wgt_i_avg)
+lowskill_coef = func_coefs(lowskill, "low_skill", "Country")
 
-lsdv.c_pool1 = lm(educshare_changes ~ prod_logchanges + factor(country), data=c_panel_1, weights = wgt_i_avg)
-lsdv.2 = func_coefs(lsdv.c_pool1, "c_fec1", "HC3")
+panel_midskill = func_empprod(2)
+midskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=panel_midskill, weights = wgt_i_avg)
+midskill_coef = func_coefs(midskill, "mid_skill", "Country")
 
-lsdv.c_pool1 = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(year), data=c_panel_1, weights = wgt_i_avg)
-lsdv.3 = func_coefs(lsdv.c_pool1, "c_fecy1", "HC3")
+panel_highskill = func_empprod(3)
+highskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=panel_highskill, weights = wgt_i_avg)
+highskill_coef = func_coefs(highskill, "high_skill", "Country")
 
-lsdv.c_pool1 = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=c_panel_1, weights = wgt_i_avg)
-lsdv.4 = func_coefs(lsdv.c_pool1, "c_fecyi1", "HC3")
+# med lags
+panel_lowskill_lags = na.omit(panel_lowskill)
+lowskill_lags = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=panel_lowskill_lags, weights = wgt_i_avg)
+lowskill_lags_coef = func_coefs(lowskill_lags, "low_skill_lags", "Country")
 
-c_panel_2 = func_empprod(,2)
-na.omit(c_panel_2)
-lsdv.c_pool2 = lm(educshare_changes ~ prod_logchanges, data=c_panel_2, weights = wgt_i_avg)
-lsdv.5 = func_coefs(lsdv.c_pool2, "c_pool2", "HC3")
+panel_midskill_lags  = na.omit(panel_midskill)
+midskill_lags  = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=panel_midskill_lags , weights = wgt_i_avg)
+midskill_lags_coef = func_coefs(midskill_lags , "mid_skill_lags ", "Country")
 
-lsdv.c_pool2 = lm(educshare_changes ~ prod_logchanges + factor(country), data=c_panel_2, weights = wgt_i_avg)
-lsdv.6 = func_coefs(lsdv.c_pool2, "c_fec2", "HC3")
+panel_highskill_lags  = na.omit(panel_highskill)
+highskill_lags  = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=panel_highskill_lags, weights = wgt_i_avg)
+highskill_lags_coef = func_coefs(highskill_lags , "high_skill_lags ", "Country")
 
-lsdv.c_pool2 = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(year), data=c_panel_2, weights = wgt_i_avg)
-lsdv.7 = func_coefs(lsdv.c_pool2, "c_fecy2", "HC3")
+# eksporter
+regoutput_share_panel <- Reduce(function(a,b){
+  ans <- merge(a,b,by="row.names", all=T)
+  row.names(ans) <- ans[,"Row.names"]
+  ans[,!names(ans) %in% "Row.names"]
+}, list(lowskill_coef, midskill_coef, highskill_coef, lowskill_lags_coef, midskill_lags_coef, highskill_lags_coef))
 
-lsdv.c_pool2 = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=c_panel_2, weights = wgt_i_avg)
-lsdv.8 = func_coefs(lsdv.c_pool2, "c_fecyi2", "HC3")
+regoutput_share_panel$vars = row.names(regoutput_share_panel)
+write_xlsx(regoutput_share_panel, "regoutput_share_panel.xlsx", col_names = TRUE)
 
-c_panel_3 = func_empprod(,3)
-na.omit(c_panel_3)
-lsdv.c_pool3 = lm(educshare_changes ~ prod_logchanges, data=c_panel_3, weights = wgt_i_avg)
-lsdv.9 = func_coefs(lsdv.c_pool3, "c_pool3", "HC3")
-
-lsdv.c_pool3 = lm(educshare_changes ~ prod_logchanges + factor(country), data=c_panel_3, weights = wgt_i_avg)
-lsdv.10 = func_coefs(lsdv.c_pool3, "c_fec3", "HC3")
-
-lsdv.c_pool3 = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(year), data=c_panel_3, weights = wgt_i_avg)
-lsdv.11 = func_coefs(lsdv.c_pool3, "c_fecy3", "HC3")
-
-lsdv.c_pool3 = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=c_panel_3, weights = wgt_i_avg)
-lsdv.12 = func_coefs(lsdv.c_pool3, "c_fecyi3", "HC3")
 
 
 table(data$country, data$year)

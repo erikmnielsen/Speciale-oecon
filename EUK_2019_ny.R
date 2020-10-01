@@ -130,8 +130,11 @@ func_empprod <- function(method, type) {
   #filtrering af lande/år hvor der mangler FOR mange industrier
   test = data %>% group_by(country, year) %>% count() #der skal være 32 industrier for hvert år i hvert land
   test2 = test %>% filter(n!=32)
+  
   data = merge(data, test, by=c("country", "year"), all.x = TRUE)
   data = data %>% filter(n>=28)
+  
+  lande = data %>% select(country) %>% unique()
 
   
   #populationsvariabel
@@ -624,7 +627,7 @@ write_xlsx(regoutput_c_panel, "regoutput_c_panel.xlsx", col_names = TRUE)
 }
 
 
-# Country industry panel --------------------------------------------------
+ # Country industry panel --------------------------------------------------
 
 #AS: Industry-by-country fixed effects are already implicitly taken out by first-differencing in the stacked firstdifference model.
 #OBS AS bruger ikke lags i denne pga insignifikans
