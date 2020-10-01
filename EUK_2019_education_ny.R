@@ -76,7 +76,7 @@ func_empprod <- function(method, type) {
   data_educ = data_educ %>% select(country, code, year, Education, value)
   data = merge(data, data_educ, by=c("country","code", "year"), all.x = TRUE)
   data = na.omit(data) #sletter rækker hvor enten GO eller EMP tal mangler
-  data = data %>% select(country, code, year, EMP, GO, Education, sum_value)
+  data = data %>% select(country, code, year, EMP, GO, Education, value)
   
   gns = data %>% group_by(country, code) %>% summarize(EMP_gns=sum(EMP))
   gns_2 = data %>% group_by(country) %>% summarize(EMP_gns_2=sum(EMP))
