@@ -59,21 +59,21 @@ func_empprod <- function(method, type) {
   
   #EUK_growthaccounts <- readRDS("~/OneDrive - Aalborg Universitet/10. SEMESTER (SPECIALE)/Speciale-oecon/Statistical_Growth-Accounts.rds")
   EUK_nationalaccounts <- readRDS("Data/Statistical_National-Accounts.rds")
-  EUK_nationalaccountslabour <- read_csv("reg_education.csv") %>% select(-X1)
+  EUK_nationalaccountslabour <- read_csv("education_csv.csv") %>% select(-X1)
 
     
     #AutorSalomons Industrier minus branche 3 :
     
   data = EUK_nationalaccounts %>% filter(code %in% c("B","C","D","E","F","G","H","I","J","K","L","M_N"))
-  data_educ = read_csv("reg_education.csv") %>% select(-X1)
+  data_educ = EUK_nationalaccountslabour
 
   data_emp = data %>% filter(var=="EMP") %>% mutate(EMP=value) %>% select(-var, -value)
   data_go = data %>% filter(var=="GO_Q") %>% mutate(GO=value) %>% select(country, code, year, GO)
   data = merge(data_emp, data_go, by=c("country","code", "year"), all.x = TRUE)
   data_educ$country = data_educ$Country
   data_educ$code = data_educ$Code
-  data_educ$year = data_educ$Year
-  data_educ = data_educ %>% select(country, code, year, Education, sum_value)
+  data_educ$year = data_educ$variable
+  data_educ = data_educ %>% select(country, code, year, Education, value)
   data = merge(data, data_educ, by=c("country","code", "year"), all.x = TRUE)
   data = na.omit(data) #sletter rækker hvor enten GO eller EMP tal mangler
   data = data %>% select(country, code, year, EMP, GO, Education, sum_value)
@@ -91,9 +91,10 @@ func_empprod <- function(method, type) {
     data_type1$id_ci = data_type1 %>% group_indices(country, code)
     pdata = pdata.frame(data_type1, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
     
-    pdata$educshare_changes = diff(pdata$sum_value, lag = 1, shift = "time")
+    pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
     pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
     pdata = na.omit(pdata)
+    data = pdata
   
   } else if (type==2) {
     
@@ -101,7 +102,7 @@ func_empprod <- function(method, type) {
     data_type2$id_ci = data_type2 %>% group_indices(country, code)
     pdata = pdata.frame(data_type2, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
     
-    pdata$educshare_changes = diff(pdata$sum_value, lag = 1, shift = "time")
+    pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
     pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
     pdata = na.omit(pdata)
     
@@ -111,7 +112,7 @@ func_empprod <- function(method, type) {
     data_type3$id_ci = data_type3 %>% group_indices(country, code)
     pdata = pdata.frame(data_type3, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
     
-    pdata$educshare_changes = diff(pdata$sum_value, lag = 1, shift = "time")
+    pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
     pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
     pdata = na.omit(pdata)
     
