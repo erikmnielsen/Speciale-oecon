@@ -1481,3 +1481,12 @@ ggplot(data=DK_exeff_2_long, aes(x=year, y=emp_basechange_pct, group=branche, co
 # TOTAL EFFECT
 
 }
+
+
+#### DESCRIPTIVE - Predicted cumulative percentage employment change for skill groups
+
+#tilføj shares til 
+
+DK_effects
+
+
