@@ -67,7 +67,8 @@ func_coefs <- function(regression, name, type) {
   
 }
   
-func_empprod <- function(type) {
+#Datasæt konstrueres
+{
   
   ### Data for produktivitet og beskæftigelse
   EUK_nationalaccounts <- readRDS("Data/Statistical_National-Accounts.rds")
@@ -95,11 +96,17 @@ func_empprod <- function(type) {
   data_educ$year = data_educ$variable
   data_educ = data_educ %>% select(country, code, year, Education, value)
   
+  lowskill = data_educ %>% filter(Education=="1") %>% mutate(lowskill=value) %>% select(-Education, -value)
+  midskill = data_educ %>% filter(Education=="2") %>% mutate(midskill=value) %>% select(-Education, -value)
+  highskill = data_educ %>% filter(Education=="3") %>% mutate(highskill=value) %>% select(-Education, -value)
+  
+  data_educ = merge(lowskill, midskill, by=c("country","code", "year"), all.x = TRUE)
+  data_educ = merge(data_educ, highskill, by=c("country","code", "year"), all.x = TRUE)
   
   ### Datasæt merges sammen 
   data = merge(data, data_educ, by=c("country","code", "year"), all.x = TRUE)
   data = na.omit(data) #sletter rækker hvor enten GO eller EMP tal mangler
-  data = data %>% select(country, code, year, EMP, GO, Education, value)
+  data = data %>% select(country, code, year, EMP, GO, lowskill, midskill, highskill)
   
   # Vægte
   gns = data %>% group_by(country, code) %>% summarize(EMP_gns=sum(EMP))
@@ -110,49 +117,50 @@ func_empprod <- function(type) {
   data = merge(data, gns, by=c("country","code"), all.x = TRUE)
   
   
-  ### Paneldata laves udfra education type
-  data_type = data %>% filter(Education==type)
-  data_type$id_ci = data_type %>% group_indices(country, code)
-  pdata = pdata.frame(data_type, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
-  
-  pdata$educshare_changes = diff(pdata$value, lag = 1, shift = "time")
+  ### Paneldata laves 
+  data$id_ci = data %>% group_indices(country, code)
+  pdata = pdata.frame(data, index = c("id_ci", "year")) #Hvis R melder duplikater, hvilket bare skyldes at der er to variable for hver
+  pdata$lowskill_changes = diff(pdata$lowskill, lag = 1, shift = "time")
+  pdata$midskill_changes = diff(pdata$midskill, lag = 1, shift = "time")
+  pdata$highskill_changes = diff(pdata$highskill, lag = 1, shift = "time")
   pdata$prod_logchanges = diff(log(pdata$GO/pdata$EMP), lag = 1, shift = "time")*100
-  
   pdata = na.omit(pdata)
   
-  #skal der bruges lags?
-  pdata$prod_logchanges_lag1 = lag(pdata$prod_logchanges, k = 1, shift = "time")
-  pdata$prod_logchanges_lag2 = lag(pdata$prod_logchanges, k = 2, shift = "time")
-  pdata$prod_logchanges_lag3 = lag(pdata$prod_logchanges, k = 3, shift = "time")
   
-  pdata
+  skill_means = data %>% group_by(country, code) %>% summarize(lowskill_gns=mean(lowskill), midskill_gns=mean(midskill), highskill_gns=mean(highskill))
+  # skill_means$tot = skill_means$lowskill_gns + skill_means$midskill_gns + skill_means$highskill_gns #tester om det summerer til 100
+  skill_means_DK = skill_means %>% filter(country=="DK")
+  
+  saveRDS(skill_means_DK, file = "skill_means_DK_rds") # Save an object to a file
+  
+  #skal der bruges lags?
+  pdata_lags = pdata
+  pdata_lags$prod_logchanges_lag1 = lag(pdata_lags$prod_logchanges, k = 1, shift = "time")
+  pdata_lags$prod_logchanges_lag2 = lag(pdata_lags$prod_logchanges, k = 2, shift = "time")
+  pdata_lags$prod_logchanges_lag3 = lag(pdata_lags$prod_logchanges, k = 3, shift = "time")
+  
+  pdata_lags = na.omit(pdata_lags)
   
 }
 
-# uden lags
-panel_lowskill = func_empprod(1)
-lowskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=panel_lowskill, weights = wgt_i_avg)
+#uden lags
+lowskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=pdata, weights = wgt_i_avg)
 lowskill_coef = func_coefs(lowskill, "low_skill", "Country")
 
-panel_midskill = func_empprod(2)
-midskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=panel_midskill, weights = wgt_i_avg)
+midskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=pdata, weights = wgt_i_avg)
 midskill_coef = func_coefs(midskill, "mid_skill", "Country")
 
-panel_highskill = func_empprod(3)
-highskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=panel_highskill, weights = wgt_i_avg)
+highskill = lm(educshare_changes ~ prod_logchanges + factor(country) + factor(code) + factor(year), data=pdata, weights = wgt_i_avg)
 highskill_coef = func_coefs(highskill, "high_skill", "Country")
 
 # med lags
-panel_lowskill_lags = na.omit(panel_lowskill)
-lowskill_lags = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=panel_lowskill_lags, weights = wgt_i_avg)
+lowskill_lags = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=pdata_lags, weights = wgt_i_avg)
 lowskill_lags_coef = func_coefs(lowskill_lags, "low_skill_lags", "Country")
 
-panel_midskill_lags  = na.omit(panel_midskill)
-midskill_lags  = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=panel_midskill_lags , weights = wgt_i_avg)
+midskill_lags  = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=pdata_lags, weights = wgt_i_avg)
 midskill_lags_coef = func_coefs(midskill_lags , "mid_skill_lags ", "Country")
 
-panel_highskill_lags  = na.omit(panel_highskill)
-highskill_lags  = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=panel_highskill_lags, weights = wgt_i_avg)
+highskill_lags  = lm(educshare_changes ~ prod_logchanges + prod_logchanges_lag1 + prod_logchanges_lag2 + prod_logchanges_lag3 + factor(country) + factor(code) + factor(year), data=pdata_lags, weights = wgt_i_avg)
 highskill_lags_coef = func_coefs(highskill_lags , "high_skill_lags ", "Country")
 
 # eksporter
@@ -170,56 +178,32 @@ write_xlsx(regoutput_share_panel, "regoutput_share_panel.xlsx", col_names = TRUE
 table(data$country, data$year)
 
 
-#### DESCRIPTIVE - Predicted cumulative percentage employment change by skill group from productivity growth originating in five sectors
+min = as.Date("2009-1-1")
+max = NA
 
-#To quantify the non-neutrality of productivity growth for employment by skill, we calculate a variant of equation (5) above 
-#where we scale predicted employment growth by industry as a function of both internal and external productivity growth by
-#the average share of industry employment comprised by low-, middle-, and high education workers
+pdata$year <- as.Date(ISOdate(pdata$year, 1, 1))
 
-#Paralleling our earlier calculations for aggregate employment, we normalize these predicted employment impacts by the base 
-#employment level of each skill group in each country to obtain implied proportional impacts. This scaling also accounts for
-#the fact that the three major skill groups are not typically equally large,
+pdata_dk = pdata %>% filter(country=="DK")
 
+pdata_dk_low = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="low")
+pdata$lowskill_changes = diff(pdata$lowskill, lag = 1, shift = "time")
 
+pdata_dk_mid = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="mid")
+pdata_dk_high = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="high")
+pdata_dk_all = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
 
-#tror vi skal brugen en variation af denne:
+pdata_dk_stat = rbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
 
-DK_effects = ci_panel_ss %>%  filter(country=="DK") %>% group_by(code) %>% mutate(baseyearEMP = EMP[year == 2009]) %>% select(country, year, code, branche, EMP, EMP_b, EMP_c, GO, prod_logchanges, baseyearEMP, 
-                                                                                                                              dLP_BwoI_b1 , dLP_BwoI_b1_lag1 , dLP_BwoI_b1_lag2 , dLP_BwoI_b1_lag3 ,
-                                                                                                                              dLP_BwoI_b2 , dLP_BwoI_b2_lag1 , dLP_BwoI_b2_lag2 , dLP_BwoI_b2_lag3 ,
-                                                                                                                              dLP_BwoI_b3 , dLP_BwoI_b3_lag1 , dLP_BwoI_b3_lag2 , dLP_BwoI_b3_lag3 ,
-                                                                                                                              dLP_BwoI_b4 , dLP_BwoI_b4_lag1 , dLP_BwoI_b4_lag2 , dLP_BwoI_b4_lag3)
-
-
-
-DK_internal_and_external = DK_effects %>% mutate(emp_change = ifelse(year==1999,0, prod_logchanges * (exp(-0.204)-1)
-                                                                     
-                                                                     
-                                                                     (dLP_BwoI_b1 * (exp(0.027)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1)) + 
-                                                         (dLP_BwoI_b2 * (exp(-0.056)-1)) + (dLP_BwoI_b2_lag1 * (exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1)) + 
-                                                         (dLP_BwoI_b3 * (exp(0.079)-1))  + (dLP_BwoI_b3_lag1 * (exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) + 
-                                                         (dLP_BwoI_b4 * (exp(0.130)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1))))
-
-
-
-DK_exeff_1 = DK_exeff_1 %>% group_by(code) %>%  mutate(cumsum_EMP = cumsum(emp_change))
-DK_exeff_1 = DK_exeff_1 %>% mutate(emp_basechange = baseyearEMP *(cumsum_EMP/100))  #base employment level of each skill group
-
-DK_exeff_1 = DK_exeff_1 %>% group_by(branche, year) %>% summarise(sumEMPchange=sum(emp_basechange), EMP_c_base= 1736) #skal akkumuleres for de tre skill grupper og ikke brancher
-DK_exeff_1 = as.data.frame(DK_exeff_1) %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100)
-
-
-DK_exeff_1_all = DK_exeff_1 %>% group_by(year) %>% summarise(sumEMPchange=sum(sumEMPchange), EMP_c_base = 1736)
-DK_exeff_1_all = DK_exeff_1_all %>% mutate(emp_basechange_pct = (sumEMPchange/EMP_c_base)*100, branche="alle")
-DK_exeff_1_all = DK_exeff_1_all %>% select(branche, year, sumEMPchange, EMP_c_base, emp_basechange_pct)
-DK_exeff_1 = rbind(DK_exeff_1,DK_exeff_1_all)
-
-
-
-
-
-
-
+ggplot(data=pdata_dk_stat, aes(x=year, y=tot, group=educ, colour=educ)) + 
+  geom_point() + 
+  geom_line() +
+  xlab("Tid") + ylab("Kumulativ prædikterede ændring i beskæftigelse, pct.") +
+  ggtitle("Kumulativ ændring i beskæftigelse i Danmark") +
+  guides(colour=guide_legend(title="Branche")) +
+  theme_economist() +
+  theme(legend.position="right") +
+  scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+  scale_x_date(limits = c(min, max))
 
 
 
