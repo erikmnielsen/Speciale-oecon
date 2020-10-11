@@ -25,6 +25,7 @@ CGR = function(x){
   })
 }
 
+
 func_coefs <- function(regression, name, type) {
   
   options(scipen=999, digits=4) 
@@ -177,7 +178,7 @@ func_empprod <- function(method, type) {
   
   }
   
-pop_var = na.omit(pop_var)
+  pop_var = na.omit(pop_var)
 
   # forberedelse af datasættet - land eller industriniveau
   if (type=="industrier") {
@@ -627,7 +628,7 @@ write_xlsx(regoutput_c_panel, "regoutput_c_panel.xlsx", col_names = TRUE)
 }
 
 
- # Country industry panel --------------------------------------------------
+# Country industry panel --------------------------------------------------
 
 #AS: Industry-by-country fixed effects are already implicitly taken out by first-differencing in the stacked firstdifference model.
 #OBS AS bruger ikke lags i denne pga insignifikans
@@ -1070,34 +1071,35 @@ write_xlsx(regoutput_ss_panel, "regoutput_ss_panel.xlsx", col_names = TRUE)
 
 #Forberedelse:
 {
-#lande og industrier
-{
-test_c = func_empprod("MN_4","lande")
-test_i = func_empprod("MN_4","industrier")
-test_c = na.omit(test_c)
+  
+  test_c = func_empprod("MN_4","lande")
+  test_i = func_empprod("MN_4","industrier")
+  
+
+#lande gns på tværs af år
+c_avg_niveau  = test_c %>% group_by(country) %>% summarise_at(vars(EMP, GO), list(mean = mean))
+c_avg_ændringer  = na.omit(test_c) %>% group_by(country) %>% summarise_at(vars(EMP, GO, emp_logchanges, prod_logchanges), list(mean = mean))
+
+#industri gns på tværs af år
+i_avg_niveau = test_i %>% group_by(code) %>% summarise_at(vars(EMP, GO), list(mean = mean))
+i_avg_ændringer = na.omit(test_i) %>% group_by(code) %>% summarise_at(vars(EMP, GO, emp_logchanges, prod_logchanges), list(mean = mean))
+
+#industri gns på tværs af år - Danmark
+DK_i_avg_niveau = test_i %>% filter(country=="DK") %>% group_by(code) %>% summarise_at(vars(EMP, GO), list(mean = mean))
+DK_i_avg_ændringer = na.omit(test_i) %>% filter(country=="DK") %>% group_by(code) %>% summarise_at(vars(EMP, GO, emp_logchanges, prod_logchanges), list(mean = mean))
 
 
-#c_tot <- test_c %>% group_by(year) %>% summarize(EMP_c=sum(EMP), GO_c=sum(GO))
-c_tot = test_c %>% group_by(year) %>% summarise_at(vars(EMP, GO), list(mean = mean))
-c_tot$id = "tot"
-c_tot = pdata.frame(c_tot, index = c("id", "year")) 
+# på tværs af lande
+c_panel_avg = na.omit(test_c) %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
 
-#c_tot$emp_logchanges = diff(log(c_tot$EMP_c), lag = 1, shift = "time")*100
-#c_tot$prod_logchanges = diff(log(c_tot$GO_c/c_tot$EMP_c), lag = 1, shift = "time")*100
-
-c_tot$emp_logchanges = diff(log(c_tot$EMP_mean), lag = 1, shift = "time")*100
-c_tot$prod_logchanges = diff(log(c_tot$GO_mean/c_tot$EMP_mean), lag = 1, shift = "time")*100 # problemt ved gns på denne måde er at landene ikk er vægtet
-c_tot_filter = c_tot %>% filter(year %in% c(2000:2015))
-
-c_panel_avg = test_c %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
-}
 
 #brancher
 {
-b_tot <- test_i %>% group_by(country,year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
+b_tot <- test_i %>% group_by(country, year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
 b_tot = b_tot %>% ungroup()
 b_tot$id_ci = b_tot %>% group_indices(country, branche) 
 
+#cumulative emplyment share
 sumEMP <- b_tot %>% group_by(country, year) %>% summarize(sum_EMP=sum(EMP_b))
 b_tot = merge(b_tot, sumEMP, by=c("country","year"), all.x = TRUE)
 b_tot$share_EMP = (b_tot$EMP_b/b_tot$sum_EMP)*100
@@ -1106,6 +1108,7 @@ b_tot$share_EMP_ppchange = diff(b_tot$share_EMP, lag = 1, shift = "time")
 b_tot$share_EMP_ppchange = ifelse(is.na(b_tot$share_EMP_ppchange)==T,0,b_tot$share_EMP_ppchange)
 b_tot = b_tot %>% group_by(country, branche) %>% mutate(cumsum_EMP = cumsum(share_EMP_ppchange))
 
+#cumulative productivity
 b_tot = pdata.frame(b_tot, index = c("id_ci", "year")) 
 b_tot$emp_logchanges = diff(log(b_tot$EMP_b), lag = 1, shift = "time")*100
 b_tot$prod_logchanges = diff(log(b_tot$GO_b/b_tot$EMP_b), lag = 1, shift = "time")*100
@@ -1116,6 +1119,19 @@ b_tot$prod_logCGR <- lag(b_tot$prod_logCGR, k= 1, shift="time")
 b_tot$prod_logCGR <- ifelse(is.na(b_tot$prod_logCGR)==T,0,b_tot$prod_logCGR)
 
 b_tot_avg = b_tot %>% group_by(branche, year) %>% summarise_at(vars(prod_logCGR, cumsum_EMP), list(mean = mean))
+
+#branche gns på tværs af år
+b_avg_ændringer = na.omit(b_tot) %>% group_by(branche) %>% summarise_at(vars(EMP_b, GO_b, emp_logchanges, prod_logchanges), list(mean = mean))
+
+#branche gns på tværs af år - Danmark
+DK_b_avg_ændringer = na.omit(b_tot) %>% filter(country=="DK") %>% group_by(branche) %>% summarise_at(vars(EMP_b, GO_b, emp_logchanges, prod_logchanges), list(mean = mean))
+
+
+
+
+
+
+
 }
 
 #datoformat
@@ -1381,10 +1397,10 @@ ggplot(data=DK_inteff, aes(x=year, y=emp_basechange_pct, group=branche, colour=b
 
 #viser hvordan branchen bliver påvirket af sector spillovers
 {
-DK_exeff_1 = DK_effects %>% mutate(emp_change = ifelse(year==1999,0, (dLP_BwoI_b1 * (exp(0.027)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1)) + 
-                                                         (dLP_BwoI_b2 * (exp(-0.056)-1)) + (dLP_BwoI_b2_lag1 * (exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1)) + 
-                                                         (dLP_BwoI_b3 * (exp(0.079)-1))  + (dLP_BwoI_b3_lag1 * (exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) + 
-                                                         (dLP_BwoI_b4 * (exp(0.130)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1))))
+DK_exeff_1 = DK_effects %>% mutate(emp_change = ifelse(year==1999,0,  (dLP_BwoI_b1 * (exp(0.015)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.012)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.021)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.004)-1)) + 
+                                                         (dLP_BwoI_b2 * (exp(0.115)-1)) + (dLP_BwoI_b2_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.059)-1)) + (dLP_BwoI_b2_lag3 * (exp(-0.003)-1)) + 
+                                                         (dLP_BwoI_b3 * (exp(0.143)-1)) + (dLP_BwoI_b3_lag1 * (exp(0.093)-1)) + (dLP_BwoI_b3_lag2 * (exp(0.004)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.024)-1)) +
+                                                         (dLP_BwoI_b4 * (exp(0.193)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.176)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.002)-1))))
 
 DK_exeff_1 = DK_exeff_1 %>% group_by(code) %>%  mutate(cumsum_EMP = cumsum(emp_change))
 DK_exeff_1 = DK_exeff_1 %>% mutate(emp_basechange = baseyearEMP *(cumsum_EMP/100))
@@ -1527,6 +1543,7 @@ ggplot(data=DK_neteff2, aes(x=year, y=neteffect, group=branche, colour=branche))
 
 #### DESCRIPTIVE - Predicted cumulative percentage employment change for skill groups
 
+
 DK_effects_skills = DK_effects %>% mutate(code_2 = ifelse(indnr == 2, "B",
                                                           ifelse(indnr %in% c(3,4,5,6,7,8,9,10,11,12,13,14,15), "C", #hele C))
                                                                  ifelse(indnr == 16, "D",
@@ -1542,11 +1559,11 @@ DK_effects_skills = DK_effects %>% mutate(code_2 = ifelse(indnr == 2, "B",
                                                                                                                                     NA)))))))))))))
   
 skill_means_DK = readRDS(file = "skill_means_DK_rds") %>% rename(code_2 = code)
-
 DK_effects_skills = merge(DK_effects_skills, skill_means_DK, by=c("country", "code_2"), all.x = TRUE)
-
 DK_effects_skills = DK_effects_skills[order(DK_effects_skills$code, DK_effects_skills$year),]
 
+#DK_effects_skills$year = as.numeric(levels(DK_effects_skills$year))[DK_effects_skills$year] 
+#DK_effects_skills = DK_effects_skills %>% filter(year > 2009)
 
 
 
@@ -1560,63 +1577,53 @@ DK_effects_skills = DK_effects_skills[order(DK_effects_skills$code, DK_effects_s
 #employment level of each skill group in each country to obtain implied proportional impacts. This scaling also accounts for
 #the fact that the three major skill groups are not typically equally large,
 
-
-
-#tror vi skal brugen en variation af denne:
-
-
-
-dLP_I_b1 + dLP_I_b1_lag1 + dLP_I_b1_lag2 + dLP_I_b1_lag3 +
-  dLP_I_b2 + dLP_I_b2_lag1 + dLP_I_b2_lag2 + dLP_I_b2_lag3 +
-  dLP_I_b3 + dLP_I_b3_lag1 + dLP_I_b3_lag2 + dLP_I_b3_lag3 +
-  dLP_I_b4 + dLP_I_b4_lag1 + dLP_I_b4_lag2 + dLP_I_b4_lag3
-
-
+# Country FE: 
+{
 DK_effects_lowskill = DK_effects_skills %>% mutate(emp_change = ifelse(year==1999,0, 
                                                                        (lowskill_gns/100) *
-                                                                       ((dLP_I_b1*(exp(-0.204)-1)) + #tilføj lags
-                                                                       (dLP_I_b2*(exp(-0.264)-1)) +
-                                                                       (dLP_I_b3*(exp(-0.416)-1)) +
-                                                                       (dLP_I_b4*(exp(-0.422)-1)) +
-                    
-                                                                       (dLP_BwoI_b1*(exp(0.027)-1)) + (dLP_BwoI_b1_lag1*(exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1)) + 
-                                                                       (dLP_BwoI_b2*(exp(-0.056)-1)) + (dLP_BwoI_b2_lag1*(exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1)) + 
-                                                                       (dLP_BwoI_b3*(exp(0.079)-1)) + (dLP_BwoI_b3_lag1*(exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) + 
-                                                                       (dLP_BwoI_b4*(exp(0.130)-1)) + (dLP_BwoI_b4_lag1*(exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1)))))
+                                                                       ((dLP_I_b1* (exp(-0.225)-1) + dLP_I_b1_lag1*(exp(0.082)-1) + dLP_I_b1_lag2*(exp(0.104)-1) + dLP_I_b1_lag3*(exp(0.073)-1)) + 
+                                                                       (dLP_I_b2* (exp(-0.283)-1) + dLP_I_b2_lag1*(exp(0.006)-1) + dLP_I_b2_lag2*(exp(-0.011)-1) + dLP_I_b2_lag3*(exp(-0.005)-1)) +
+                                                                       (dLP_I_b3*(exp(-0.407)-1) + dLP_I_b3_lag1*(exp(0.003)-1) + dLP_I_b3_lag2*(exp(0.048)-1) + dLP_I_b3_lag3*(exp(0.007)-1)) +
+                                                                       (dLP_I_b4*(exp(-0.384)-1) + dLP_I_b4_lag1*(exp(0.028)-1) + dLP_I_b4_lag2*(exp(0.070)-1) + dLP_I_b4_lag3*(exp(0.038)-1)) +
+                                                                       (dLP_BwoI_b1 * (exp(0.015)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.012)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.021)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.004)-1)) + 
+                                                                       (dLP_BwoI_b2 * (exp(0.115)-1)) + (dLP_BwoI_b2_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.059)-1)) + (dLP_BwoI_b2_lag3 * (exp(-0.003)-1)) + 
+                                                                       (dLP_BwoI_b3 * (exp(0.143)-1)) + (dLP_BwoI_b3_lag1 * (exp(0.093)-1)) + (dLP_BwoI_b3_lag2 * (exp(0.004)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.024)-1)) +
+                                                                       (dLP_BwoI_b4 * (exp(0.193)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.176)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.002)-1)))))
 
 DK_effects_midskill = DK_effects_skills %>% mutate(emp_change = ifelse(year==1999,0, 
                                                                        (midskill_gns/100) *
-                                                                         ((dLP_I_b1*(exp(-0.204)-1)) + #tilføj lags
-                                                                            (dLP_I_b2*(exp(-0.264)-1)) +
-                                                                            (dLP_I_b3*(exp(-0.416)-1)) +
-                                                                            (dLP_I_b4*(exp(-0.422)-1)) +
-                                                                            (dLP_BwoI_b1*(exp(0.027)-1)) + (dLP_BwoI_b1_lag1*(exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1)) + 
-                                                                            (dLP_BwoI_b2*(exp(-0.056)-1)) + (dLP_BwoI_b2_lag1*(exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1)) + 
-                                                                            (dLP_BwoI_b3*(exp(0.079)-1)) + (dLP_BwoI_b3_lag1*(exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) + 
-                                                                            (dLP_BwoI_b4*(exp(0.130)-1)) + (dLP_BwoI_b4_lag1*(exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1)))))
+                                                                         ((dLP_I_b1* (exp(-0.225)-1) + dLP_I_b1_lag1*(exp(0.082)-1) + dLP_I_b1_lag2*(exp(0.104)-1) + dLP_I_b1_lag3*(exp(0.073)-1)) + 
+                                                                            (dLP_I_b2* (exp(-0.283)-1) + dLP_I_b2_lag1*(exp(0.006)-1) + dLP_I_b2_lag2*(exp(-0.011)-1) + dLP_I_b2_lag3*(exp(-0.005)-1)) +
+                                                                            (dLP_I_b3*(exp(-0.407)-1) + dLP_I_b3_lag1*(exp(0.003)-1) + dLP_I_b3_lag2*(exp(0.048)-1) + dLP_I_b3_lag3*(exp(0.007)-1)) +
+                                                                            (dLP_I_b4*(exp(-0.384)-1) + dLP_I_b4_lag1*(exp(0.028)-1) + dLP_I_b4_lag2*(exp(0.070)-1) + dLP_I_b4_lag3*(exp(0.038)-1)) +
+                                                                            (dLP_BwoI_b1 * (exp(0.015)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.012)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.021)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.004)-1)) + 
+                                                                            (dLP_BwoI_b2 * (exp(0.115)-1)) + (dLP_BwoI_b2_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.059)-1)) + (dLP_BwoI_b2_lag3 * (exp(-0.003)-1)) + 
+                                                                            (dLP_BwoI_b3 * (exp(0.143)-1)) + (dLP_BwoI_b3_lag1 * (exp(0.093)-1)) + (dLP_BwoI_b3_lag2 * (exp(0.004)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.024)-1)) +
+                                                                            (dLP_BwoI_b4 * (exp(0.193)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.176)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.002)-1)))))                                                                    
 
 
 DK_effects_highskill = DK_effects_skills %>% mutate(emp_change = ifelse(year==1999,0, 
                                                                        (highskill_gns/100) *
-                                                                         ((dLP_I_b1*(exp(-0.204)-1)) + #tilføj lags
-                                                                            (dLP_I_b2*(exp(-0.264)-1)) +
-                                                                            (dLP_I_b3*(exp(-0.416)-1)) +
-                                                                            (dLP_I_b4*(exp(-0.422)-1)) +
-                                                                            (dLP_BwoI_b1*(exp(0.027)-1)) + (dLP_BwoI_b1_lag1*(exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1)) + 
-                                                                            (dLP_BwoI_b2*(exp(-0.056)-1)) + (dLP_BwoI_b2_lag1*(exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1)) + 
-                                                                            (dLP_BwoI_b3*(exp(0.079)-1)) + (dLP_BwoI_b3_lag1*(exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) + 
-                                                                            (dLP_BwoI_b4*(exp(0.130)-1)) + (dLP_BwoI_b4_lag1*(exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1)))))
+                                                                         ((dLP_I_b1* (exp(-0.225)-1) + dLP_I_b1_lag1*(exp(0.082)-1) + dLP_I_b1_lag2*(exp(0.104)-1) + dLP_I_b1_lag3*(exp(0.073)-1)) +
+                                                                            (dLP_I_b2* (exp(-0.283)-1) + dLP_I_b2_lag1*(exp(0.006)-1) + dLP_I_b2_lag2*(exp(-0.011)-1) + dLP_I_b2_lag3*(exp(-0.005)-1)) +
+                                                                            (dLP_I_b3*(exp(-0.407)-1) + dLP_I_b3_lag1*(exp(0.003)-1) + dLP_I_b3_lag2*(exp(0.048)-1) + dLP_I_b3_lag3*(exp(0.007)-1)) +
+                                                                            (dLP_I_b4*(exp(-0.384)-1) + dLP_I_b4_lag1*(exp(0.028)-1) + dLP_I_b4_lag2*(exp(0.070)-1) + dLP_I_b4_lag3*(exp(0.038)-1)) +
+                                                                            (dLP_BwoI_b1 * (exp(0.015)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.012)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.021)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.004)-1)) + 
+                                                                            (dLP_BwoI_b2 * (exp(0.115)-1)) + (dLP_BwoI_b2_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.059)-1)) + (dLP_BwoI_b2_lag3 * (exp(-0.003)-1)) + 
+                                                                            (dLP_BwoI_b3 * (exp(0.143)-1)) + (dLP_BwoI_b3_lag1 * (exp(0.093)-1)) + (dLP_BwoI_b3_lag2 * (exp(0.004)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.024)-1)) +
+                                                                            (dLP_BwoI_b4 * (exp(0.193)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.176)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.002)-1)))))
 
 DK_effects_all = DK_effects_skills %>% mutate(emp_change = ifelse(year==1999,0, 
-                                                                          ((dLP_I_b1*(exp(-0.204)-1)) + #tilføj lags
-                                                                             (dLP_I_b2*(exp(-0.264)-1)) +
-                                                                             (dLP_I_b3*(exp(-0.416)-1)) +
-                                                                             (dLP_I_b4*(exp(-0.422)-1)) +
-                                                                             (dLP_BwoI_b1*(exp(0.027)-1)) + (dLP_BwoI_b1_lag1*(exp(0.054)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.049)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.040)-1)) + 
-                                                                             (dLP_BwoI_b2*(exp(-0.056)-1)) + (dLP_BwoI_b2_lag1*(exp(-0.032)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.063)-1)) + (dLP_BwoI_b2_lag3 * (exp(0.015)-1)) + 
-                                                                             (dLP_BwoI_b3*(exp(0.079)-1)) + (dLP_BwoI_b3_lag1*(exp(0.049)-1)) + (dLP_BwoI_b3_lag2 * (exp(-0.031)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.025)-1)) + 
-                                                                             (dLP_BwoI_b4*(exp(0.130)-1)) + (dLP_BwoI_b4_lag1*(exp(0.158)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.027)-1)))))
+                                                                  ((dLP_I_b1* (exp(-0.225)-1) + dLP_I_b1_lag1*(exp(0.082)-1) + dLP_I_b1_lag2*(exp(0.104)-1) + dLP_I_b1_lag3*(exp(0.073)-1)) +
+                                                                     (dLP_I_b2* (exp(-0.283)-1) + dLP_I_b2_lag1*(exp(0.006)-1) + dLP_I_b2_lag2*(exp(-0.011)-1) + dLP_I_b2_lag3*(exp(-0.005)-1)) +
+                                                                     (dLP_I_b3*(exp(-0.407)-1) + dLP_I_b3_lag1*(exp(0.003)-1) + dLP_I_b3_lag2*(exp(0.048)-1) + dLP_I_b3_lag3*(exp(0.007)-1)) +
+                                                                     (dLP_I_b4*(exp(-0.384)-1) + dLP_I_b4_lag1*(exp(0.028)-1) + dLP_I_b4_lag2*(exp(0.070)-1) + dLP_I_b4_lag3*(exp(0.038)-1)) +
+                                                                     (dLP_BwoI_b1 * (exp(0.015)-1)) + (dLP_BwoI_b1_lag1 * (exp(0.012)-1)) + (dLP_BwoI_b1_lag2 * (exp(0.021)-1)) + (dLP_BwoI_b1_lag3 * (exp(0.004)-1)) + 
+                                                                     (dLP_BwoI_b2 * (exp(0.115)-1)) + (dLP_BwoI_b2_lag1 * (exp(0.054)-1)) + (dLP_BwoI_b2_lag2 * (exp(-0.059)-1)) + (dLP_BwoI_b2_lag3 * (exp(-0.003)-1)) + 
+                                                                     (dLP_BwoI_b3 * (exp(0.143)-1)) + (dLP_BwoI_b3_lag1 * (exp(0.093)-1)) + (dLP_BwoI_b3_lag2 * (exp(0.004)-1)) + (dLP_BwoI_b3_lag3 * (exp(-0.024)-1)) +
+                                                                     (dLP_BwoI_b4 * (exp(0.193)-1)) + (dLP_BwoI_b4_lag1 * (exp(0.176)-1)) + (dLP_BwoI_b4_lag2 * (exp(0.097)-1)) + (dLP_BwoI_b4_lag3 * (exp(-0.002)-1)))))
 
+}
 
 DK_lowskill = DK_effects_lowskill %>% group_by(code) %>% mutate(cumsum_EMP = cumsum(emp_change))
 DK_lowskill = DK_lowskill %>% mutate(emp_basechange = (baseyearEMP*lowskill_gns/100) * (cumsum_EMP/100)) #base employment level of each skill group
@@ -1655,11 +1662,13 @@ max = NA
 
 DK_skills$year <- as.Date(ISOdate(DK_skills$year, 1, 1))
 
+#predicted cumulative percentage employment change by skill group from productivity growth originating in five sectors
+
 ggplot(data=DK_skills, aes(x=year, y=emp_basechange_pct, group=education, colour=education)) + 
   geom_point() + 
   geom_line() +
-  xlab("Tid") + ylab("Kumulativ prædikterede ændring i beskæftigelse, pct.") +
-  ggtitle("Kumulativ ændring i beskæftigelse i Danmark") +
+  xlab("Tid") + ylab("Kumulativ prædikterede beskæftigelseæmdringer for kompetence grupperne") +
+  ggtitle("Kumulativ ændring i beskæftigelsen for de tre kompetencegrupper fra produktivitetsvækst med oprindelse i de fire brancher") +
   guides(colour=guide_legend(title="Branche")) +
   theme_economist() +
   theme(legend.position="right") +
