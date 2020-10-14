@@ -121,6 +121,25 @@ func_coefs <- function(regression, name, type) {
   gns = gns %>% select(country, code, wgt_i_avg)
   data = merge(data, gns, by=c("country","code"), all.x = TRUE)
   
+  #skill means eksporteres 
+  skill_means = data %>% group_by(country, code) %>% summarize(lowskill_gns=mean(lowskill), midskill_gns=mean(midskill), highskill_gns=mean(highskill))
+  skill_means2 = data %>% group_by(country) %>% summarize(lowskill_gns=mean(lowskill), midskill_gns=mean(midskill), highskill_gns=mean(highskill))
+  skill_means3 = data %>% group_by(country, code, year) %>% summarize(lowskill_gns=mean(lowskill), midskill_gns=mean(midskill), highskill_gns=mean(highskill))
+  skill_means4 = data %>% group_by(country, year) %>% summarize(lowskill_gns=mean(lowskill), midskill_gns=mean(midskill), highskill_gns=mean(highskill))
+  
+  
+  #skill_means$tot = skill_means$lowskill_gns + skill_means$midskill_gns + skill_means$highskill_gns #tester om det summerer til 100
+  skill_means_DK = skill_means %>% filter(country=="DK")
+  skill_means_DK2 = skill_means2 %>% filter(country=="DK")
+  skill_means_DK3 = skill_means3 %>% filter(country=="DK")
+  skill_means_DK4 = skill_means4 %>% filter(country=="DK")
+  saveRDS(skill_means_DK, file = "skill_means_DK_rds") # Savve an object to a file
+  saveRDS(skill_means_DK2, file = "skill_means_DK2_rds") # Save an object to a file
+  saveRDS(skill_means_DK3, file = "skill_means_DK3_rds") # Save an object to a file
+  saveRDS(skill_means_DK4, file = "skill_means_DK4_rds") # Save an object to a file
+  
+  
+  
   ### Paneldata laves 
   
   b_tot <- data %>% group_by(country, year, branche) %>% summarize(EMP_b=sum(EMP) , GO_b=sum(GO))
@@ -160,13 +179,6 @@ func_coefs <- function(regression, name, type) {
   pdata$dLP_BwoI_b4 = ifelse(pdata$branche=="b4", diff(log((pdata$GO_b4-pdata$GO)/(pdata$EMP_b4-pdata$EMP)), lag = 1, shift = "time")*100, diff(log(pdata$GO_b4/pdata$EMP_b4), lag = 1, shift = "time")*100)
   
   pdata = na.omit(pdata)
-  
-  #skill means eksporteres 
-  skill_means = data %>% group_by(country, code) %>% summarize(lowskill_gns=mean(lowskill), midskill_gns=mean(midskill), highskill_gns=mean(highskill))
-  #skill_means$tot = skill_means$lowskill_gns + skill_means$midskill_gns + skill_means$highskill_gns #tester om det summerer til 100
-  skill_means_DK = skill_means %>% filter(country=="DK")
-  saveRDS(skill_means_DK, file = "skill_means_DK_rds") # Save an object to a file
-  saveRDS(skill_means, file = "skill_means_rds") # Save an object to a file
   
   #skal der bruges lags?
   pdata_lags = pdata
