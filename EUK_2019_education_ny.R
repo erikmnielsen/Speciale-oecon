@@ -426,82 +426,61 @@ max = NA
 
 pdata$year <- as.Date(ISOdate(pdata$year, 1, 1))
 
-pdata_dk = pdata %>% filter(country=="DK") %>% select(-branche)
-
-pdata_dk_low = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="low")
-pdata_dk_mid = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="mid")
-pdata_dk_high = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="high")
-pdata_dk_all = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
-
-pdata_dk_stat2 = cbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
-
-pdata_dk_stat2$share1 = pdata_dk_stat2[,2]/pdata_dk_stat2[,11]
-pdata_dk_stat2$share2 = pdata_dk_stat2[,5]/pdata_dk_stat2[,11]
-pdata_dk_stat2$share3 = pdata_dk_stat2[,8]/pdata_dk_stat2[,11]
-
-pdata_dk_stat = rbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
-
-ggplot(data=pdata_dk_stat, aes(x=year, y=tot, group=educ, colour=educ)) + 
-  geom_point() + 
-  geom_line() +
-  xlab("Tid") + ylab("Kumulativ prædikterede ændring i beskæftigelse, pct.") +
-  ggtitle("Kumulativ ændring i beskæftigelse i Danmark") +
-  guides(colour=guide_legend(title="Branche")) +
-  theme_economist() +
-  theme(legend.position="right") +
-  scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
-  scale_x_date(limits = c(min, max))
-
-all = pdata_dk_stat %>% filter( educ != "all")
-all = merge(all, pdata_dk_all, by=c("year"), all.x = TRUE)
-all$share = all$tot.x/all$tot.y
-
-ggplot(data=all, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
-  geom_point() + 
-  geom_line() +
-  xlab("Tid") + ylab("Andele af beskæftigelsen") +
-  ggtitle("Udvikling i kompetencegruppernes andele af beskæftigelsen i Danmark") +
-  guides(colour=guide_legend(title="Kompetencegruppe")) +
-  theme_economist() +
-  theme(legend.position="right") +
-  scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
-  scale_x_date(limits = c(min, max))
-
-
-###
+###### for hele landet ---------------
 
 pdata_dk = pdata %>% filter(country=="DK")
 
-pdata_dk_low = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="low")
-pdata_dk_mid = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="mid")
-pdata_dk_high = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="high")
-pdata_dk_all = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
+pdata_dk_low = pdata_dk %>% group_by( year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="Ufaglærte")
+pdata_dk_mid = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="Mellemlang Uddannelse")
+pdata_dk_high = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="Højtuddannede")
+pdata_dk_all = pdata_dk %>% group_by(year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
 
 pdata_dk_stat2 = cbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
-
 pdata_dk_stat2$share1 = pdata_dk_stat2[,2]/pdata_dk_stat2[,11]
 pdata_dk_stat2$share2 = pdata_dk_stat2[,5]/pdata_dk_stat2[,11]
 pdata_dk_stat2$share3 = pdata_dk_stat2[,8]/pdata_dk_stat2[,11]
 
 pdata_dk_stat = rbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
 
-ggplot(data=pdata_dk_low, aes(x=year, y=tot, group=branche, colour=branche)) + 
-  geom_point() + 
-  geom_line() +
-  xlab("Tid") + ylab("Kumulativ prædikterede ændring i beskæftigelse, pct.") +
-  ggtitle("Kumulativ ændring i beskæftigelse i Danmark") +
-  guides(colour=guide_legend(title="Branche")) +
-  theme_economist() +
-  theme(legend.position="right") +
-  scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
-  scale_x_date(limits = c(min, max))
+  dk_all = pdata_dk_stat %>% filter( educ != "all")
+  dk_all = merge(dk_all, pdata_dk_all, by=c("year"), all.x = TRUE)
+  dk_all$share = dk_all$tot.x/dk_all$tot.y
+  
+  ggplot(data=dk_all, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+    geom_point() + 
+    geom_line() +
+    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    ggtitle("Udvikling i kompetencegruppernes andele af beskæftigelsen i Danmark") +
+    guides(colour=guide_legend(title="Kompetencegruppe")) +
+    theme_economist() +
+    theme(legend.position="right") +
+    scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+    scale_x_date(limits = c(min, max))
 
 
-b1 = pdata_dk_stat %>% filter(branche=="b1", educ != "all")
-b1 = merge(b1, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
-b1$share = b1$tot.x/b1$tot.y
+#### For brancher i DK   ----------------  
 
-ggplot(data=b1, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+pdata_dk = pdata %>% filter(country=="DK")
+
+pdata_dk_low = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="Ufaglærte")
+pdata_dk_mid = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="Mellemlang Uddannelse")
+pdata_dk_high = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="Højtuddannede")
+pdata_dk_all = pdata_dk %>% group_by(branche, year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
+
+pdata_dk_stat2 = cbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
+pdata_dk_stat2$share1 = pdata_dk_stat2[,2]/pdata_dk_stat2[,11]
+pdata_dk_stat2$share2 = pdata_dk_stat2[,5]/pdata_dk_stat2[,11]
+pdata_dk_stat2$share3 = pdata_dk_stat2[,8]/pdata_dk_stat2[,11]
+
+pdata_dk_stat = rbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
+
+#Brancher
+{
+dk_b1 = pdata_dk_stat %>% filter(branche=="b1", educ != "all")
+dk_b1 = merge(dk_b1, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
+dk_b1$share = dk_b1$tot.x/dk_b1$tot.y
+
+ggplot(data=dk_b1, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
   xlab("Tid") + ylab("Andele af beskæftigelsen") +
@@ -512,11 +491,11 @@ ggplot(data=b1, aes(x=year, y=share, group=educ.x, colour=educ.x)) +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
   scale_x_date(limits = c(min, max))
 
-b2 = pdata_dk_stat %>% filter(branche=="b2", educ != "all")
-b2 = merge(b2, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
-b2$share = b2$tot.x/b2$tot.y
+dk_b2 = pdata_dk_stat %>% filter(branche=="b2", educ != "all")
+dk_b2 = merge(dk_b2, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
+dk_b2$share = dk_b2$tot.x/dk_b2$tot.y
 
-ggplot(data=b2, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+ggplot(data=dk_b2, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
   xlab("Tid") + ylab("Andele af beskæftigelsen") +
@@ -527,11 +506,11 @@ ggplot(data=b2, aes(x=year, y=share, group=educ.x, colour=educ.x)) +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
   scale_x_date(limits = c(min, max))
 
-b3 = pdata_dk_stat %>% filter(branche=="b3", educ != "all")
-b3 = merge(b3, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
-b3$share = b3$tot.x/b3$tot.y
+dk_b3 = pdata_dk_stat %>% filter(branche=="b3", educ != "all")
+dk_b3 = merge(dk_b3, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
+dk_b3$share = dk_b3$tot.x/dk_b3$tot.y
 
-ggplot(data=b3, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+ggplot(data=dk_b3, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
   xlab("Tid") + ylab("Andele af beskæftigelsen") +
@@ -542,11 +521,11 @@ ggplot(data=b3, aes(x=year, y=share, group=educ.x, colour=educ.x)) +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
   scale_x_date(limits = c(min, max))
 
-b4 = pdata_dk_stat %>% filter(branche=="b4", educ != "all")
-b4 = merge(b4, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
-b4$share = b4$tot.x/b4$tot.y
+dk_b4 = pdata_dk_stat %>% filter(branche=="b4", educ != "all")
+dk_b4 = merge(dk_b4, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
+dk_b4$share = dk_b4$tot.x/dk_b4$tot.y
 
-ggplot(data=b4, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+ggplot(data=dk_b4, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
   xlab("Tid") + ylab("Andele af beskæftigelsen") +
@@ -557,37 +536,110 @@ ggplot(data=b4, aes(x=year, y=share, group=educ.x, colour=educ.x)) +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
   scale_x_date(limits = c(min, max))
 
-#########################
+}
 
+
+
+######################### På tværs af alle lande -----------------
 
 pdata_all = pdata
-pdata_all_low = pdata_all %>% group_by(year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="low")
-pdata_all_mid = pdata_all %>% group_by(year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="mid")
-pdata_all_high = pdata_all %>% group_by(year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="high")
-pdata_all_all = pdata_all %>% group_by(year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
-
-pdata_all_stat2 = cbind(pdata_all_low, pdata_all_mid, pdata_all_high, pdata_all_all)
-
-pdata_all_stat2$share1 = pdata_all_stat2[,2]/pdata_all_stat2[,11]
-pdata_all_stat2$share2 = pdata_all_stat2[,5]/pdata_all_stat2[,11]
-pdata_all_stat2$share3 = pdata_all_stat2[,8]/pdata_all_stat2[,11]
+pdata_all_low = pdata_all %>% group_by(country, year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="Ufaglærte")
+pdata_all_mid = pdata_all %>% group_by(country, year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="Mellemlang Uddannelse")
+pdata_all_high = pdata_all %>% group_by(country, year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="Højtuddannede")
+pdata_all_all = pdata_all %>% group_by(country, year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
 
 pdata_all_stat = rbind(pdata_all_low, pdata_all_mid, pdata_all_high, pdata_all_all)
 
+all = pdata_all_stat %>% filter(educ != "all")
+all = merge(all, pdata_all_all, by=c("country","year"), all.x = TRUE)
+all$share = all$tot.x/all$tot.y
 
+pdata_all_stat_avg= all %>% group_by(educ.x, year) %>% summarise_at(vars(share), list(mean = mean))
 
-ggplot(data=pdata_all_stat, aes(x=year, y=tot, group=educ, colour=educ)) + 
+ggplot(data=pdata_all_stat_avg, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
-  xlab("Tid") + ylab("Kumulativ prædikterede ændring i beskæftigelse, pct.") +
-  ggtitle("Kumulativ ændring i beskæftigelse i Danmark") +
-  guides(colour=guide_legend(title="Branche")) +
+  xlab("Tid") + ylab("") +
+  ggtitle("") +
+  guides(colour=guide_legend(title="Uddannelsegruppe")) +
   theme_economist() +
   theme(legend.position="right") +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
   scale_x_date(limits = c(min, max))
 
+## For brancher på tværs af alle lande ----------
 
+pdata_all = pdata
+pdata_all_low = pdata_all %>% group_by(branche, country, year) %>% summarise(tot = sum(EMP*(lowskill/100))) %>% mutate(educ="Ufaglærte")
+pdata_all_mid = pdata_all %>% group_by(branche, country, year) %>% summarise(tot = sum(EMP*(midskill/100))) %>% mutate(educ="Mellemlang Uddannelse")
+pdata_all_high = pdata_all %>% group_by(branche, country, year) %>% summarise(tot = sum(EMP*(highskill/100))) %>% mutate(educ="Højtuddannede")
+pdata_all_all = pdata_all %>% group_by(branche, country, year) %>% summarise(tot = sum(EMP)) %>% mutate(educ="all")
+
+pdata_all_stat = rbind(pdata_all_low, pdata_all_mid, pdata_all_high, pdata_all_all)
+
+all = pdata_all_stat %>% filter(educ != "all")
+all = merge(all, pdata_all_all, by=c("branche","country","year"), all.x = TRUE)
+all$share = all$tot.x/all$tot.y
+
+pdata_all_stat_avg= all %>% group_by(educ.x, year, branche) %>% summarise_at(vars(share), list(mean = mean))
+
+
+#Brancher
+{
+  b1 = pdata_all_stat_avg %>% filter(branche=="b1")
+  
+  ggplot(data=b1, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+    geom_point() + 
+    geom_line() +
+    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    ggtitle("") +
+    guides(colour=guide_legend(title="Uddannelsesegruppe")) +
+    theme_economist() +
+    theme(legend.position="right") +
+    scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+    scale_x_date(limits = c(min, max))
+  
+  b2 = pdata_all_stat_avg %>% filter(branche=="b2")
+  
+  ggplot(data=b2, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+    geom_point() + 
+    geom_line() +
+    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    ggtitle("") +
+    guides(colour=guide_legend(title="Uddannelsesegruppe")) +
+    theme_economist() +
+    theme(legend.position="right") +
+    scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+    scale_x_date(limits = c(min, max))
+  
+  b3 = pdata_all_stat_avg %>% filter(branche=="b3")
+  
+  ggplot(data=b3, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+    geom_point() + 
+    geom_line() +
+    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    ggtitle("") +
+    guides(colour=guide_legend(title="Uddannelsesegruppe")) +
+    theme_economist() +
+    theme(legend.position="right") +
+    scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+    scale_x_date(limits = c(min, max))
+  
+  b4 = pdata_all_stat_avg %>% filter(branche=="b4")
+  
+  ggplot(data=b4, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+    geom_point() + 
+    geom_line() +
+    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    ggtitle("") +
+    guides(colour=guide_legend(title="Uddannelsesegruppe")) +
+    theme_economist() +
+    theme(legend.position="right") +
+    scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
+    scale_x_date(limits = c(min, max))
+  
+  
+  }
 
 
 

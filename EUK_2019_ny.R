@@ -1076,17 +1076,16 @@ write_xlsx(regoutput_ss_panel, "regoutput_ss_panel.xlsx", col_names = TRUE)
 # Deskriptiv --------------------------------------------------
 
 #Forberedelse:
-{
-  
-  test_c = func_empprod("MN_4","lande")
-  test_i = func_empprod("MN_4","industrier")
-  
 
+test_c = func_empprod("MN_4","lande")
+test_i = func_empprod("MN_4","industrier")
+
+#Gennemsnit/overblik over variable og enheder:
+{
 #lande gns på tværs af år
 c_avg_niveau  = test_c %>% group_by(country) %>% summarise_at(vars(EMP, GO), list(mean = mean))
 c_avg_ændringer  = na.omit(test_c) %>% group_by(country) %>% summarise_at(vars(EMP, GO, emp_logchanges, prod_logchanges), list(mean = mean))
 tot_avg_ændringer  = na.omit(test_c) %>% group_by() %>% summarise_at(vars(EMP, GO, emp_logchanges, prod_logchanges), list(mean = mean))
-
 
 #industri gns på tværs af år
 i_avg_niveau = test_i %>% group_by(code) %>% summarise_at(vars(EMP, GO), list(mean = mean))
@@ -1096,10 +1095,8 @@ i_avg_ændringer = na.omit(test_i) %>% group_by(code) %>% summarise_at(vars(EMP,
 DK_i_avg_niveau = test_i %>% filter(country=="DK") %>% group_by(code) %>% summarise_at(vars(EMP, GO), list(mean = mean))
 DK_i_avg_ændringer = na.omit(test_i) %>% filter(country=="DK") %>% group_by(code) %>% summarise_at(vars(EMP, GO, emp_logchanges, prod_logchanges), list(mean = mean))
 
-
 # på tværs af lande
 c_panel_avg = na.omit(test_c) %>% group_by(year) %>% summarise_at(vars(emp_logchanges, prod_logchanges), list(mean = mean))
-
 
 #brancher
 {
@@ -1133,22 +1130,16 @@ b_avg_ændringer = na.omit(b_tot) %>% group_by(branche) %>% summarise_at(vars(EM
 
 #branche gns på tværs af år - Danmark
 DK_b_avg_ændringer = na.omit(b_tot) %>% filter(country=="DK") %>% group_by(branche) %>% summarise_at(vars(EMP_b, GO_b, emp_logchanges, prod_logchanges), list(mean = mean))
-
-
-
-
-
-
+}
 
 }
+
 
 #datoformat
 min <- as.Date("1995-1-1")
 max <- NA
 
 test_c$year <- as.Date(ISOdate(test_c$year, 1, 1))
-c_tot$year <- as.Date(ISOdate(c_tot$year, 1, 1))
-c_tot_filter$year <- as.Date(ISOdate(c_tot_filter$year, 1, 1))
 c_panel_avg$year <- as.Date(ISOdate(c_panel_avg$year, 1, 1))
 b_tot$year = as.Date(ISOdate(b_tot$year, 1, 1))
 b_tot_avg$year = as.Date(ISOdate(b_tot_avg$year, 1, 1))
@@ -1159,7 +1150,6 @@ n_industries = test_i %>% group_by(country, year) %>% count()
 n_industries_miss = n_industries %>% filter(n!=32)
 n_countries = test_c %>% group_by(country) %>% count()
 test = data %>% group_by(country, year) %>% count() #der skal være 32 industrier for hvert år i hvert land
-}
 
 #### DESCRIPTIVE - Employment and productivty
 {
@@ -1182,6 +1172,25 @@ NL_tot = test_c %>% filter(country=="NL")
     theme_economist() +
     theme(legend.position="right") + 
     scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
+  
+  library(ggplot2)
+  x <- seq(1992, 2002, by=2)
+  
+  d1 <- data.frame(x=x, y=rnorm(length(x)))
+  xy <- expand.grid(x=x, y=x)
+  d2 <- data.frame(x=xy$x, y=xy$y, z= jitter(xy$x + xy$y))
+  
+  d1$panel <- "a"
+  d2$panel <- "b"
+  d1$z <- d1$x
+  
+  d <- rbind(d1, d2)
+  
+  p <- ggplot(data = d, mapping = aes(x = x, y = y)) + 
+    facet_grid(panel~., scale="free") + 
+    geom_line(data = d1, stat = "identity") + 
+    geom_tile(data=d2, mapping=aes(colour=z, fill=z), stat = "identity")
+  p
   
   
   }
@@ -1252,18 +1261,7 @@ NL_tot = test_c %>% filter(country=="NL")
       scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
   } 
   
-  {ggplot(data = c_tot_filter) + 
-      geom_line(aes(x = year, y = emp_logchanges, color = "emp_logchanges"),) +
-      geom_line(aes(x = year, y = prod_logchanges, color = "prod_logchanges"),) +
-      scale_color_manual(name = "Colors", values = c("emp_logchanges" = "blue", "prod_logchanges" = "red")) +
-      xlab("Time") + ylab("") +
-      ggtitle("Produktivitet- og beskæftigelsesvækst, gns på tværs af lande") +
-      guides(colour=guide_legend(title="")) +
-      theme_economist() +
-      theme(legend.position="right") + 
-      scale_x_date(date_breaks = "5 year", date_labels = "%Y")  + scale_x_date(limits = c(min, max))
-  } 
-  
+
 }
 
 #Produktivitet- og beskæftigelsesvækst - BRANCHER
