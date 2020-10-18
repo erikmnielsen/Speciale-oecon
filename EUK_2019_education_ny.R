@@ -23,6 +23,7 @@ CGR = function(x){
   })
 }
 
+
 func_coefs <- function(regression, name, type) {
   
   options(scipen=999, digits=4) 
@@ -33,7 +34,7 @@ func_coefs <- function(regression, name, type) {
     coef = coeftest(regression, vcovPL(regression, cluster = ~ country, kernel = "Bartlett"))
     
     siglvl = stars.pval(coef[,4])
-    reg_coef = cbind(coef[,c(1,4)], siglvl)
+    reg_coef = cbind(coef[,c(1,2)], siglvl)
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
     
     reg_coef
@@ -43,7 +44,7 @@ func_coefs <- function(regression, name, type) {
     coef = coeftest(regression, vcovPL(regression, cluster = ~ year, kernel = "Bartlett"))
     
     siglvl = stars.pval(coef[,4])
-    reg_coef = cbind(coef[,c(1,4)], siglvl)
+    reg_coef = cbind(coef[,c(1,2)], siglvl)
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
     
     reg_coef
@@ -54,7 +55,7 @@ func_coefs <- function(regression, name, type) {
     coef = coeftest(regression, vcovPL(regression, cluster = NULL, kernel = "Bartlett"))
     
     siglvl = stars.pval(coef[,4])
-    reg_coef = cbind(coef[,c(1,4)], siglvl)
+    reg_coef = cbind(coef[,c(1,2)], siglvl)
     colnames(reg_coef) <- paste(name, colnames(reg_coef), sep = "_")
     
     reg_coef
@@ -66,7 +67,8 @@ func_coefs <- function(regression, name, type) {
   }
   
 }
-  
+
+
 #Datasæt konstrueres
 {
   ### Data for produktivitet og beskæftigelse
@@ -417,9 +419,19 @@ regoutput_share_panel <- Reduce(function(a,b){
 regoutput_share_panel$vars = row.names(regoutput_share_panel)
 write_xlsx(regoutput_share_panel, "regoutput_share_panel.xlsx", col_names = TRUE)
 
+summary(lowskill) 
+summary(midskill) 
+summary(highskill) 
+summary(lowskill_lags) 
+summary(midskill_lags) 
+summary(highskill_lags) 
+
 
 
 ##### Deskroptiv -------------------------------
+
+library(devtools)
+library(ggpubr)
 
 min = as.Date("2009-1-1")
 max = NA
@@ -446,12 +458,13 @@ pdata_dk_stat = rbind(pdata_dk_low, pdata_dk_mid, pdata_dk_high, pdata_dk_all)
   dk_all = merge(dk_all, pdata_dk_all, by=c("year"), all.x = TRUE)
   dk_all$share = dk_all$tot.x/dk_all$tot.y
   
-  ggplot(data=dk_all, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+  #Udvikling i kompetencegruppernes andele af beskæftigelsen i Danmark
+  dk_all_graf = ggplot(data=dk_all, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
     geom_point() + 
     geom_line() +
-    xlab("Tid") + ylab("Andele af beskæftigelsen") +
-    ggtitle("Udvikling i kompetencegruppernes andele af beskæftigelsen i Danmark") +
-    guides(colour=guide_legend(title="Kompetencegruppe")) +
+    xlab("") + ylab("Andele af beskæftigelsen") +
+    ggtitle("") +
+    guides(colour=guide_legend(title="Uddannelsesgruppe")) +
     theme_economist() +
     theme(legend.position="right") +
     scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
@@ -480,12 +493,12 @@ dk_b1 = pdata_dk_stat %>% filter(branche=="b1", educ != "all")
 dk_b1 = merge(dk_b1, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
 dk_b1$share = dk_b1$tot.x/dk_b1$tot.y
 
-ggplot(data=dk_b1, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+dk_b1_graf = ggplot(data=dk_b1, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
-  xlab("Tid") + ylab("Andele af beskæftigelsen") +
-  ggtitle("Udvikling i kompetencegruppernes andele af beskæftigelsen i primære erhverv-branchen") +
-  guides(colour=guide_legend(title="Kompetencegruppe")) +
+  xlab("") + ylab("Andele af beskæftigelsen") +
+  ggtitle("") +
+  guides(colour=guide_legend(title="Uddannelsesgruppe")) +
   theme_economist() +
   theme(legend.position="right") +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
@@ -495,12 +508,12 @@ dk_b2 = pdata_dk_stat %>% filter(branche=="b2", educ != "all")
 dk_b2 = merge(dk_b2, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
 dk_b2$share = dk_b2$tot.x/dk_b2$tot.y
 
-ggplot(data=dk_b2, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+dk_b2_graf = ggplot(data=dk_b2, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
-  xlab("Tid") + ylab("Andele af beskæftigelsen") +
-  ggtitle("Udvikling i kompetencegruppernes andele af beskæftigelsen i fremstillingsbranchen") +
-  guides(colour=guide_legend(title="Kompetencegruppe")) +
+  xlab("") + ylab("Andele af beskæftigelsen") +
+  ggtitle("") +
+  guides(colour=guide_legend(title="Uddannelsesgruppe")) +
   theme_economist() +
   theme(legend.position="right") +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
@@ -510,12 +523,12 @@ dk_b3 = pdata_dk_stat %>% filter(branche=="b3", educ != "all")
 dk_b3 = merge(dk_b3, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
 dk_b3$share = dk_b3$tot.x/dk_b3$tot.y
 
-ggplot(data=dk_b3, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+dk_b3_graf = ggplot(data=dk_b3, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
-  xlab("Tid") + ylab("Andele af beskæftigelsen") +
-  ggtitle("Udvikling i kompetencegruppernes andele af beskæftigelsen i den højteknologiske service-branche") +
-  guides(colour=guide_legend(title="Kompetencegruppe")) +
+  xlab("") + ylab("Andele af beskæftigelsen") +
+  ggtitle("") +
+  guides(colour=guide_legend(title="Uddannelsesgruppe")) +
   theme_economist() +
   theme(legend.position="right") +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
@@ -525,17 +538,22 @@ dk_b4 = pdata_dk_stat %>% filter(branche=="b4", educ != "all")
 dk_b4 = merge(dk_b4, pdata_dk_all, by=c("branche", "year"), all.x = TRUE)
 dk_b4$share = dk_b4$tot.x/dk_b4$tot.y
 
-ggplot(data=dk_b4, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
+dk_b4_graf = ggplot(data=dk_b4, aes(x=year, y=share, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
-  xlab("Tid") + ylab("Andele af beskæftigelsen") +
-  ggtitle("Udvikling i kompetencegruppernes andele af beskæftigelsen i den lavteknologiske service-branche") +
-  guides(colour=guide_legend(title="Kompetencegruppe")) +
+  xlab("") + ylab("Andele af beskæftigelsen") +
+  ggtitle("") +
+  guides(colour=guide_legend(title="Uddannelsesgruppe")) +
   theme_economist() +
   theme(legend.position="right") +
   scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
   scale_x_date(limits = c(min, max))
 
+
+ggarrange(dk_b1_graf, dk_b2_graf, dk_b3_graf, dk_b4_graf,
+          ncol = 2,  nrow = 2, 
+          labels = c("Primære erhverv", "Fremstilling", "Højteknologiske services", "Lavteknologiske services"))
+ 
 }
 
 
@@ -559,7 +577,7 @@ pdata_all_stat_avg= all %>% group_by(educ.x, year) %>% summarise_at(vars(share),
 ggplot(data=pdata_all_stat_avg, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
   geom_point() + 
   geom_line() +
-  xlab("Tid") + ylab("") +
+  xlab("") + ylab("") +
   ggtitle("") +
   guides(colour=guide_legend(title="Uddannelsegruppe")) +
   theme_economist() +
@@ -588,10 +606,10 @@ pdata_all_stat_avg= all %>% group_by(educ.x, year, branche) %>% summarise_at(var
 {
   b1 = pdata_all_stat_avg %>% filter(branche=="b1")
   
-  ggplot(data=b1, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+  b1_all_graf = ggplot(data=b1, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
     geom_point() + 
     geom_line() +
-    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    xlab("") + ylab("Andele af beskæftigelsen") +
     ggtitle("") +
     guides(colour=guide_legend(title="Uddannelsesegruppe")) +
     theme_economist() +
@@ -601,10 +619,10 @@ pdata_all_stat_avg= all %>% group_by(educ.x, year, branche) %>% summarise_at(var
   
   b2 = pdata_all_stat_avg %>% filter(branche=="b2")
   
-  ggplot(data=b2, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+  b2_all_graf =  ggplot(data=b2, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
     geom_point() + 
     geom_line() +
-    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    xlab("") + ylab("Andele af beskæftigelsen") +
     ggtitle("") +
     guides(colour=guide_legend(title="Uddannelsesegruppe")) +
     theme_economist() +
@@ -614,10 +632,10 @@ pdata_all_stat_avg= all %>% group_by(educ.x, year, branche) %>% summarise_at(var
   
   b3 = pdata_all_stat_avg %>% filter(branche=="b3")
   
-  ggplot(data=b3, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+  b3_all_graf = ggplot(data=b3, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
     geom_point() + 
     geom_line() +
-    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    xlab("") + ylab("Andele af beskæftigelsen") +
     ggtitle("") +
     guides(colour=guide_legend(title="Uddannelsesegruppe")) +
     theme_economist() +
@@ -627,10 +645,10 @@ pdata_all_stat_avg= all %>% group_by(educ.x, year, branche) %>% summarise_at(var
   
   b4 = pdata_all_stat_avg %>% filter(branche=="b4")
   
-  ggplot(data=b4, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
+  b4_all_graf = ggplot(data=b4, aes(x=year, y=mean, group=educ.x, colour=educ.x)) + 
     geom_point() + 
     geom_line() +
-    xlab("Tid") + ylab("Andele af beskæftigelsen") +
+    xlab("") + ylab("Andele af beskæftigelsen") +
     ggtitle("") +
     guides(colour=guide_legend(title="Uddannelsesegruppe")) +
     theme_economist() +
@@ -638,8 +656,14 @@ pdata_all_stat_avg= all %>% group_by(educ.x, year, branche) %>% summarise_at(var
     scale_x_date(date_breaks = "5 year", date_labels = "%Y") +
     scale_x_date(limits = c(min, max))
   
+  ggarrange(b1_all_graf, b2_all_graf, b3_all_graf, b4_all_graf,
+            ncol = 2,  nrow = 2, 
+            labels = c("Primære erhverv", "Fremstilling", "Højteknologiske services", "Lavteknologiske services"))
   
-  }
+}
+
+  
+
 
 
 
