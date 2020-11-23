@@ -7,3 +7,5 @@ surveyforbehandling.R er forbehandling af data i R for spørgeskemaundersøgelse
 survey_R_ny.R er regressionsresultater og modeltjek for spørgeskemaundersøgelsen "TAKS" (kapitel 5). 
 
 EUK_2019_ny.R er bearbejdelse, regressionsresultater og modeltjek for projektet undersøgelse af EU KLEMS datasættet (kapitel 4). 
+
+DK_documentation_2017.pdf er dokumentation af "TASK". 
